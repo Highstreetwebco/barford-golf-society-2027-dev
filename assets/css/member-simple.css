@@ -120,3 +120,8 @@ body .desktop-primary{display:none}
 body #scoresNav button{font-size:1rem!important;min-height:52px!important}
 body .score-player-row b{font-size:1.3rem;max-width:44%;text-align:right}
 body #scoreSafetyText{overflow-wrap:anywhere}
+/* Keep member text on a light surface, including loading and error messages. */
+body:has(.simple-shell),body:has(#eventList),body:has(#accountContent),body:has(#memberSignupForm){background:#f2f5f3!important;color:#183c2f}
+body:has(.simple-shell) main>h1,body:has(#eventList) .events-toolbar h2{color:#183c2f!important;text-shadow:none!important}
+body:has(#eventList) .events-toolbar .muted{color:#405d50!important}
+body .simple-shell>.simple-back{color:#174d36!important}

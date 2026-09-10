@@ -3,7 +3,9 @@
   if(!list||!F)return;
   async function load(){
     try{
-      const [events,auth]=await Promise.all([F.request(client.from('events').select('*').in('status',['scheduled','cancelled','completed']).order('event_date')),F.request(client.auth.getSession())]);
+      const auth=await F.request(client.auth.getSession());
+      if(!auth.session){summary.textContent='Sign in to see your events, bookings and tee times.';list.innerHTML=`<article class="simple-card"><h3>Your society events</h3><p>Sign in to choose an event or check your booking.</p><a class="button button-primary" href="${F.loginUrl(location.href)}">Sign in to view events</a></article>`;return;}
+      const events=await F.request(client.from('events').select('*').in('status',['scheduled','cancelled','completed']).order('event_date'));
       let rsvps=[],bookingError=false;
       if(auth.session){try{rsvps=await F.request(client.from('rsvps').select('event_id,status,payment_status').eq('member_id',auth.session.user.id));}catch{bookingError=true;}}
       const upcoming=events.filter(e=>e.event_date>=F.today()&&e.status!=='completed'),past=events.filter(e=>!upcoming.includes(e)).reverse();

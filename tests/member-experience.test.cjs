@@ -110,3 +110,8 @@ test('sign-out recovers from a stalled auth request and preserves saved scorecar
  vm.createContext(context);vm.runInContext(source('account-session.js'),context);await context.window.BarfordAccountSession.signOut();timers.forEach(clearTimeout);
  assert.equal(scope,'local');assert.equal(destination,'account.html?signedout=1');assert.equal(storage.has(key),false);assert.equal(storage.get('barford-fast-scorecard-v4'),'scores');assert.equal(storage.get('other-app-token'),'keep');
 });
+test('signed-out event calendar offers sign-in without making a forbidden database query',async()=>{
+ const document=documentStub();new Element({id:'eventList'},document);new Element({id:'eventCalendarSummary'},document);let queries=0;
+ const context={window:{BarfordSupabase:{auth:{getSession:async()=>({data:{session:null}})},from(){queries++;throw Error('Anonymous event reads are not allowed');}}},document,location:{href:'https://example.com/golf/events.html'},URL,URLSearchParams,Date,Promise,setTimeout,clearTimeout};
+ vm.createContext(context);vm.runInContext(source('member-workflow.js'),context);vm.runInContext(source('events-live.js'),context);await settle();assert.equal(queries,0);assert.match(document.getElementById('eventList').innerHTML,/Sign in to view events/);assert.match(document.getElementById('eventList').innerHTML,/returnTo=/);
+});

@@ -1,4 +1,4 @@
-import { ScoresData } from "./scores-data.js?v=member73";
+import { ScoresData } from "./scores-data.js?v=member74";
 import { rankPlayers, calculatePlayerStatistics } from "./handicap-engine.js";
 
 
@@ -17,11 +17,13 @@ const formatChange = value => value == null ? "DNP" : value > 0 ? `+${value}` : 
 const latestResult = (playerId) => [...state.data.rounds].reverse().map(r => r.results.find(x => x.playerId === playerId)).find(Boolean);
 
 async function refresh() {
-  state.data = await ScoresData.getSnapshot();
-  if (window.BarfordSupabase) {
-    const { data: { session } } = await window.BarfordSupabase.auth.getSession();
-    state.currentUserId = session?.user?.id ?? null;
+  const auth=await window.BarfordMemberFlow.request(window.BarfordSupabase.auth.getSession());
+  state.currentUserId=auth.session?.user?.id||null;
+  if(!auth.session){
+    $$('.view').forEach(view=>{view.innerHTML=`<article class="simple-card"><h2>Sign in to see society results</h2><p>View the leaderboard, round results and your handicap.</p><a class="button button-primary" href="${window.BarfordMemberFlow.loginUrl(location.href)}">Sign in to view results</a></article>`;});
+    setView(new URLSearchParams(location.search).get('view')||'leaderboard');return;
   }
+  state.data=await ScoresData.getSnapshot();
   const eventId=new URLSearchParams(location.search).get('event');
   if(eventId){const result=await window.BarfordMemberFlow.request(window.BarfordSupabase.from('rounds').select('id').eq('event_id',eventId).eq('season',2027).maybeSingle());if(result&&state.data.rounds.some(r=>r.id===result.id))state.selectedRoundId=result.id;}
   const requestedRound=new URLSearchParams(location.search).get('round');
@@ -412,6 +414,7 @@ function setView(name) {
   const url=new URL(location.href);url.searchParams.set("view",name);history.replaceState(null,"",url);
   $$(".nav-tab").forEach(b=>{b.classList.toggle("is-active",b.dataset.view===name);b.setAttribute("aria-pressed",String(b.dataset.view===name));});
   $$(".view").forEach(v=>{const active=v.id===`${name}View`;v.hidden=!active;v.classList.toggle("is-active",active)});
+  if(!state.data)document.querySelectorAll('.view a[href*="account.html"]').forEach(link=>link.href=window.BarfordMemberFlow.loginUrl(location.href));
   const titles={leaderboard:["Leaderboard","Best five rounds count towards the season total."],rounds:["Rounds","Every player, handicap and adjustment in a phone-friendly view."],handicaps:["Handicap History","See how handicaps move throughout the season."],statistics:["Statistics","Performance summaries for every member."]};
   const heroTitle=$("#heroTitle"),heroSubtitle=$("#heroSubtitle");
   if(heroTitle)heroTitle.textContent=titles[name][0];
@@ -435,4 +438,4 @@ window.addEventListener("scores:data-changed",refresh);
 
 
 
-refresh().catch(()=>{const host=document.getElementById('leaderboardView');host.insertAdjacentHTML('afterbegin','<div class="simple-card" role="status"><p>Results could not be loaded. Please try again.</p><button class="button button-primary" id="retryResults">Reload results</button></div>');document.getElementById('retryResults').onclick=()=>location.reload();});
+refresh().catch(()=>{$$('.view').forEach(view=>{view.innerHTML='<article class="simple-card" role="status"><h2>Results could not be loaded</h2><p>Please try again to see the latest scores.</p><button class="button button-primary" data-retry-results>Reload results</button></article>';view.querySelector('[data-retry-results]').onclick=()=>location.reload();});});

@@ -14,6 +14,7 @@
   const lightboxCount = document.querySelector("#galleryLightboxCount");
   const eventId=new URLSearchParams(location.search).get('event');
   if(eventId){const back=document.createElement('a');back.className='button button-outline';back.href='event.html?event='+encodeURIComponent(eventId);back.textContent='Back to my event';document.querySelector('.page-hero .shell')?.append(back);const all=document.createElement('a');all.href='gallery.html';all.className='button button-outline';all.textContent='View all society photos';back.after(all);}
+  let memberSession=null;
   let activePhotos = [];
   let activeIndex = 0;
   let touchStartX = 0;
@@ -40,8 +41,8 @@
   const movePhoto = direction => showPhoto(activeIndex + direction);
   const loadGallery = async () => {
     let data,error;
-    try{const query=client.from('gallery_photos').select('id,storage_path,caption,taken_at,created_at,event_id').eq('approved',true).order('created_at',{ascending:false});({data,error}=await window.BarfordMemberFlow.bounded(eventId?query.eq('event_id',eventId):query));}catch(e){error=e;}
-    if(error){count.textContent='Photos could not be loaded';grid.innerHTML='<button class="button button-primary" id="retryGallery">Try again</button>';document.getElementById('retryGallery').onclick=loadGallery;return;}
+    try{if(!memberSession&&eventId){data=[];}else{const query=client.from('gallery_photos').select('id,storage_path,caption,taken_at,created_at,event_id').eq('approved',true).order('created_at',{ascending:false});({data,error}=await window.BarfordMemberFlow.bounded(eventId?query.eq('event_id',eventId):query));}}catch(e){error=e;}
+    if(error&&memberSession){count.textContent='Photos could not be loaded';grid.innerHTML='<button class="button button-primary" id="retryGallery">Try again</button>';document.getElementById('retryGallery').onclick=loadGallery;return;}
 
     const currentPhotos = error ? [] : (data || []).map(photo => ({
       url: client.storage.from(config.galleryBucket).getPublicUrl(photo.storage_path).data.publicUrl,
@@ -51,6 +52,7 @@
     activePhotos = photos;
 
     count.textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}`;
+    if(!memberSession&&eventId){grid.innerHTML=`<article class="simple-card"><h2>Sign in to see event photos</h2><a class="button button-primary" href="${window.BarfordMemberFlow.loginUrl(location.href)}">Sign in</a></article>`;return;}
     if (!photos.length) {
       grid.innerHTML = '<div class="empty-state"><strong>No photos yet</strong><span>New society photos will appear here.</span></div>';
       return;
@@ -89,6 +91,7 @@
   const initialise = async () => {
     if (!client) return;
     const { data: { session } } = await client.auth.getSession();
+    memberSession=session;
     form.classList.toggle("hidden", !session);
     note.textContent = session ? "Choose one or more images to add to the society gallery." : "Sign in to upload photographs.";
     form.addEventListener("submit", async event => {
