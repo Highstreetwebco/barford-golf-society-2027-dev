@@ -1,4 +1,4 @@
-const CACHE='barford-golf-2027-offline-v78-9512bc135b50';
+const CACHE='barford-golf-2027-offline-v79-presentation-rehearsal-fixes';
 const PREFIX='barford-golf-2027-offline-';
 const SCOPE=new URL('./',self.location.href);
 const PAGES=new Set(["404.html","about.html","account.html","admin.html","event.html","events.html","gallery.html","hole-view.html","index.html","payments.html","scores.html","scoring.html","shop.html","signup.html","worldevents.html"]);
