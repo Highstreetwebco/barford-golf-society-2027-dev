@@ -37,3 +37,7 @@ Regular reading text is 18px, primary controls are at least 48px high, and score
 ## Implementation
 
 `clubhouse.css` replaces the retired decorative theme layers on member pages. `clubhouse-course.css` styles the existing map interface. Shared event renderers supply the new heading/date structure while keeping their IDs, action hooks and server contracts. The service worker includes both new stylesheets and the society image in its own namespaced cache.
+
+## Verification
+
+All 20 existing automated member-workflow checks passed after the redesign. A colour-grid check covered 4,096 personalised colours with a minimum 4.5:1 text contrast. Original HTML IDs, balanced structure, local asset references and changed JavaScript syntax were checked. The published homepage, events, results navigation, More menu and account sign-in page were inspected in the browser. Signed-in transaction flows use simulated data in the existing checks; no member bookings, payments or scores were changed during this work.
