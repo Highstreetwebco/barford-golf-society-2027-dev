@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#073c2f"><title>Shop | Barford Golf Society</title><link rel="stylesheet" href="../assets/dist/styles.25b6981ca7d7.css" data-css-sources="assets/css/styles.css">
+<link rel="stylesheet" href="../assets/dist/member-ui.49d5a6a1e11e.css" data-css-sources="assets/css/accessible-mobile.css,assets/css/personal-theme.css,assets/css/member-simple.css,assets/css/clubhouse.css" data-ui-ready data-personal-theme><link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin></head>
+<body class="clubhouse page-shop"><a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header"><div class="shell header-inner"><a class="brand" href="index.html"><img src="../assets/images/barford-golf-society-logo-320.webp" alt="Barford Golf Society"><span class="brand-wordmark" aria-hidden="true"><strong>Barford</strong><small>Golf Society</small></span></a><button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation"><span class="sr-only">Open menu</span><span></span><span></span><span></span></button><nav id="primary-navigation" class="site-nav"><a href="index.html">Home</a><a href="events.html">Events</a><a href="worldevents.html">Society Trips</a><a href="scores.html">League Table</a><a class="active" href="shop.html">Shop</a><a href="gallery.html">Photos</a><a href="about.html">About Us</a><a href="account.html">My Account</a><a href="admin.html">Admin</a></nav></div></header>
+<main id="main-content"><section class="page-hero shop"><div class="shell"><p class="eyebrow">Society merchandise</p><h1>Golf shop</h1><p>Official Barford Golf Society products and collection information.</p></div></section><section class="section shell"><article class="empty-state account-panel"><p class="eyebrow">No products yet</p><h2>The shop is currently empty</h2><p>Products will appear here when the committee makes them available.</p></article></section></main>
+<footer class="site-footer"><div class="shell footer-inner"><div class="footer-brand"><img src="../assets/images/barford-golf-society-logo-320.webp" alt=""><span>Barford Golf Society</span></div><p>© <span id="year"></span> Barford Golf Society</p></div></footer><script src="demo-data.js"></script><script>const body=document.body;
+const currentPage=location.pathname.split("/").pop()||"index.html";
+document.querySelectorAll(".site-header .brand img,.global-site-header .global-brand img").forEach(image=>{image.src="../assets/images/barford-presentation-golf-society-logo-320.webp";image.width=320;image.height=320;image.alt="Barford Golf Society";});
+const addCss=(href,key)=>{if(document.querySelector("link[data-ui-ready]"))return;const attr=`data-${key.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`;if(document.querySelector(`link[${attr}]`))return;const link=document.createElement("link");link.rel="stylesheet";link.href=href;link.dataset[key]="1";document.head.appendChild(link);};
+addCss("assets/css/deep-teal-theme.css?v=global-header1","deepTealTheme");
+// Keep the established feature layout, then apply one shared redesign layer.
+if(currentPage==="index.html"){
+  body.classList.add("product-premium");
+  addCss("assets/css/product-premium.css?v=4","productPremium");
+  addCss("assets/css/mobile-redesign.css?v=4","mobileRedesign");
+  addCss("assets/css/brilliant.css?v=3","brilliantProduct");
+}
+body.classList.add("matchday-ui");
+addCss("assets/css/matchday-redesign.css?v=3","matchdayRedesign");
+
+const standardPages=[["index.html","Dashboard"],["events.html","Events"],["scores.html","Leaderboard"],["gallery.html","Gallery"],["account.html","My account"],["payments.html","My payments"],["worldevents.html","Society trips"],["shop.html","Shop"],["about.html","About us"],["admin.html","Committee admin"]];
+document.querySelectorAll('.site-nav').forEach(nav=>{nav.innerHTML=standardPages.map(([href,label])=>`<a href="${href}"${currentPage===href?' class="active" aria-current="page"':''}>${label}</a>`).join('');});
+document.querySelectorAll('.site-header .menu-button').forEach(button=>{const nav=document.createElement('nav');nav.className='desktop-primary';nav.setAttribute('aria-label','Main pages');nav.innerHTML=standardPages.slice(0,4).map(([href,label])=>`<a href="${href}"${currentPage===href?' aria-current="page"':''}>${label}</a>`).join('');button.before(nav);});
+document.querySelectorAll(".menu-button").forEach(menuButton=>{const navigationId=menuButton.getAttribute("aria-controls");const navigation=navigationId?document.getElementById(navigationId):menuButton.closest(".site-header")?.querySelector(".site-nav");if(!navigation)return;const closeMenu=()=>{navigation.classList.remove("is-open");menuButton.setAttribute("aria-expanded","false");body.classList.remove("mobile-menu-open");const label=menuButton.querySelector(".menu-button-label");if(label)label.textContent="More";menuButton.setAttribute("aria-label","Open more pages")};menuButton.addEventListener("click",event=>{event.stopPropagation();const open=navigation.classList.toggle("is-open");menuButton.setAttribute("aria-expanded",String(open));body.classList.toggle("mobile-menu-open",open)});navigation.querySelectorAll("a").forEach(link=>link.addEventListener("click",closeMenu));document.addEventListener("click",event=>{if(!navigation.contains(event.target)&&!menuButton.contains(event.target))closeMenu()},{passive:true});document.addEventListener("keydown",event=>{if(event.key==="Escape"&&navigation.classList.contains("is-open")){closeMenu();menuButton.focus()}});});
+const year=document.querySelector("#year");if(year)year.textContent=new Date().getFullYear();const installBtn=document.querySelector("#installHelpBtn"),installHelp=document.querySelector("#installHelp");if(installBtn&&installHelp)installBtn.addEventListener("click",()=>{installHelp.classList.toggle("hidden");installBtn.textContent=installHelp.classList.contains("hidden")?"Show instructions":"Hide instructions"});
+
+const mobileNav=document.createElement("nav");mobileNav.className="mobile-quick-nav";mobileNav.dataset.playerNav="true";mobileNav.setAttribute("aria-label","Player navigation");const quickItems=[["index.html",'<svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V20H4Z"/><path d="M9 20v-6h6v6"/></svg>',"Dashboard"],["events.html",'<svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17M7 14h3M14 14h3M7 17h3"/></svg>',"Events"],["scores.html",'<svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0Z"/><path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 12v4M8 20h8M9 16h6v4"/></svg>',"Leaderboard"],["gallery.html",'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4.5 18 5-5 3.5 3 2.5-2.5 4 4"/></svg>',"Gallery"]];mobileNav.innerHTML=quickItems.map(([href,icon,label])=>`<a href="${href}" class="${(currentPage===href||(["event.html","payments.html"].includes(currentPage)&&href==="events.html"))?"active":""}"${currentPage===href?' aria-current="page"':""}><span class="quick-icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`).join("");if(!body.classList.contains("gps-page"))body.appendChild(mobileNav);
+const initialiseSharedUi=()=>{const dialog=document.createElement("dialog");dialog.className="profile-photo-lightbox";dialog.setAttribute("aria-label","Profile photo");dialog.innerHTML='<form method="dialog"><button class="profile-photo-lightbox-close" value="cancel" aria-label="Close profile photo">×</button><img alt="Enlarged profile photo"><a class="button button-primary profile-photo-change hidden" href="account.html#profile-photo">Change profile picture</a><button class="button button-outline" value="cancel">Close</button></form>';document.body.append(dialog);const openPhoto=element=>{const source=element?.dataset?.profilePhoto||element?.querySelector?.("img")?.src;if(!source){location.href="account.html#profile-photo";return}dialog.querySelector("img").src=source;dialog.querySelector(".profile-photo-change")?.classList.toggle("hidden",element.dataset.profileOwner!=="self");dialog.showModal()};document.addEventListener("click",event=>{const target=event.target.closest('[data-profile-photo], [data-profile-owner="self"]');if(target)openPhoto(target)});document.addEventListener("profile-photo:open",event=>openPhoto(event.target));};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialiseSharedUi,{once:true});else initialiseSharedUi();
+</script><script>(() => {
+  const mobileQuery = window.matchMedia("(max-width: 850px)");
+  const currentPage = location.pathname.split("/").pop() || "index.html";
+
+  if (currentPage === "gallery.html") {
+    document.title = "Gallery | Barford Golf Society";
+    const heading = document.querySelector(".page-hero h1");
+    if (heading) heading.textContent = "Gallery";
+    document.querySelectorAll("h2").forEach(title => {
+      if (title.textContent.trim() === "Society gallery") title.textContent = "Society photos";
+      if (title.textContent.trim() === "Upload your golf photos") title.textContent = "Add your golf photos";
+    });
+    const upload = document.querySelector(".upload-card button");
+    if (upload) upload.textContent = "Upload photos";
+  }
+  if (currentPage === "worldevents.html") {
+    document.title = "Society Trips | Barford Golf Society";
+    const heading = document.querySelector(".page-hero h1");
+    if (heading) heading.textContent = "Society trips";
+    const featured = [...document.querySelectorAll("h2")].find(title => title.textContent.trim() === "Featured trip ideas");
+    if (featured) featured.textContent = "Future society trips";
+  }
+  if (currentPage === "index.html") {
+    document.querySelectorAll('a[href="events.html"]').forEach(link => {
+      if (link.textContent.trim() === "RSVP to next event") link.textContent = "Book my place";
+      if (link.textContent.trim() === "RSVP now") link.textContent = "View event";
+    });
+  }
+
+  document.querySelectorAll(".menu-button").forEach(button => {
+    if (button.querySelector(".menu-button-label")) return;
+    const bars = document.createElement("span");
+    bars.className = "menu-button-lines";
+    [...button.children].filter(child => !child.classList.contains("sr-only")).forEach(child => bars.appendChild(child));
+    const label = document.createElement("span");
+    label.className = "menu-button-label";
+    label.textContent = "More";
+    button.append(bars, label);
+    button.setAttribute("aria-label", "Open more pages");
+    button.addEventListener("click", () => {
+      const open = button.getAttribute("aria-expanded") === "true";
+      label.textContent = open ? "Close" : "More";
+      button.setAttribute("aria-label", open ? "Close more pages" : "Open more pages");
+    });
+  });
+
+  document.querySelectorAll('a[href="worldevents.html"]').forEach(link => {
+    if (link.textContent.trim() === "World Events") link.textContent = "Society Trips";
+  });
+
+  const quickNav = document.querySelector(".mobile-quick-nav");
+  if (quickNav && !quickNav.dataset.playerNav) {
+    const items = [
+      ["index.html", "⌂", "Dashboard"],
+      ["events.html", "▣", "Events"],
+      ["scores.html", "♛", "Leaderboard"],
+      ["gallery.html", "▧", "Gallery"]
+    ];
+    const current = currentPage;
+    quickNav.innerHTML = items.map(([href, icon, label]) =>
+      `<a href="${href}" class="${current === href ? "active" : ""}"${current === href ? ' aria-current="page"' : ""}><span class="quick-icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`
+    ).join("");
+  }
+
+  // Admin visibility is handled once by supabase-client.js; avoid a duplicate profile request.\n
+  document.querySelectorAll(".rsvp-event-button").forEach(button => {
+    if (button.textContent.trim() === "RSVP") button.textContent = "Choose yes or no";
+  });
+  document.querySelectorAll(".event-button-row button").forEach(button => {
+    if (button.textContent.trim() === "Course video") button.textContent = "Watch course video";
+    if (button.textContent.trim() === "More details") button.textContent = "View event details";
+  });
+  document.querySelectorAll(".payment-status.due").forEach(status => {
+    status.textContent = "Payment required";
+  });
+
+  document.querySelectorAll(".event-rsvp-section").forEach(section => {
+    const list = section.querySelector(".public-rsvp-list");
+    if (!list || list.children.length <= 5) return;
+    const button = document.createElement("button");
+    button.className = "button button-outline players-toggle";
+    button.type = "button";
+    const total = list.children.length;
+    button.textContent = `View all ${total} players`;
+    button.setAttribute("aria-expanded", "false");
+    button.addEventListener("click", () => {
+      const open = list.classList.toggle("is-expanded");
+      button.setAttribute("aria-expanded", String(open));
+      button.textContent = open ? "Show fewer players" : `View all ${total} players`;
+    });
+    section.appendChild(button);
+  });
+
+  const message = document.createElement("div");
+  message.className = "site-message";
+  message.setAttribute("role", "status");
+  message.setAttribute("aria-live", "polite");
+  document.body.appendChild(message);
+  window.showSiteMessage = text => {
+    message.textContent = text;
+    message.classList.add("show");
+    clearTimeout(window.siteMessageTimer);
+    window.siteMessageTimer = setTimeout(() => message.classList.remove("show"), 2600);
+  };
+})();
+</script></body></html>
