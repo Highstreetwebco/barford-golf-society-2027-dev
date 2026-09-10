@@ -26,10 +26,11 @@ const changed = () => window.dispatchEvent(new CustomEvent("scores:data-changed"
 
 export const ScoresData = {
   async getSnapshot() {
+    if(!window.BarfordSupabase)throw new Error("Results connection unavailable");
     if (window.BarfordSupabase && Date.now() - loadedAt > 30000) {
       const today = new Date();
       const localToday = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
-      const [snapshotResult, eventResult] = await Promise.all([
+      const [snapshotResult, eventResult] = await window.BarfordMemberFlow.bounded(Promise.all([
         window.BarfordSupabase.rpc("get_2027_leaderboard_snapshot"),
         window.BarfordSupabase
           .from("events")
@@ -38,7 +39,8 @@ export const ScoresData = {
           .gte("event_date", localToday)
           .order("event_date", { ascending: true })
           .limit(1)
-      ]);
+      ]));
+      if(snapshotResult.error)throw snapshotResult.error;
       if (!snapshotResult.error && snapshotResult.data) {
         const players = await Promise.all((snapshotResult.data.players || []).map(async player => {
           if (!player.photoUrl) return player;

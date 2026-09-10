@@ -1,4 +1,4 @@
-import { ScoresData } from "./scores-data.js?v=royalboard1";
+import { ScoresData } from "./scores-data.js?v=member73";
 import { rankPlayers, calculatePlayerStatistics } from "./handicap-engine.js";
 
 
@@ -22,8 +22,12 @@ async function refresh() {
     const { data: { session } } = await window.BarfordSupabase.auth.getSession();
     state.currentUserId = session?.user?.id ?? null;
   }
-  state.selectedRoundId ||= state.data.rounds[0]?.id;
-  state.selectedPlayerId ||= state.data.players[0]?.id;
+  const eventId=new URLSearchParams(location.search).get('event');
+  if(eventId){const result=await window.BarfordMemberFlow.request(window.BarfordSupabase.from('rounds').select('id').eq('event_id',eventId).eq('season',2027).maybeSingle());if(result&&state.data.rounds.some(r=>r.id===result.id))state.selectedRoundId=result.id;}
+  const requestedRound=new URLSearchParams(location.search).get('round');
+  if(requestedRound&&state.data.rounds.some(r=>r.id===requestedRound))state.selectedRoundId=requestedRound;
+  state.selectedRoundId ||= getCompletedRounds().at(-1)?.id || state.data.rounds[0]?.id;
+  state.selectedPlayerId ||= state.data.players.find(p=>p.id===state.currentUserId)?.id || state.data.players[0]?.id;
 
   const completedRounds = getCompletedRounds();
   if (
@@ -33,7 +37,10 @@ async function refresh() {
     state.selectedLeaderboardRoundId = completedRounds.at(-1)?.id ?? null;
   }
 
+  const find=document.getElementById('findMyPosition');find.hidden=!state.currentUserId;
+  find.onclick=()=>{state.search='';document.getElementById('playerSearch').value='';setView('leaderboard');renderLeaderboard();const row=document.querySelector('.is-current-player');if(row){row.scrollIntoView({block:'center',behavior:'smooth'});row.tabIndex=-1;row.focus({preventScroll:true});}else document.getElementById('myPositionStatus').textContent='Your position will appear after your first published result.';};
   renderAll();
+  setView(new URLSearchParams(location.search).get("view")||state.activeView);
 }
 
 function renderAll() {
@@ -400,14 +407,16 @@ function renderStatistics() {
 }
 
 function setView(name) {
+  if(!["leaderboard","rounds","handicaps","statistics"].includes(name))name="leaderboard";
   state.activeView=name;
-  $$(".nav-tab").forEach(b=>b.classList.toggle("is-active",b.dataset.view===name));
+  const url=new URL(location.href);url.searchParams.set("view",name);history.replaceState(null,"",url);
+  $$(".nav-tab").forEach(b=>{b.classList.toggle("is-active",b.dataset.view===name);b.setAttribute("aria-pressed",String(b.dataset.view===name));});
   $$(".view").forEach(v=>{const active=v.id===`${name}View`;v.hidden=!active;v.classList.toggle("is-active",active)});
   const titles={leaderboard:["Leaderboard","Best five rounds count towards the season total."],rounds:["Rounds","Every player, handicap and adjustment in a phone-friendly view."],handicaps:["Handicap History","See how handicaps move throughout the season."],statistics:["Statistics","Performance summaries for every member."]};
   const heroTitle=$("#heroTitle"),heroSubtitle=$("#heroSubtitle");
   if(heroTitle)heroTitle.textContent=titles[name][0];
   if(heroSubtitle)heroSubtitle.textContent=titles[name][1];
-  if(name==="handicaps")renderHandicapHistory();if(name==="statistics")renderStatistics();
+  if(state.data){if(name==="handicaps")renderHandicapHistory();if(name==="statistics")renderStatistics();}
 }
 
 function escapeHtml(value=""){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -426,4 +435,4 @@ window.addEventListener("scores:data-changed",refresh);
 
 
 
-refresh();
+refresh().catch(()=>{const host=document.getElementById('leaderboardView');host.insertAdjacentHTML('afterbegin','<div class="simple-card" role="status"><p>Results could not be loaded. Please try again.</p><button class="button button-primary" id="retryResults">Reload results</button></div>');document.getElementById('retryResults').onclick=()=>location.reload();});

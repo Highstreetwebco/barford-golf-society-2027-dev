@@ -20,6 +20,7 @@
   const request = async (action, body = {}, accessToken = "") => {
     const response = await fetch(`${endpoint}/${action}`, {
       method: "POST",
+      signal: AbortSignal.timeout(12000),
       headers: {
         "Content-Type": "application/json",
         apikey: config.supabasePublishableKey,

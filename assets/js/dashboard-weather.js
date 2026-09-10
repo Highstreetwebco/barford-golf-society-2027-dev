@@ -1,8 +1,10 @@
 (() => {
   "use strict";
   const client = window.BarfordSupabase;
-  const host = document.getElementById("dashboardEventFacts");
-  if (!client || !host) return;
+  if (!client) return;
+  const initialise=async model=>{
+  const host=document.getElementById("dashboardEventFacts");if(!host||!model)return;
+  document.getElementById("dashboardWeather")?.remove();
   const localDate = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" });
   const friendlyDate = value => new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short"}).format(new Date(value+"T12:00:00"));
   const card = document.createElement("section");
@@ -28,15 +30,13 @@
     return "Golf-day tips: "+tips.join(" ");
   };
   const condition = code => code === 0 ? ["☀️","Sunny"] : [1,2].includes(code) ? ["🌤️","Sunny intervals"] : code === 3 ? ["☁️","Cloudy"] : [45,48].includes(code) ? ["🌫️","Foggy"] : [51,53,55].includes(code) ? ["🌦️","Drizzle"] : [61,63,65,80,81,82].includes(code) ? ["🌧️","Rain"] : [95,96,99].includes(code) ? ["⛈️","Thunderstorms"] : ["🌥️","Mixed conditions"];
-  (async () => {
-    const { data:{session} } = await client.auth.getSession();
-    if (!session) return;
-    const { data:event } = await client.from("events").select("id,name,venue,event_date,first_tee_time,latitude,longitude,status").gte("event_date",localDate()).eq("status","scheduled").order("event_date").limit(1).maybeSingle();
+    const {event,session}=model;
     if (!event?.event_date || event.latitude == null || event.longitude == null) return;
     const days = Math.ceil((new Date(event.event_date+"T12:00:00") - new Date()) / 86400000);
-    if (days > 16) { set("Forecast will appear nearer the day", friendlyDate(event.event_date)+" · reliable tee-time weather is normally available within 16 days."); return; }
+    if (days < 0) return;
+    if (days >= 16) { set("Forecast will appear nearer the day", friendlyDate(event.event_date)+" · reliable tee-time weather is normally available within 16 days."); return; }
     try {
-      const {data:memberTee}=await client.from("tee_times").select("tee_time").eq("event_id",event.id).eq("member_id",session.user.id).maybeSingle();
+      const memberTee=model.group?.find(p=>p.is_you);
       const teeTime=String(memberTee?.tee_time||event.first_tee_time||"09:00").slice(0,5);
       const params = new URLSearchParams({latitude:event.latitude,longitude:event.longitude,hourly:"temperature_2m,precipitation_probability,weather_code,wind_speed_10m",temperature_unit:"celsius",wind_speed_unit:"mph",timezone:"Europe/London",start_date:event.event_date,end_date:event.event_date,models:"best_match"});
       const response = await fetch("https://api.open-meteo.com/v1/forecast?"+params,{cache:"no-store"});
@@ -68,5 +68,7 @@
       card.querySelector("span").textContent=weatherIcon;
       set(`${temp}°C · ${label}`, `${teeTime} tee-off at ${event.venue||event.name} · ${rain}% chance of rain · up to ${roundRain}% during your round · ${wind} mph wind`, change, adviceFor({temp:Math.max(temp,...roundTemps),rain:roundRain,wind:roundWind}));
     } catch { set("Weather update unavailable", "We will try again automatically when you revisit the dashboard."); }
-  })();
+  };
+  window.addEventListener("barford-dashboard-ready",e=>initialise(e.detail));
+  if(window.BarfordDashboardModel)initialise(window.BarfordDashboardModel);
 })();

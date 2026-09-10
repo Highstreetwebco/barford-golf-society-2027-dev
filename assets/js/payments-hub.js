@@ -1,45 +1,19 @@
 (() => {
-  "use strict";
-  const client = window.BarfordSupabase;
-  const panel = document.querySelector("#main-content .account-panel");
-  if (!panel) return;
-  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[character]);
-  const money = value => Number.isFinite(Number(value)) ? `£${Number(value).toFixed(2)}` : "Amount TBC";
-
-  const showMessage = (eyebrow, title, copy, actions = "") => {
-    panel.innerHTML = `<p class="eyebrow">${escapeHtml(eyebrow)}</p><h2>${escapeHtml(title)}</h2><p>${escapeHtml(copy)}</p>${actions}`;
-  };
-
-  const load = async () => {
-    if (!client) {
-      showMessage("Payment status", "Payment details unavailable", "Please refresh the page and try again.");
-      return;
-    }
-    const { data: { session } } = await client.auth.getSession();
-    if (!session) {
-      showMessage("Member payment", "Sign in to continue", "Your payment status is private and linked to your member account.", '<a class="button button-primary" href="account.html">Sign in</a>');
-      return;
-    }
-    const eventId = new URLSearchParams(location.search).get("event");
-    if (!eventId) {
-      showMessage("Payment status", "Choose an event", "Open an event from your dashboard to see its payment status.", '<a class="button button-primary" href="index.html">Return to dashboard</a>');
-      return;
-    }
-    const [{ data: event, error: eventError }, { data: rsvp, error: rsvpError }] = await Promise.all([
-      client.from("events").select("id,name,event_date,price,status").eq("id", eventId).maybeSingle(),
-      client.from("rsvps").select("status,payment_status,updated_at").eq("event_id", eventId).eq("member_id", session.user.id).maybeSingle()
-    ]);
-    if (eventError || rsvpError || !event || !rsvp || rsvp.status !== "playing") {
-      showMessage("Payment status", "No payment is attached to this account", "Confirm that you are playing the event before opening its payment page.", '<a class="button button-primary" href="events.html">View events</a>');
-      return;
-    }
-    if (rsvp.payment_status === "paid") {
-      panel.innerHTML = `<div class="payment-page-success" aria-hidden="true">✓</div><p class="eyebrow">Payment confirmed</p><h2>You have paid</h2><p><strong>${escapeHtml(money(event.price))}</strong> is recorded as paid for ${escapeHtml(event.name)}.</p><div class="dashboard-button-row"><a class="button button-primary" href="index.html">Return to dashboard</a><a class="button button-outline" href="events.html">View event</a></div>`;
-      return;
-    }
-    panel.innerHTML = `<p class="eyebrow">Payment due</p><h2>${escapeHtml(event.name)}</h2><div class="payment-page-amount"><span>Amount to pay</span><strong>${escapeHtml(money(event.price))}</strong></div><p>Your place is confirmed, but payment is still shown as outstanding. Online card checkout is being prepared; use the society’s current payment method and the committee can confirm it here.</p><div class="dashboard-button-row"><button class="button button-primary" type="button" disabled>Online payment opening soon</button><a class="button button-outline" href="events.html">Back to event</a></div>`;
-  };
+  const F=window.BarfordMemberFlow,client=window.BarfordSupabase,host=document.getElementById('memberPayments'),id=new URLSearchParams(location.search).get('event');
+  if(!F||!host)return;
+  if(id){const back=document.getElementById('paymentBack');back.href=F.eventUrl(id);back.textContent='← Back to my event';}
+  async function load(){
+    try{
+      const auth=await F.request(client.auth.getSession());
+      if(!auth.session){host.innerHTML=`<article class="simple-card"><h2>Sign in to see your payments</h2><a class="button button-primary" href="${F.loginUrl(location.href)}">Sign in</a></article>`;return;}
+      const query=client.from('rsvps').select('event_id,status,payment_status').eq('member_id',auth.session.user.id);
+      const rsvps=await F.request(id?query.eq('event_id',id):query);
+      const ids=id?[id]:rsvps.filter(r=>r.status==='playing'||['paid','refunded','waived'].includes(r.payment_status)).map(r=>r.event_id);
+      if(!ids.length){host.innerHTML='<article class="simple-card"><h2>No event payments to show</h2><p>Your payments will appear here when you book an event.</p><a class="button button-primary" href="events.html">View events</a></article>';return;}
+      const events=await F.request(client.from('events').select('*').in('id',ids).order('event_date'));
+      host.innerHTML=events.map(e=>{const r=rsvps.find(x=>x.event_id===e.id),pay=F.payment(e,r);return `<article class="simple-card"><h2>${F.esc(e.name)}</h2><p>${F.esc(F.date(e.event_date))}</p><p class="simple-payment-state"><strong>${F.esc(pay.label)}</strong></p>${pay.due?'<p>Online payment is not available yet. Ask the committee for payment instructions. They will mark your payment as paid when it is confirmed.</p>':e.status==='cancelled'&&r?.payment_status==='paid'?'<p>If you need to discuss a refund, please ask the committee.</p>':r?.status==='reserve'?'<p>You do not need to pay while waiting for a place.</p>':''}${pay.due?`<button class="button button-primary" data-payment-help="${F.esc(e.id)}">Ask for payment details</button><details class="simple-details"><summary>Already paid?</summary><p>Your payment has not yet been marked as paid. Ask the committee to check it before making another payment.</p><button class="button button-outline" data-payment-check="${F.esc(e.id)}">Ask the committee to check</button></details>`:''}<a class="button button-outline" href="${F.eventUrl(e.id)}">Back to event</a></article>`;}).join('')||'<p>The event could not be found.</p>';
+      host.querySelectorAll('[data-payment-help],[data-payment-check]').forEach(b=>b.onclick=()=>F.contact(events.find(e=>e.id===(b.dataset.paymentHelp||b.dataset.paymentCheck)),b.dataset.paymentCheck?'check a payment I have already made':'get the payment details'));
+    }catch{host.innerHTML='<article class="simple-card"><h2>Payments could not be checked</h2><p>Please try again to see the latest payment status.</p><button class="button button-primary" id="retryPayments">Try again</button></article>';host.querySelector('#retryPayments').onclick=load;}
+  }
   load();
 })();

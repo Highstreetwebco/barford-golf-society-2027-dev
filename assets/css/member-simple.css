@@ -1,0 +1,122 @@
+/* Member tasks use readable type, labelled controls and a single primary action. */
+:root{--member-ink:#163b33;--member-line:#c6d2ce;--member-paper:#fff}
+html{font-size:18px;scroll-padding-top:90px}
+body{line-height:1.55}
+body .hidden,body [hidden]{display:none!important}
+body :is(button,.button,input,select,textarea){font-size:1rem}
+body :is(button,.button,select,input:not([type=checkbox]):not([type=radio]):not([type=color])){min-height:48px}
+body :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #b76600!important;outline-offset:4px!important}
+body :is(input,select,textarea){max-width:100%;color:#183b34;background-color:#fff}
+body button:disabled{opacity:.65;cursor:default}
+body .button{white-space:normal;text-align:center;line-height:1.35;padding:12px 18px}
+body .simple-shell{max-width:860px;padding-top:24px;padding-bottom:110px}
+body .simple-member-home{background:#f2f5f3}
+body .simple-welcome{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+body .simple-welcome h1{font-size:clamp(1.6rem,5vw,2.2rem);margin:0}
+body .simple-card{display:block;background:#fff;color:var(--member-ink);border:1px solid var(--member-line);border-radius:18px;padding:24px;margin:0 0 20px;box-shadow:0 3px 12px #173f3208}
+body .simple-card :is(h1,h2,h3){color:var(--member-ink);line-height:1.2;margin:0 0 12px;font-family:inherit}
+body .simple-card h1{font-size:2rem}body .simple-card h2{font-size:1.55rem}body .simple-card h3{font-size:1.3rem}
+body .simple-card p{color:#334e46;margin:10px 0 16px;font-size:1rem}
+body .simple-card .eyebrow{font-size:.8rem;letter-spacing:.06em;font-weight:750;color:#426053;margin-bottom:8px}
+body .simple-event-date{font-weight:700}
+body .simple-next-action{background:#edf5ef;border-left:5px solid #176244;border-radius:8px;padding:18px;margin:22px 0}
+body .simple-next-action>strong{font-size:1.2rem;color:#123e2b}
+body .simple-next-action>.button{width:100%;min-height:56px;font-size:1.1rem}
+body .simple-facts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0}
+body .simple-facts dt{font-size:.9rem;color:#52655e}body .simple-facts dd{font-weight:700;margin:4px 0 0;color:#183d31}
+body .simple-actions{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+body .simple-actions>.button{flex:1 1 200px}
+body .full-button{display:flex;width:100%;margin:12px 0;justify-content:center}
+body .simple-details>summary{font-weight:750;font-size:1.05rem;cursor:pointer;min-height:48px;align-content:center;color:#173f32;list-style:revert}
+body .simple-details>summary::marker{color:#176244}
+body .simple-detail-content{padding-top:18px}
+body .simple-card .simple-card{box-shadow:none;border-radius:10px}
+body .simple-back{display:inline-flex;align-items:center;min-height:48px;margin-bottom:12px;color:#174d36;text-decoration:underline;font-weight:700}
+body .simple-player-list{padding-left:24px;margin:16px 0}
+body .simple-player-list li{padding:10px 0;border-bottom:1px solid #dce5df;font-size:1rem}
+body .simple-notes{white-space:pre-line}
+body .simple-calendar-card{display:flex;gap:24px;align-items:center;justify-content:space-between}
+body .simple-booking-label{font-weight:700}
+body .simple-notice{border:2px solid #bb842c;background:#fff7df;color:#614200;padding:16px;border-radius:10px}
+body .simple-dialog{width:min(94vw,600px);max-height:90dvh;border:0;border-radius:16px;padding:0;color:#153c2c;background:#fff}
+body .simple-dialog::backdrop{background:#051b17a6}
+body .simple-dialog-panel{padding:24px;overflow:auto}
+body .simple-dialog-close{display:block;margin:0 0 18px auto;border:1px solid #a4b8ac;background:#f5f8f5;color:#143d2b}
+body .simple-dialog label{display:grid;gap:8px;margin:16px 0;font-weight:700}
+body .simple-dialog fieldset{padding:0;border:0;margin:20px 0}
+body .simple-dialog legend{font-size:1.1rem;font-weight:700}
+body .simple-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body .simple-choices label{display:flex;align-items:center;border:2px solid #bccfc3;border-radius:10px;padding:16px;cursor:pointer}
+body .simple-choices label:has(input:checked){border-color:#176244;background:#edf6ef}
+body .simple-choices input{width:24px;height:24px;accent-color:#176244;flex:none}
+body .simple-dialog :is(textarea,select){width:100%;padding:12px;border:1px solid #9eb5a5;border-radius:8px;font:inherit}
+body .simple-dialog .form-status{min-height:1.5em}
+body .site-nav a{font-size:1rem!important;min-height:48px;align-content:center}
+body .site-nav a[href="shop.html"],body .site-nav a[href="worldevents.html"]{display:block!important}
+body:not(.is-admin) .site-nav a[href="admin.html"]{display:none!important}
+body .mobile-quick-nav a{min-height:64px;font-size:.78rem!important;line-height:1.2}
+body .mobile-quick-nav a>span:last-child{font-size:.78rem!important}
+body .mobile-quick-nav{padding-bottom:max(8px,env(safe-area-inset-bottom));grid-template-columns:repeat(4,minmax(0,1fr))}
+body .menu-button{min-width:78px}
+body #seasonDashboardCard{margin:0;border:0;padding:0;box-shadow:none;display:block!important}
+body #seasonDashboardCard .legacy-stat-grid{font-size:1rem}
+body #dashboardWeather{display:block;padding:14px 0;margin:0 0 18px;background:#fff;border:0}
+body #dashboardWeather.hidden{display:none!important}
+body .account-layout{display:grid;grid-template-columns:minmax(0,1fr)}
+body .account-side{order:-1}
+body .account-mobile-tabs{display:none!important}
+body #scoresNav{display:flex!important;position:static;flex-wrap:wrap;gap:10px;margin:24px auto;max-width:980px;padding:0 16px}
+body #scoresNav button{flex:1 1 150px;font-size:1rem;min-height:52px}
+body .view:not([hidden]){display:block!important}
+body .score-current-players{display:grid;gap:10px;margin:20px 0}
+body .score-player-row{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;padding:16px;border:2px solid #c3d2c9;border-radius:12px;background:white;color:#173f32;min-height:64px}
+body .score-player-row.is-selected{border-color:#176244;background:#eaf5ed;box-shadow:inset 4px 0 #176244}
+body .score-player-row strong{font-size:1rem}body .score-player-row b{font-size:1.5rem}body .score-player-row small{display:block;color:#486257}
+body .score-app{max-width:720px;padding-bottom:40px}
+body .score-app-header{position:sticky;top:0;gap:8px;min-height:68px;padding:8px 12px}
+body .score-app-header :is(a,button){font-size:.85rem;min-height:48px;padding:8px}
+body .score-app-header small{font-size:.8rem!important;white-space:normal!important}
+body .score-safety-bar{position:static;padding:12px 16px;font-size:.85rem;display:flex;gap:10px;flex-wrap:wrap;background:#eaf1ec;color:#183f2c}
+body .hole-heading{grid-template-columns:90px 1fr 90px;gap:8px}
+body .hole-heading>button{font-size:.85rem;width:auto;height:auto;min-height:52px;padding:8px;white-space:normal}
+body .hole-heading h1{font-size:1.7rem}
+body #selectedPlayerPrompt{font-size:1.2rem;padding:12px 0}body #selectedPlayerPrompt small{font-size:.9rem}
+body .keypad-grid button{min-height:64px;font-size:1.8rem}body .keypad-grid button small{font-size:.85rem}
+body .score-app .simple-details{margin:16px 0;padding:14px;background:#fff;border:1px solid #bdcfc1;border-radius:12px}
+body #liveNineStrip{overflow-x:auto;margin-top:14px;padding-bottom:8px}
+body .live-card-row,body .live-card-header{min-width:650px}body .live-card-row button{min-height:48px}
+body #scoreUnavailable .button{margin:10px 5px}
+body .score-session-notice{padding:14px;border-radius:10px;background:#fff3d6;color:#513b08;font-size:1rem}
+body .score-review .review-grid button{min-height:56px;min-width:48px}
+@media(max-width:650px){
+ body .simple-shell{width:calc(100% - 24px);padding-top:18px}
+ body .simple-card{padding:20px 16px;border-radius:14px}
+ body .simple-welcome{align-items:flex-start;flex-wrap:wrap}
+ body .simple-calendar-card{display:block}body .simple-calendar-card>.button{width:100%;margin-top:12px}
+ body .simple-choices{grid-template-columns:1fr}
+ body .simple-choices label{margin:0}
+ body .simple-actions>.button{flex-basis:100%}
+ body .simple-dialog-panel{padding:20px 16px}
+ body .page-hero{padding:28px 0!important}body .page-hero h1{font-size:2rem!important}
+ body .site-nav.is-open{max-height:calc(100dvh - 155px);overflow-y:auto}
+ body .score-app{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+body .group-photo{display:inline-grid;place-items:center;width:48px;height:48px;min-height:48px;padding:0;margin-right:12px;border:1px solid #bbcbbf;border-radius:50%;overflow:hidden;vertical-align:middle;background:#edf3ef;color:#184930}
+body .group-photo img{width:100%;height:100%;object-fit:cover}
+body .simple-next-action>.button{background:#176244!important;color:#fff!important;border-color:#176244!important}
+body .account-connection-actions{display:flex;gap:12px;flex-wrap:wrap}
+body .desktop-primary{display:none}
+@media(min-width:851px){
+ body .desktop-primary{display:flex;align-items:center;gap:24px;margin-left:auto}
+ body .desktop-primary a{font-size:1rem;color:inherit;min-height:48px;align-content:center;font-weight:700}
+ body .desktop-primary a[aria-current]{text-decoration:underline;text-underline-offset:7px}
+ body .site-header .menu-button{display:flex!important;align-items:center;justify-content:center;width:auto;padding:8px 14px;height:auto;margin-left:20px;gap:10px}
+ body .site-header .site-nav{display:none;position:absolute;z-index:2000;top:100%;right:20px;left:auto;width:340px;max-height:70vh;overflow:auto;padding:14px;background:#fff!important;border:1px solid #bccfc3;border-radius:12px;box-shadow:0 12px 30px #0003}
+ body .site-header .site-nav.is-open{display:flex;flex-direction:column;gap:2px;align-items:stretch}
+ body .site-header .site-nav a{color:#174a35!important;padding:10px 14px;text-shadow:none!important}
+ body .site-header .site-nav a:nth-child(-n+4){display:none}
+}
+body #scoresNav button{font-size:1rem!important;min-height:52px!important}
+body .score-player-row b{font-size:1.3rem;max-width:44%;text-align:right}
+body #scoreSafetyText{overflow-wrap:anywhere}

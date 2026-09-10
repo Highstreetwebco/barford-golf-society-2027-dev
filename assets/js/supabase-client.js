@@ -4,14 +4,42 @@
   const config = window.BARFORD_2027_CONFIG;
   if (!config || !window.supabase?.createClient) {
     console.error("The 2027 Supabase connection could not be loaded.");
+    window.BarfordAccountSession?.showProblem("The account connection is unavailable. Try again, or sign out to reset your saved sign-in.");
     return;
   }
+
+  const storageKey = `sb-${new URL(config.supabaseUrl).hostname.split(".")[0]}-auth-token`;
+  try {
+    if (localStorage.getItem(`${storageKey}-reset-pending`)) {
+      [storageKey, `${storageKey}-code-verifier`, `${storageKey}-user`].forEach(key => localStorage.removeItem(key));
+      localStorage.removeItem(`${storageKey}-reset-pending`);
+    }
+  } catch {}
+
+  // Bound auth network requests after an outage; retain the SDK's normal locking.
+  const authFetch = async (input, options = {}) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (!url.startsWith(`${config.supabaseUrl}/auth/v1/`)) return fetch(input, options);
+    const controller = new AbortController();
+    const previousSignal = options.signal || (typeof input === "object" ? input.signal : null);
+    const abort = () => controller.abort();
+    if (previousSignal?.aborted) abort();
+    else previousSignal?.addEventListener("abort", abort, { once: true });
+    const timer = setTimeout(abort, 10000);
+    try { return await fetch(input, { ...options, signal: controller.signal }); }
+    finally {
+      clearTimeout(timer);
+      previousSignal?.removeEventListener("abort", abort);
+    }
+  };
 
   window.BarfordSupabase = window.supabase.createClient(
     config.supabaseUrl,
     config.supabasePublishableKey,
     {
+      global: { fetch: authFetch },
       auth: {
+        storageKey,
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
@@ -38,7 +66,7 @@
   document.body.appendChild(personalThemeScript);
 
   // Keep the shared assignment/tee guard, which is not declared in page HTML.
-  if (document.body.classList.contains("admin-page") || document.body.classList.contains("scoring-page")) {
+  if (document.body.classList.contains("admin-page")) {
     const workflow = document.createElement("script");
     workflow.src = "assets/js/scorecard-workflow-fix.js?v=speed20";
     workflow.async = true;

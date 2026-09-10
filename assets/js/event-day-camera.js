@@ -1,26 +1,12 @@
 (() => {
   "use strict";
   const client=window.BarfordSupabase,config=window.BARFORD_2027_CONFIG;
+  if(!client||!config)return;
+  const initialise=model=>{
   const button=document.getElementById("dashboardEventCamera"),input=document.getElementById("dashboardEventCameraInput");
-  if(!client||!config||!button||!input)return;
-  button.setAttribute("aria-label","Take an event photo and add it to the gallery");
-  button.removeAttribute("title");
-  button.innerHTML='<span class="event-camera-icon" aria-hidden="true">📷</span><strong>Take event photo</strong><small>Add to gallery</small>';
-  let activeEvent=null,session=null;
-  const today=()=>{const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`};
-  const initialise=async()=>{
-    ({data:{session}}=await client.auth.getSession());if(!session)return;
-    const {data}=await client.from("events").select("id,name,event_date,status,test_mode_active,test_original_event_date").eq("event_date",today()).eq("status","scheduled").limit(1).maybeSingle();
-    activeEvent=data||null;if(!activeEvent){button.classList.add("hidden");return;}
-    const {data:rsvp}=await client.from("rsvps").select("status").eq("event_id",activeEvent.id).eq("member_id",session.user.id).maybeSingle();
-    const playing=rsvp?.status==="playing";
-    button.classList.toggle("hidden",!playing);
-    if(playing){
-      const action=document.getElementById("dashboardNextStepText");
-      if(action&&!action.textContent.toLowerCase().includes("score"))action.textContent="Choose one person in your group to keep the score today.";
-      document.getElementById("dashboardNextStep")?.classList.add("needs-action");
-    }
-  };
+  if(!button||!input||button.dataset.ready)return;button.dataset.ready='true';
+  button.innerHTML='<strong>Take event photo</strong>';
+  const activeEvent=model.event,session=model.session;
   button.addEventListener("click",()=>{if(activeEvent)input.click()});
   input.addEventListener("change",async()=>{
     const file=input.files?.[0];if(!file||!session||!activeEvent)return;
@@ -32,9 +18,11 @@
       const dateText=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${shownDate}T12:00:00`));
       const caption=`${activeEvent.test_mode_active?"TEST · ":""}${activeEvent.name} · ${dateText}`;
       const {error:recordError}=await client.from("gallery_photos").insert({event_id:activeEvent.id,storage_path:path,uploaded_by:session.user.id,approved:true,caption});
-      if(!recordError){button.classList.remove("is-uploading");button.classList.add("is-done");button.querySelector("strong").textContent="Photo added to the gallery";button.querySelector(".event-camera-icon").textContent="✓";setTimeout(()=>{button.classList.remove("is-done");button.querySelector("strong").textContent="Take an event photo";button.querySelector(".event-camera-icon").textContent="📷";button.disabled=false;input.value=""},1800);return}
+      if(!recordError){button.classList.remove("is-uploading");button.classList.add("is-done");button.querySelector("strong").textContent="Photo added to the gallery";setTimeout(()=>{button.classList.remove("is-done");button.querySelector("strong").textContent="Take an event photo";button.disabled=false;input.value=""},1800);return}
     }
     button.classList.remove("is-uploading");button.querySelector("strong").textContent="Try again";button.disabled=false;input.value="";
   });
-  initialise();
+  };
+  window.addEventListener("barford-dashboard-ready",e=>initialise(e.detail));
+  if(window.BarfordDashboardModel)initialise(window.BarfordDashboardModel);
 })();

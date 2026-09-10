@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="assets/css/mobile-menu-fix.css?v=1">
   <link rel="stylesheet" href="assets/css/accessible-mobile.css?v=simplenav1">
   <link rel="stylesheet" href="assets/css/leaderboard-royal.css?v=3">
-<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="stylesheet" href="assets/css/deep-teal-theme.css?v=speed72"><link rel="stylesheet" href="assets/css/matchday-redesign.css?v=3"><link rel="stylesheet" href="assets/css/personal-theme.css?v=3" data-ui-ready></head>
+<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="stylesheet" href="assets/css/deep-teal-theme.css?v=speed72"><link rel="stylesheet" href="assets/css/matchday-redesign.css?v=3"><link rel="stylesheet" href="assets/css/personal-theme.css?v=3" data-ui-ready><link rel="stylesheet" href="assets/css/member-simple.css?v=member73"></head>
 <body>
   <a class="skip-link" href="#main-content">Skip to league table</a>
 
@@ -38,7 +38,13 @@
 </header>
 
   <main id="main-content">
-    <section id="leaderboardView" class="view is-active leaderboard-first" aria-labelledby="leaderboardHeading">
+    <nav class="primary-nav" id="scoresNav" aria-label="Scores navigation">
+      <button class="nav-tab is-active" data-view="leaderboard" type="button">Season leaderboard</button>
+      <button class="nav-tab" data-view="rounds" type="button">Round results</button>
+      <button class="nav-tab" data-view="handicaps" type="button">My handicap</button>
+      <button class="nav-tab" data-view="statistics" type="button">Statistics</button>
+    </nav>
+    <section id="leaderboardView" class="view is-active leaderboard-first" aria-labelledby="leaderboardHeading"><button id="findMyPosition" class="button button-outline" type="button" hidden>Find my position</button><p id="myPositionStatus" role="status"></p>
       <section class="league-table-panel royal-championship-board" aria-label="Barford Golf Society championship standings">
         <header class="league-table-brand royal-board-heading">
           <img src="assets/images/barford-golf-society-logo-320.webp" alt="" width="76" height="76">
@@ -92,12 +98,7 @@
       <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
     </section>
 
-    <nav class="primary-nav" id="scoresNav" aria-label="Scores navigation">
-      <button class="nav-tab is-active" data-view="leaderboard" type="button">League Table</button>
-      <button class="nav-tab" data-view="rounds" type="button">Rounds</button>
-      <button class="nav-tab" data-view="handicaps" type="button">Handicap History</button>
-      <button class="nav-tab" data-view="statistics" type="button">Statistics</button>
-    </nav>
+
 
     <section id="roundsView" class="view" hidden>
       <div class="section-heading">
@@ -155,12 +156,13 @@
     </article>
   </template>
 
-  <script src="assets/js/app.js?v=speed72" defer></script>
+  <script src="assets/js/app.js?v=member73" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/supabase-config.js?v=live1" defer></script>
-  <script src="assets/js/supabase-client.js?v=speed72" defer></script>
-  <script type="module" src="assets/js/scores.js?v=royalboard1"></script>
-<script src="assets/js/accessible-mobile.js?v=royalnav1" defer></script>
+  <script src="assets/js/supabase-client.js?v=member73" defer></script>
+  <script src="assets/js/member-workflow.js?v=member73" defer></script>
+<script type="module" src="assets/js/scores.js?v=member73"></script>
+<script src="assets/js/accessible-mobile.js?v=member73" defer></script>
 
 </body>
 </html>

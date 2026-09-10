@@ -12,6 +12,8 @@
   const previousButton = document.querySelector("#galleryPrevious");
   const nextButton = document.querySelector("#galleryNext");
   const lightboxCount = document.querySelector("#galleryLightboxCount");
+  const eventId=new URLSearchParams(location.search).get('event');
+  if(eventId){const back=document.createElement('a');back.className='button button-outline';back.href='event.html?event='+encodeURIComponent(eventId);back.textContent='Back to my event';document.querySelector('.page-hero .shell')?.append(back);const all=document.createElement('a');all.href='gallery.html';all.className='button button-outline';all.textContent='View all society photos';back.after(all);}
   let activePhotos = [];
   let activeIndex = 0;
   let touchStartX = 0;
@@ -37,15 +39,15 @@
   };
   const movePhoto = direction => showPhoto(activeIndex + direction);
   const loadGallery = async () => {
-    const { data, error } = await client.from("gallery_photos")
-      .select("id,storage_path,caption,taken_at,created_at").eq("approved", true)
-      .order("created_at", { ascending: false });
+    let data,error;
+    try{const query=client.from('gallery_photos').select('id,storage_path,caption,taken_at,created_at,event_id').eq('approved',true).order('created_at',{ascending:false});({data,error}=await window.BarfordMemberFlow.bounded(eventId?query.eq('event_id',eventId):query));}catch(e){error=e;}
+    if(error){count.textContent='Photos could not be loaded';grid.innerHTML='<button class="button button-primary" id="retryGallery">Try again</button>';document.getElementById('retryGallery').onclick=loadGallery;return;}
 
     const currentPhotos = error ? [] : (data || []).map(photo => ({
       url: client.storage.from(config.galleryBucket).getPublicUrl(photo.storage_path).data.publicUrl,
       caption: photo.caption || "Barford Golf Society photograph"
     }));
-    const photos = [...currentPhotos, ...legacyPhotos];
+    const photos = [...currentPhotos, ...(eventId?[]:legacyPhotos)];
     activePhotos = photos;
 
     count.textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}`;
@@ -104,7 +106,7 @@
           .upload(path, file, { contentType: file.type, upsert: false });
         if (uploadError) { showStatus(uploadError.message, true); button.disabled = false; return; }
         const { error: recordError } = await client.from("gallery_photos").insert({
-          storage_path: path, uploaded_by: session.user.id, approved: true
+          event_id:eventId||null,storage_path: path, uploaded_by: session.user.id, approved: true
         });
         if (recordError) { showStatus(recordError.message, true); button.disabled = false; return; }
       }

@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="assets/css/members.css?v=ux100">
   
   <link rel="stylesheet" href="assets/css/accessible-mobile.css?v=simplenav1">
-<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="stylesheet" href="assets/css/deep-teal-theme.css?v=speed72"><link rel="stylesheet" href="assets/css/matchday-redesign.css?v=3"><link rel="stylesheet" href="assets/css/personal-theme.css?v=3" data-ui-ready></head>
+<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="stylesheet" href="assets/css/deep-teal-theme.css?v=speed72"><link rel="stylesheet" href="assets/css/matchday-redesign.css?v=3"><link rel="stylesheet" href="assets/css/personal-theme.css?v=3" data-ui-ready><link rel="stylesheet" href="assets/css/member-simple.css?v=member73"></head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header">
@@ -37,7 +37,7 @@
 <main id="main-content">
 <section class="page-hero signup"><div class="shell"><p class="eyebrow">2027 member account</p><h1>Set up your account</h1><p>Create your secure Barford Golf Society login. It only takes a minute.</p></div></section>
 <section class="section shell"><div class="signup-grid"><div><p class="eyebrow">Simple setup</p><h2>Your golf, all in one place</h2><p>Choose your name and create your Barford Golf Society login.</p><ul class="check-list"><li>Stay signed in on your device</li><li>Manage your profile and golf information</li><li>Access events, tee times and the League Table</li></ul></div><form id="memberSignupForm" class="form-card member-create-form">
-  <label>Your name<select id="signupName" required><option value="">Loading member names…</option></select></label>
+  <label>Your name<select id="signupName" required><option value="">Select your name…</option><option value="__new__">My name isn’t listed / I’m a new member</option></select></label>
   <label id="signupNewNameWrap" class="hidden">Your full name<input id="signupNewName" type="text" autocomplete="name" placeholder="Type your full name"></label>
   <label>Playing category<select id="signupPlayingCategory" required><option value="">Select men’s or women’s…</option><option value="men">Men’s — yellow tees</option><option value="women">Women’s — red tees</option></select><small>Used to load the correct tee distances, par and stroke indexes on event scorecards.</small></label>
   <label>Starting society handicap<input id="signupHandicap" type="number" min="0" max="54" step=".1" required inputmode="decimal" placeholder="e.g. 18"><small>Your starting handicap is set once here, then updates automatically after each society round.</small></label>
@@ -46,7 +46,7 @@
   <label>Confirm password<input id="signupPasswordConfirm" type="password" required minlength="8" autocomplete="new-password" placeholder="Type it again"></label>
   <button class="password-toggle" type="button" data-password-toggle="signupPassword,signupPasswordConfirm" aria-pressed="false">Show password</button>
   <label>Mobile number <span class="optional-label">Optional</span><input id="signupPhone" type="tel" autocomplete="tel" placeholder="07..."></label>
-  <fieldset class="theme-picker">
+  <details class="simple-details"><summary>Personalise my colours (optional)</summary><fieldset class="theme-picker">
     <legend>Choose your dashboard colours</legend>
     <p>Pick two colours that feel like you. Tap either colour square to open the full colour chart.</p>
     <div class="theme-colour-controls">
@@ -57,9 +57,9 @@
       <div class="theme-preview-header">My dashboard</div>
       <div class="theme-preview-body"><span>Next golf event</span><b>Open scorecard</b></div>
     </div>
-  </fieldset>
+  </fieldset></details>
   <button class="button button-primary full-button" type="submit">Create my account</button>
-  <p class="account-helper">After creating your account, sign in using the email address and password you chose.</p>
+  <p class="account-helper">Already have an account? <a href="account.html">Sign in here</a>.</p>
   <p id="signupStatus" class="form-status" aria-live="polite"></p>
 </form></div></section>
 
@@ -70,14 +70,15 @@
     <p>© <span id="year"></span> Barford Golf Society</p>
   </div>
 </footer>
-<script src="assets/js/app.js?v=speed72" defer></script>
+<script src="assets/js/app.js?v=member73" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=live1" defer></script>
-<script src="assets/js/supabase-client.js?v=speed72" defer></script>
-<script src="assets/js/passkeys.js?v=faceid1" defer></script>
-<script src="assets/js/member-auth.js?v=personal-theme1" defer></script>
+<script src="assets/js/supabase-client.js?v=member73" defer></script>
+<script src="assets/js/passkeys.js?v=member73" defer></script>
+<script src="assets/js/member-workflow.js?v=member73" defer></script>
+<script src="assets/js/member-auth.js?v=member73" defer></script>
 
-<script src="assets/js/accessible-mobile.js?v=royalnav1" defer></script>
+<script src="assets/js/accessible-mobile.js?v=member73" defer></script>
 
 </body>
 </html>

@@ -3,9 +3,9 @@
   const currentPage = location.pathname.split("/").pop() || "index.html";
 
   if (currentPage === "gallery.html") {
-    document.title = "Photos | Barford Golf Society";
+    document.title = "Gallery | Barford Golf Society";
     const heading = document.querySelector(".page-hero h1");
-    if (heading) heading.textContent = "Photos";
+    if (heading) heading.textContent = "Gallery";
     document.querySelectorAll("h2").forEach(title => {
       if (title.textContent.trim() === "Society gallery") title.textContent = "Society photos";
       if (title.textContent.trim() === "Upload your golf photos") title.textContent = "Add your golf photos";
@@ -19,10 +19,6 @@
     if (heading) heading.textContent = "Society trips";
     const featured = [...document.querySelectorAll("h2")].find(title => title.textContent.trim() === "Featured trip ideas");
     if (featured) featured.textContent = "Future society trips";
-  }
-  if (currentPage === "events.html") {
-    const preview = document.querySelector(".events-toolbar .muted");
-    if (preview) preview.textContent = "The 2027 calendar is ready for the committee to add the first event.";
   }
   if (currentPage === "index.html") {
     document.querySelectorAll('a[href="events.html"]').forEach(link => {
@@ -48,10 +44,6 @@
     });
   });
 
-  document.querySelectorAll('a[href="gallery.html"]').forEach(link => {
-    if (link.closest(".mobile-quick-nav")) return;
-    if (link.textContent.trim() === "Gallery" || link.textContent.includes("Member gallery")) link.textContent = "Photos";
-  });
   document.querySelectorAll('a[href="worldevents.html"]').forEach(link => {
     if (link.textContent.trim() === "World Events") link.textContent = "Society Trips";
   });
@@ -98,44 +90,6 @@
     });
     section.appendChild(button);
   });
-
-  const accountLayout = document.querySelector(".account-layout");
-  if (accountLayout) {
-    const main = accountLayout.querySelector(".account-main");
-    const side = accountLayout.querySelector(".account-side");
-    const panels = main ? [...main.querySelectorAll(":scope > .account-panel")] : [];
-    const profile = side?.querySelector(".profile-panel");
-    const membership = side?.querySelector(".account-membership");
-    const groups = {
-      overview: [main?.querySelector(".account-section-heading"), main?.querySelector(".account-stat-grid")],
-      performance: panels,
-      profile: [profile],
-      membership: [membership, side?.querySelector(".account-panel:last-child")]
-    };
-    Object.values(groups).flat().filter(Boolean).forEach(el => el.classList.add("account-mobile-section"));
-    const tabs = document.createElement("div");
-    tabs.className = "account-mobile-tabs mobile-only";
-    [["overview","Overview"],["performance","My scores"],["profile","My details"],["membership","Membership"]].forEach(([key,text], index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = `button ${index ? "button-outline" : "button-primary"}`;
-      button.textContent = text;
-      button.addEventListener("click", () => {
-        Object.entries(groups).forEach(([group,elements]) => elements.filter(Boolean).forEach(el => {
-          el.hidden = mobileQuery.matches && group !== key;
-        }));
-        tabs.querySelectorAll("button").forEach(tab => {
-          const active = tab === button;
-          tab.className = `button ${active ? "button-primary" : "button-outline"}`;
-          tab.setAttribute("aria-pressed", String(active));
-        });
-      });
-      button.setAttribute("aria-pressed", String(index === 0));
-      tabs.appendChild(button);
-    });
-    accountLayout.prepend(tabs);
-    if (mobileQuery.matches) Object.entries(groups).forEach(([key,elements]) => elements.filter(Boolean).forEach(el => { el.hidden = key !== "overview"; }));
-  }
 
   const message = document.createElement("div");
   message.className = "site-message";

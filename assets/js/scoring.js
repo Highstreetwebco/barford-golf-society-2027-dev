@@ -1,23 +1,217 @@
 (() => {
-"use strict";document.body.classList.add("matchday-ui");const matchdayStyle=document.createElement("link");matchdayStyle.rel="stylesheet";matchdayStyle.href="assets/css/matchday-redesign.css?v=3";document.head.appendChild(matchdayStyle);const client=window.BarfordSupabase,$=id=>document.getElementById(id),show=id=>$(id)?.classList.remove("hidden"),hide=id=>$(id)?.classList.add("hidden"),CACHE="barford-fast-scorecard-v4",ROMAN_ROAD_EVENT="61cd0cf7-2e66-46be-b2c3-6239d66750a5";if(!client||!$("scoreApp"))return;let session,card,players=[],holes=[],scores={},hole=Math.min(18,Math.max(1,+new URLSearchParams(location.search).get("hole")||1)),selected=null,saving=false,syncTimer=0,editVersion=0,lastCompetitionHole=null,competitionTimer=null;
-const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])),key=(p,h)=>`${p}:${h}`,readCache=()=>{try{return JSON.parse(localStorage.getItem(CACHE)||"null")}catch{return null}},writeCache=()=>{try{localStorage.setItem(CACHE,JSON.stringify({userId:session?.user?.id,card,players,holes,scores,savedAt:Date.now()}))}catch{}};
-const romanRoadCard=()=>[[1,4,423,5,5,386,13],[2,5,468,15,5,450,9],[3,4,381,7,4,355,3],[4,3,180,11,3,138,15],[5,5,507,1,5,446,1],[6,4,288,9,4,240,7],[7,3,129,13,3,117,17],[8,4,428,3,5,433,11],[9,5,450,17,4,326,5],[10,4,401,8,4,371,6],[11,3,186,6,3,163,12],[12,4,353,14,4,277,10],[13,4,420,2,4,371,2],[14,3,154,16,3,123,16],[15,4,355,4,4,290,8],[16,3,139,18,3,101,4],[17,4,321,10,4,214,14],[18,4,381,12,5,392,18]].map(([hole_number,par,yards,stroke_index,red_par,red_yards,red_stroke_index])=>({event_id:ROMAN_ROAD_EVENT,hole_number,par,yards,stroke_index,red_par,red_yards,red_stroke_index,yellow_tee_name:"Yellow",red_tee_name:"Red",longest_drive:hole_number===18,nearest_pin:hole_number===16}));
-async function cacheCourse(eventId,holeRows){if(!navigator.onLine||!eventId)return;try{const {data:event}=await client.from("events").select("latitude,longitude,course_scorecard_id").eq("id",eventId).maybeSingle();if(!event?.course_scorecard_id)return;const {data:maps}=await client.from("course_hole_maps").select("*").eq("course_scorecard_id",event.course_scorecard_id);const model={eventId,courseId:event.course_scorecard_id,eventData:{latitude:event.latitude,longitude:event.longitude},holes:holeRows||[],views:maps||[],savedAt:Date.now()};localStorage.setItem(`barford-course-${event.course_scorecard_id}:${eventId}`,JSON.stringify(model));localStorage.setItem(`barford-course-${event.course_scorecard_id}`,JSON.stringify(model))}catch{}}
-const tee=(p,h)=>p.playing_category==="women"?{par:+(h.red_par||h.par),yards:+(h.red_yards||h.yards),si:+(h.red_stroke_index||h.stroke_index),name:h.red_tee_name||"Red"}:{par:+h.par,yards:+h.yards,si:+h.stroke_index,name:h.yellow_tee_name||"Yellow"},shots=(hcp,si)=>hcp<si?0:Math.floor((hcp-si)/18)+1,points=(p,h,v)=>!v||v.picked_up?0:Math.max(0,2+tee(p,h).par-(+v.strokes-shots(+p.handicap_used,tee(p,h).si))),badge=t=>{if($("scoreSyncButton"))$("scoreSyncButton").textContent=t.startsWith("Saved")?`✓ ${t}`:t;};
-const holeComplete=()=>players.length&&players.every(p=>scores[key(p.id,hole)]),rangePoints=(p,a,b)=>holes.filter(h=>h.hole_number>=a&&h.hole_number<=b).reduce((n,h)=>n+points(p,h,scores[key(p.id,h.hole_number)]),0),frontPoints=p=>rangePoints(p,1,9),totalPoints=p=>rangePoints(p,1,18);
-function competitionAlert(h){const a=$("competitionAlert"),c=[];if(!a)return;if(h.longest_drive)c.push(["🏌️","LONGEST DRIVE"]);if(h.nearest_pin)c.push(["🎯","NEAREST THE PIN"]);if(!c.length){hide("competitionAlert");return}const sig=`${hole}:${c.map(x=>x[1]).join("|")}`;if(lastCompetitionHole===sig)return;lastCompetitionHole=sig;clearTimeout(competitionTimer);$("competitionAlertIcon").textContent=c.length>1?"🏆":c[0][0];$("competitionAlertTitle").textContent=c.map(x=>x[1]).join(" + ");$("competitionAlertText").textContent="Competition hole";show("competitionAlert");competitionTimer=setTimeout(()=>hide("competitionAlert"),2750)}
-function reveal(){selected=players.find(p=>!scores[key(p.id,hole)])?.id||players[0]?.id;hide("scoreLoading");hide("scoreUnavailable");show("scoreReady");render();badge(navigator.onLine?"Saved":"Saved offline")}
-async function load(){try{const auth=await client.auth.getSession();session=auth.data.session;if(!session)throw Error("Please sign in again.");const c=readCache();if(c?.userId===session.user.id&&c?.card?.id&&c?.players?.length&&c?.holes?.length===18){card=c.card;players=c.players;holes=c.holes;scores=c.scores||{};cacheCourse(card.event_id,holes);reveal();return}await refresh(true)}catch(e){hide("scoreLoading");show("scoreUnavailable");$("scoreUnavailableMessage").textContent=e.message}}
-async function refresh(first=false){const {data:cards,error}=await client.from("event_scorecards").select("id,event_id,status,scorer_id,updated_at").eq("scorer_id",session.user.id).in("status",["ready","in_progress"]).order("updated_at",{ascending:false}).limit(1);if(error)throw error;if(!cards?.length)throw Error("No active scorecard is assigned to you. Choose the scorer first.");const fresh=cards[0],[pr,hr]=await Promise.all([client.from("event_scorecard_players").select("id,member_id,display_name,handicap_used,position,playing_category,tee_name").eq("scorecard_id",fresh.id).order("position"),client.from("event_holes").select("hole_number,par,yards,stroke_index,red_par,red_yards,red_stroke_index,yellow_tee_name,red_tee_name,longest_drive,nearest_pin").eq("event_id",fresh.event_id).order("hole_number")]);if(pr.error)throw pr.error;if(hr.error)throw hr.error;const official=fresh.event_id===ROMAN_ROAD_EVENT?romanRoadCard():null;if(official)client.from("event_holes").upsert(official,{onConflict:"event_id,hole_number"}).then(()=>{});const {data:existing}=await client.from("event_hole_scores").select("scorecard_player_id,hole_number,strokes,picked_up").in("scorecard_player_id",pr.data.map(p=>p.id));card=fresh;players=pr.data;holes=official||hr.data;scores={};(existing||[]).forEach(v=>scores[key(v.scorecard_player_id,v.hole_number)]=v);writeCache();cacheCourse(fresh.event_id,holes);if(first)reveal();else render()}
-function render(){const h=holes.find(x=>x.hole_number===hole);if(!h)return;show("scoreReady");hide("halfwayReview");hide("roundReview");$("holeProgress").textContent=`Hole ${hole} of 18`;$("holeTitle").textContent=`Hole ${hole}`;$("holePar").textContent=`Par ${h.par}`;$("holeYards").textContent=`${h.yards||"—"} yards`;$("holeIndex").textContent=`SI ${h.stroke_index}`;$("redHolePar").textContent=`Par ${h.red_par||h.par}`;$("redHoleYards").textContent=`${h.red_yards||"—"} yards`;$("redHoleIndex").textContent=`SI ${h.red_stroke_index||h.stroke_index}`;const ld=holes.filter(x=>x.longest_drive).map(x=>x.hole_number),np=holes.filter(x=>x.nearest_pin).map(x=>x.hole_number);$("competitionSummary").textContent=`LD = ${ld.length?ld.join(", "):"—"} • NP = ${np.length?np.join(", "):"—"}`;competitionAlert(h);const p=players.find(x=>x.id===selected),t=p?tee(p,h):null;if(p)$("selectedPlayerPrompt").innerHTML=`<strong>${esc(p.display_name)}</strong><small>HCP ${p.handicap_used} · ${esc(t.name)} · ${t.yards}yd</small>`;$("nextHole").textContent=holeComplete()?(hole===18?"Review scores":"Next hole"):"Enter scores";$("nextHole").disabled=!holeComplete();renderStrip()}
-function renderStrip(){const start=hole<=9?1:10,nums=Array.from({length:9},(_,i)=>start+i);$("liveNineStrip").innerHTML=`<div class="live-card-header"><strong>${start===1?"Front 9":"Back 9"}</strong>${nums.map(n=>`<b class="${n===hole?"is-current":""}">${n}</b>`).join("")}</div>`+players.map(p=>`<div class="live-card-row ${selected===p.id?"is-selected-player":""}"><button class="live-player-name">${esc(p.display_name.split(/\s+/)[0])}</button>${nums.map(n=>{const v=scores[key(p.id,n)],hi=holes.find(x=>x.hole_number===n),txt=v?(v.picked_up?"X":`${v.strokes}/${points(p,hi,v)}`):"–";return `<button data-edit-player="${p.id}" data-edit-hole="${n}" class="${n===hole?"is-current":""} ${v?"has-score":""}">${txt}</button>`}).join("")}</div>`).join("");document.querySelectorAll("[data-edit-player]").forEach(b=>b.onclick=()=>{hole=+b.dataset.editHole;selected=b.dataset.editPlayer;lastCompetitionHole=null;render()})}
-const syncArgs=()=>({target_scorecard_id:card.id,score_changes:Object.values(scores).map(v=>({player_id:v.scorecard_player_id,hole:v.hole_number,strokes:v.picked_up?null:+v.strokes,picked_up:!!v.picked_up}))});
-const queueLatest=()=>window.BarfordScoreSafety?.queue?.({card_id:card.id,args:syncArgs(),saved_at:new Date().toISOString()});
-async function syncScores(version=editVersion){if(saving)return;if(!navigator.onLine){badge("Saved offline");await queueLatest();return}saving=true;badge("Saving…");let error=null;try{({error}=await client.rpc("sync_scorecard",syncArgs()))}catch(e){error=e}saving=false;if(version!==editVersion){await queueLatest();clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncScores(editVersion),80);return}badge(error?"Saved offline":"Saved");writeCache()}
-async function setScore(value,picked=false){if(!selected)return;const scored=selected;scores[key(scored,hole)]={scorecard_player_id:scored,hole_number:hole,strokes:picked?null:value,picked_up:picked,changed_at:new Date().toISOString()};editVersion++;writeCache();window.BarfordScoreSafety?.snapshot?.();queueLatest();const idx=players.findIndex(p=>p.id===scored),next=players.slice(idx+1).find(p=>!scores[key(p.id,hole)])||players.find(p=>!scores[key(p.id,hole)]);if(next)selected=next.id;render();badge(navigator.onLine?"Saving…":"Saved offline");clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncScores(editVersion),350)}
-function halfway(){hide("scoreReady");show("halfwayReview");$("halfwayPlayers").innerHTML=players.map(p=>`<article><div><strong>${esc(p.display_name)}</strong><small>After 9 holes</small></div><b>${frontPoints(p)} pts</b></article>`).join("")}
-function review(){hide("scoreReady");hide("halfwayReview");show("roundReview");$("roundReview").innerHTML=`<p class="eyebrow">18 holes complete</p><h1>Review the scores</h1><p>Check every score before sending the card to the committee.</p>${players.map(p=>`<section class="review-player"><header><strong>${esc(p.display_name)}</strong><b>${totalPoints(p)} points</b></header><div class="review-grid">${holes.map(h=>{const v=scores[key(p.id,h.hole_number)],txt=v?(v.picked_up?"X":`${v.strokes}/${points(p,h,v)}`):"–";return `<button data-review-player="${p.id}" data-review-hole="${h.hole_number}"><small>${h.hole_number}</small><strong>${txt}</strong></button>`}).join("")}</div><footer>Front 9: <b>${frontPoints(p)}</b> · Back 9: <b>${rangePoints(p,10,18)}</b> · Total: <b>${totalPoints(p)} pts</b></footer></section>`).join("")}<button id="returnToCard" class="button button-outline">Go back and correct a score</button><button id="finaliseScores" class="button button-primary">Submit scores to committee</button><p id="finaliseStatus" class="form-status"></p>`;document.querySelectorAll("[data-review-player]").forEach(b=>b.onclick=()=>{hole=+b.dataset.reviewHole;selected=b.dataset.reviewPlayer;render()});$("returnToCard").onclick=()=>{hole=18;selected=players[0].id;render()};$("finaliseScores").onclick=submit}
-async function submit(){const btn=$("finaliseScores"),status=$("finaliseStatus");btn.disabled=true;btn.textContent="Submitting…";status.textContent="Saving the completed card…";const changes=Object.values(scores).map(v=>({player_id:v.scorecard_player_id,hole:v.hole_number,strokes:v.picked_up?null:+v.strokes,picked_up:!!v.picked_up})),args={target_scorecard_id:card.id,score_changes:changes};if(!navigator.onLine){await window.BarfordScoreSafety?.queue?.({card_id:card.id,args,saved_at:new Date().toISOString(),submit_when_synced:true});await window.BarfordScoreSafety?.snapshot?.();status.textContent="No signal. The completed card is safe on this phone and will submit when you reconnect.";btn.disabled=false;btn.textContent="Queued — submit when online";return}let sync;try{sync=await client.rpc("sync_scorecard",args)}catch(error){sync={error}}if(sync.error){status.textContent="Could not submit yet. Your scores are still saved on this phone.";btn.disabled=false;btn.textContent="Submit scores to committee";return}const res=await client.from("event_scorecards").update({status:"submitted",updated_at:new Date().toISOString()}).eq("id",card.id);if(res.error){await window.BarfordScoreSafety?.queue?.({card_id:card.id,args,saved_at:new Date().toISOString(),submit_when_synced:true});status.textContent="Scores are saved; final submission is queued for reconnection.";btn.disabled=false;btn.textContent="Queued — submit when online";return}await window.BarfordScoreSafety?.remove?.(card.id);localStorage.removeItem(CACHE);$("roundReview").innerHTML=`<div class="score-state"><span class="submitted-tick">✓</span><h1>Scores submitted</h1><p>Your group’s completed scorecard has been sent to the committee.</p><a class="button button-primary" href="index.html">Return to dashboard</a></div>`}
-function nextHole(){if(!holeComplete())return;if(hole===9){halfway();return}if(hole===18){review();return}hole++;selected=players[0].id;lastCompetitionHole=null;render()}
-$("viewHole").onclick=()=>location.href=`hole-view.html?from=scoring&event=${encodeURIComponent(card.event_id)}&hole=${hole}`;document.querySelectorAll("[data-score]").forEach(b=>b.onclick=()=>setScore(+b.dataset.score,false));$("pickupScore").onclick=()=>setScore(null,true);$("clearScore").onclick=()=>{if(selected){delete scores[key(selected,hole)];writeCache();render()}};$("nextHole").onclick=nextHole;$("continueBackNine").onclick=()=>{hole=10;selected=players[0].id;lastCompetitionHole=null;render()};$("backToFrontNine").onclick=()=>{hole=9;selected=players[0].id;render()};$("previousHoleBottom").onclick=()=>{if(hole>1){hole--;selected=players[0].id;lastCompetitionHole=null;render()}};$("previousHole").onclick=()=>$("previousHoleBottom").click();$("nextHoleTop").onclick=nextHole;load();
+  'use strict';
+  const F=window.BarfordMemberFlow,M=window.BarfordScoreModel,S=window.BarfordScoreSafety,client=window.BarfordSupabase,$=id=>document.getElementById(id);
+  const params=new URLSearchParams(location.search),requestedCard=params.get('card'),requestedEvent=params.get('event');
+  let session,model,selected,hole=1,view='card',loading=false,flushing=null,refreshing=null,busy=false,syncTimer,storageOK=true,lastSyncError="",verifiedCard=null;
+  const show=id=>$(id)?.classList.remove('hidden'),hide=id=>$(id)?.classList.add('hidden');
+  const canEdit=()=>model?.card.status==='in_progress'&&model.card.scorer_id===session?.user.id&&!model.submitQueued&&!busy;
+  const hasPending=()=>Object.keys(model?.dirty||{}).length>0;
+  const connectionError=error=>/connection|network|failed to fetch|fetch failed|timeout|timed out|taking too long|load failed/i.test(error?.message||'');
+  const ownScorer=()=>model?.card.scorer_id===session?.user.id;
+  const tee=(p,h)=>p.playing_category==='women'?{par:Number(h.red_par||h.par),yards:h.red_yards,si:Number(h.red_stroke_index||h.stroke_index),name:h.red_tee_name||'Red'}:{par:Number(h.par),yards:h.yards,si:Number(h.stroke_index),name:h.yellow_tee_name||'Yellow'};
+  const shots=(hcp,si)=>hcp<si?0:Math.floor((hcp-si)/18)+1;
+  const points=(p,h,v)=>!M.valid(v)||v.picked_up?0:Math.max(0,2+tee(p,h).par-(Number(v.strokes)-shots(Number(p.handicap_used),tee(p,h).si)));
+  const total=(p,start=1,end=18)=>model.holes.filter(h=>h.hole_number>=start&&h.hole_number<=end).reduce((sum,h)=>sum+points(p,h,model.scores[M.key(p.id,h.hole_number)]),0);
+  const scoreText=v=>M.valid(v)?v.picked_up?'Picked up':String(v.strokes):'Enter score';
+  const completeHole=()=>model.players.every(p=>M.valid(model.scores[M.key(p.id,hole)]));
+  function status(text){$('scoreSyncButton').textContent=text;$('scoreSafetyText').textContent=text;}
+  function updateStatus(){
+    if(!model)return;
+    if(!storageOK){status('Phone save failed — keep this page open');return;}
+    if(['submitted','locked'].includes(model.card.status)){status(model.card.status==='locked'?'Results approved':'Submitted to committee');return;}
+    if(flushing){status('Sending scores…');return;}
+    if(lastSyncError){$('scoreSyncButton').textContent='Not sent — tap to retry';$('scoreSafetyText').textContent=lastSyncError;return;}
+    if(model.submitQueued){status('Saved on phone — submission waiting');return;}
+    if(hasPending()){status(navigator.onLine?'Saved on phone — tap to retry':'Saved on phone — waiting for signal');return;}
+    if((model.cleared||[]).length){status('Replace the cleared score to finish saving');return;}
+    if(!ownScorer()){status(navigator.onLine?'Viewing group scores':'Offline copy of group scores');return;}
+    status(navigator.onLine?'Scores saved to server':'Offline — scores saved on phone');
+  }
+  async function persist(){
+    if(!model)return false;
+    model.hole=hole;model.selected=selected;model.view=view;model.savedAt=Date.now();
+    const result=await S.save(model);storageOK=result.local||result.backup;return storageOK;
+  }
+  async function cacheCourse(){
+    if(!model.event?.course_scorecard_id||!navigator.onLine)return;
+    try{const maps=await F.request(client.from('course_hole_maps').select('*').eq('course_scorecard_id',model.event.course_scorecard_id));const record={eventId:model.card.event_id,courseId:model.event.course_scorecard_id,eventData:model.event,holes:model.holes,views:maps,savedAt:Date.now()};for(const suffix of [`${record.courseId}:${record.eventId}`,record.courseId])localStorage.setItem('barford-course-'+suffix,JSON.stringify(record));}catch{}
+  }
+  function unavailable(message){hide('scoreLoading');hide('scoreReady');hide('halfwayReview');hide('roundReview');show('scoreUnavailable');$('scoreUnavailableMessage').textContent=message;}
+  async function load(){
+    if(loading)return;loading=true;
+    try{
+      const auth=await F.request(client.auth.getSession());session=auth.session;
+      if(!session){$('scoreSignIn').href=F.loginUrl(location.href);show('scoreSignIn');throw Error('Sign in to open your group’s scorecard.');}
+      const cached=await F.bounded(S.read(session.user.id,requestedCard,requestedEvent),4000).catch(()=>null);
+      if(cached){model=cached;model.dirty=model.dirty||Object.fromEntries(Object.entries(model.scores||{}).map(([k,v])=>[k,v.changed_at||'1970-01-01T00:00:00.000Z']));model.cleared=model.cleared||[];hole=Math.min(18,Math.max(1,Number(params.get('hole')||model.hole)||1));selected=model.selected;view=model.view||'card';}
+      if(navigator.onLine)await refresh();
+      else if(!model)throw Error('Open this scorecard once while connected so it is available on this phone.');
+      if(!model.players?.length||model.holes?.length!==18)throw Error('The committee is still preparing this scorecard. Please return to your event.');
+      if(!selected||!model.players.some(p=>p.id===selected))selected=model.players.find(p=>!M.valid(model.scores[M.key(p.id,hole)]))?.id||model.players[0].id;
+      hide('scoreLoading');hide('scoreUnavailable');render();
+      if(navigator.onLine&&(hasPending()||model.submitQueued))flush();
+      cacheCourse();
+    }catch(error){if(model?.card?.id&&model.players?.length&&model.holes?.length===18&&(!navigator.onLine||connectionError(error))&&(!verifiedCard||(verifiedCard.status==='in_progress'&&verifiedCard.scorer_id===session?.user.id))){lastSyncError='Using the scorecard saved on this phone. Connection unavailable; tap to retry.';render();}else unavailable(error.message||'Your scorecard could not be opened. Please try again.');}
+    finally{loading=false;}
+  }
+  async function refresh(){
+    if(flushing)await flushing;
+    if(refreshing)return refreshing;
+    refreshing=fetchFresh().finally(()=>{refreshing=null;});return refreshing;
+  }
+  async function fetchFresh(){
+    let cardId=requestedCard||model?.card?.id;
+    if(!cardId&&requestedEvent){const card=await F.getCard(requestedEvent,session.user.id);cardId=card?.id;}
+    if(!cardId){const cards=await F.request(client.from('event_scorecards').select('id').eq('scorer_id',session.user.id).in('status',['ready','in_progress']).order('updated_at',{ascending:false}).limit(1));cardId=cards?.[0]?.id;}
+    if(!cardId)throw Error('Your scorecard is not ready yet. Return to the event to choose your group’s scorer.');
+    const card=await F.request(client.from('event_scorecards').select('id,event_id,status,scorer_id,updated_at').eq('id',cardId).single());
+    verifiedCard=card;
+    if(requestedEvent&&card.event_id!==requestedEvent)throw Error('This scorecard belongs to a different event. Return to your event and open its scorecard.');
+    const [players,holes,event]=await Promise.all([
+      F.request(client.from('event_scorecard_players').select('id,member_id,display_name,handicap_used,position,playing_category,tee_name').eq('scorecard_id',card.id).order('position')),
+      F.request(client.from('event_holes').select('hole_number,par,yards,stroke_index,red_par,red_yards,red_stroke_index,yellow_tee_name,red_tee_name,longest_drive,nearest_pin').eq('event_id',card.event_id).order('hole_number')),
+      F.request(client.from('events').select('*').eq('id',card.event_id).single())
+    ]);
+    if(!players.length||holes.length!==18)throw Error('The committee is still preparing the players and holes for this scorecard.');
+    const rows=await F.request(client.from('event_hole_scores').select('scorecard_player_id,hole_number,strokes,picked_up,client_changed_at').in('scorecard_player_id',players.map(p=>p.id)));
+    let previous=model?.card.id===card.id?model:await S.read(session.user.id,card.id,card.event_id);
+    if(!previous)previous={scores:{},dirty:{},cleared:[],submitQueued:false};
+    const legacy=await S.legacyPending(card.id);
+    if(legacy&&previous.userId===session.user.id){for(const raw of legacy.args?.score_changes||[]){const v=M.normalise(raw),k=M.key(v.scorecard_player_id,v.hole_number);if(!previous.scores[k]||M.stamp(v)>M.stamp(previous.scores[k])){previous.scores[k]=v;(previous.dirty||={})[k]=v.changed_at;}}previous.submitQueued=previous.submitQueued||legacy.submit_when_synced;}
+    // Never replay old local edits after submission or after another member takes over.
+    const writable=card.scorer_id===session.user.id&&card.status==='in_progress';
+    const dirty=writable?(previous.dirty||{}):{},cleared=writable?(previous.cleared||[]):[];
+    model={...previous,userId:session.user.id,card,players,holes,event,dirty,cleared,submitQueued:writable&&Boolean(previous.submitQueued),scores:M.merge(rows,previous.scores||{},dirty,cleared)};
+    const newConflict=!writable&&Object.keys(previous.dirty||{}).length>0;
+    if(newConflict)model.recoveryNotice='Scoring is now closed or assigned to another member. Your previous phone copy has been kept in the backup.';
+    // Keep the old unsent copy separately for committee recovery without allowing replay.
+    if(newConflict){try{localStorage.setItem('barford-score-recovery-'+card.id,JSON.stringify(previous));}catch{}}
+    if(await persist())await S.removeLegacy(card.id);
+  }
+  function render(){
+    if(!model)return;
+    document.body.classList.add('matchday-ui');
+    const back=F.eventUrl(model.card.event_id);$('scoreBack').href=back;$('scoreEventLink').href=back;
+    $('competitionSummary').textContent=model.event?.name||'Group scorecard';
+    if(['submitted','locked'].includes(model.card.status)){view='review';review();updateStatus();return;}
+    if(view==='halfway'){halfway();updateStatus();return;}
+    if(view==='review'){review();updateStatus();return;}
+    show('scoreReady');hide('scoreLoading');hide('scoreUnavailable');hide('halfwayReview');hide('roundReview');
+    const h=model.holes.find(x=>x.hole_number===hole);if(!h)return;
+    $('holeProgress').textContent=`Hole ${hole} of 18`;$('holeTitle').textContent=`Hole ${hole}`;
+    $('holePar').textContent=`Par ${h.par}`;$('holeYards').textContent=`${h.yards||'—'} yards`;$('holeIndex').textContent=`Stroke index ${h.stroke_index}`;
+    $('redHolePar').textContent=`Par ${h.red_par||h.par}`;$('redHoleYards').textContent=`${h.red_yards||'—'} yards`;$('redHoleIndex').textContent=`Stroke index ${h.red_stroke_index||h.stroke_index}`;
+    $('yellowTeeSummary').classList.toggle('hidden',!model.players.some(p=>p.playing_category!=='women'));$('redTeeSummary').classList.toggle('hidden',!model.players.some(p=>p.playing_category==='women'));
+    const comps=[h.longest_drive?'Longest drive':'',h.nearest_pin?'Nearest the pin':''].filter(Boolean);
+    $('competitionAlertTitle').textContent=comps.join(' · ');$('competitionAlertText').textContent='Competition on this hole';$('competitionAlert').classList.toggle('hidden',!comps.length);
+    const editable=canEdit(),scorer=model.players.find(p=>p.member_id===model.card.scorer_id);
+    $('scoreSessionNotice').textContent=(model.recoveryNotice||model.submitQueued)?'':(!ownScorer()?`Viewing only. ${scorer?.display_name||'Your nominated scorer'} enters the group’s scores.`:model.card.status==='ready'?'Start your round when you are ready to score.':'Tap a player, then enter their score below.');
+    if(model.recoveryNotice)$('scoreSessionNotice').textContent=model.recoveryNotice;
+    if(model.submitQueued)$('scoreSessionNotice').textContent='Submission is waiting for a connection. Keep this page open when you reconnect.';
+    $('startRound').classList.toggle('hidden',!(ownScorer()&&model.card.status==='ready'));
+    $('startRound').disabled=busy||!navigator.onLine;
+    $('handoffScorecard').classList.toggle('hidden',!editable||model.players.filter(p=>p.member_id).length<2);
+    $('scoreCurrentPlayers').innerHTML=model.players.map(p=>{const v=model.scores[M.key(p.id,hole)];return `<button class="score-player-row ${selected===p.id?'is-selected':''}" type="button" data-player="${p.id}" aria-pressed="${selected===p.id}"><span><strong>${F.esc(p.display_name)}</strong><small>${F.esc(tee(p,h).name)} tees · ${total(p)} points so far</small></span><b>${F.esc(scoreText(v))}</b></button>`;}).join('');
+    $('scoreCurrentPlayers').querySelectorAll('[data-player]').forEach(b=>b.onclick=()=>{selected=b.dataset.player;render();persist();});
+    const p=model.players.find(p=>p.id===selected)||model.players[0];
+    $('selectedPlayerPrompt').innerHTML=`<strong>${F.esc(p.display_name)}</strong><small>${editable?'Enter strokes, or choose Pick up':'Scores entered by your group’s scorer'}</small>`;
+    $('scoreKeypad').classList.toggle('hidden',!editable);
+    $('previousHole').disabled=hole===1;$('previousHoleBottom').disabled=hole===1;
+    $('nextHole').disabled=editable&&!completeHole();$('nextHoleTop').disabled=editable&&!completeHole();
+    $('nextHole').textContent=hole===18?'Review full scorecard':editable&&!completeHole()?'Enter all scores above':hole===9?'Review front nine':'Next hole';
+    renderStrip();updateStatus();
+  }
+  function renderStrip(){
+    const start=hole<=9?1:10,nums=Array.from({length:9},(_,i)=>start+i);
+    $('liveNineStrip').innerHTML=`<p>Tap a hole to view or correct a score. Each entry shows strokes / points. X means picked up.</p><div class="live-card-header"><strong>${start===1?'Front nine':'Back nine'}</strong>${nums.map(n=>`<b>${n}</b>`).join('')}</div>`+model.players.map(p=>`<div class="live-card-row"><span>${F.esc(p.display_name)}</span>${nums.map(n=>{const v=model.scores[M.key(p.id,n)],h=model.holes.find(x=>x.hole_number===n);return `<button type="button" data-edit-player="${p.id}" data-edit-hole="${n}" aria-label="${F.esc(p.display_name)}, hole ${n}, ${F.esc(scoreText(v))}" class="${n===hole?'is-current':''}">${M.valid(v)?v.picked_up?'X':`${v.strokes}/${points(p,h,v)}`:'—'}</button>`;}).join('')}</div>`).join('');
+    $('liveNineStrip').querySelectorAll('[data-edit-player]').forEach(b=>b.onclick=()=>navigate(Number(b.dataset.editHole),b.dataset.editPlayer));
+  }
+  async function edit(value,pickedUp=false,clear=false){
+    if(!canEdit()||!selected)return;
+    const k=M.key(selected,hole);
+    if(clear){delete model.scores[k];delete model.dirty[k];model.cleared=[...new Set([...model.cleared,k])];}
+    else{const timestamp=new Date(Math.max(Date.now(),M.stamp(model.scores[k])+1)).toISOString();model.scores[k]={scorecard_player_id:selected,hole_number:hole,strokes:value,picked_up:pickedUp,changed_at:timestamp};model.dirty[k]=timestamp;model.cleared=model.cleared.filter(x=>x!==k);const next=model.players.find(p=>!M.valid(model.scores[M.key(p.id,hole)]));if(next)selected=next.id;}
+    render();await persist();updateStatus();clearTimeout(syncTimer);syncTimer=setTimeout(flush,350);
+  }
+  async function flush(){
+    if(flushing)return flushing;
+    if(refreshing){try{await refreshing;}catch{return false;}if(flushing)return flushing;}
+    if(!model||!navigator.onLine||!ownScorer()||model.card.status!=='in_progress')return false;
+    flushing=(async()=>{
+      lastSyncError='';
+      try{
+        while(hasPending()){
+          const sent={...model.dirty},changes=M.changes(model.scores,sent);
+          if(changes.length)await F.request(client.rpc('sync_scorecard',{target_scorecard_id:model.card.id,score_changes:changes}));
+          model.dirty=M.acknowledge(model.dirty,sent);await persist();
+        }
+        if(model.submitQueued){
+          if(!M.complete(model.players,model.holes,model.scores))throw Error('Some scores are missing. Complete the card before submitting.');
+          const current=await F.request(client.from('event_scorecards').select('status,scorer_id').eq('id',model.card.id).single());
+          if(!['submitted','locked'].includes(current.status)){
+            await F.request(client.rpc('submit_scorecard',{target_scorecard_id:model.card.id}));
+            const confirmed=await F.request(client.from('event_scorecards').select('status').eq('id',model.card.id).single());
+            if(!['submitted','locked'].includes(confirmed.status))throw Error('Submission has not been confirmed yet. Please try again.');
+            model.card.status=confirmed.status;
+          }else model.card.status=current.status;
+          model.submitQueued=false;model.dirty={};await persist();await S.removeLegacy(model.card.id);view='review';render();
+        }
+        return true;
+      }catch(error){
+        lastSyncError=connectionError(error)?'Saved on this phone. Reconnect, then tap to retry.':error.message||'Scores could not be sent. Please try again.';
+        if(!connectionError(error)){
+          try{const latest=await F.request(client.from('event_scorecards').select('status,scorer_id').eq('id',model.card.id).single());
+            if(latest.scorer_id!==session.user.id||['submitted','locked'].includes(latest.status)){
+              if(hasPending())try{localStorage.setItem('barford-score-recovery-'+model.card.id,JSON.stringify(model));}catch{}
+              model.card={...model.card,...latest};model.dirty={};model.submitQueued=false;await persist();
+            }else if(model.submitQueued){model.submitQueued=false;await persist();}
+          }catch{}
+        }
+        return false;
+      }
+    })().finally(()=>{flushing=null;updateStatus();if(view==='review')review();});updateStatus();return flushing;
+  }
+  function navigate(n,player){hole=Math.min(18,Math.max(1,n));selected=player||model.players.find(p=>!M.valid(model.scores[M.key(p.id,hole)]))?.id||model.players[0].id;view='card';render();persist();}
+  function halfway(){view='halfway';hide('scoreReady');hide('roundReview');show('halfwayReview');$('halfwayPlayers').innerHTML=model.players.map(p=>`<article><strong>${F.esc(p.display_name)}</strong><b>${total(p,1,9)} points</b></article>`).join('');persist();}
+  function review(){
+    view='review';hide('scoreReady');hide('halfwayReview');hide('scoreLoading');show('roundReview');
+    const submitted=['submitted','locked'].includes(model.card.status),all=M.complete(model.players,model.holes,model.scores);
+    $('roundReview').innerHTML=`<h1>${submitted?'Scores submitted':'Check your group’s scores'}</h1><p>${submitted?model.card.status==='locked'?'The committee has approved this round.':'Your scorecard has reached the committee and is awaiting approval.':all?'Check the scores with your group, then submit.':'Some scores are missing. Tap a hole to complete or correct it.'}</p>${model.players.map(p=>`<section class="review-player"><header><strong>${F.esc(p.display_name)}</strong><b>${total(p)} points</b></header><div class="review-grid">${model.holes.map(h=>{const v=model.scores[M.key(p.id,h.hole_number)];return `<button type="button" data-review-player="${p.id}" data-review-hole="${h.hole_number}" aria-label="${F.esc(p.display_name)}, hole ${h.hole_number}, ${F.esc(scoreText(v))}" ${submitted?'disabled':''}><small>Hole ${h.hole_number}</small><strong>${M.valid(v)?v.picked_up?'X':`${v.strokes}/${points(p,h,v)}`:'—'}</strong></button>`;}).join('')}</div><footer>Front nine: ${total(p,1,9)} · Back nine: ${total(p,10,18)}</footer></section>`).join('')}${!submitted?'<button class="button button-outline" id="returnToCard">Back to scorecard</button>':''}${!submitted&&ownScorer()?`<button class="button button-primary" id="finaliseScores" ${!all||model.submitQueued||flushing?'disabled':''}>${model.submitQueued?'Waiting to submit when connected':'Submit scores to committee'}</button>`:''}<p id="finaliseStatus" role="status">${F.esc(lastSyncError)||(model.submitQueued?'Your card is saved on this phone. Reconnect with this page open to finish submitting.':'')}</p><a class="button button-outline" href="${F.eventUrl(model.card.event_id)}">Back to my event</a>`;
+    $('roundReview').querySelectorAll('[data-review-player]').forEach(b=>b.onclick=()=>navigate(Number(b.dataset.reviewHole),b.dataset.reviewPlayer));
+    $('returnToCard')?.addEventListener('click',()=>navigate(hole));$('finaliseScores')?.addEventListener('click',submit);persist();
+  }
+  async function submit(){
+    if(!canEdit()||!M.complete(model.players,model.holes,model.scores))return;
+    model.submitQueued=true;if(!await persist()){model.submitQueued=false;$('finaliseStatus').textContent='This phone could not save the card. Keep this page open and reconnect before trying again.';return;}
+    review();await flush();updateStatus();
+  }
+  async function startRound(){
+    busy=true;$('startRound').disabled=true;
+    try{await F.request(client.rpc('claim_scorecard',{target_scorecard_id:model.card.id}));await refresh();}
+    catch(error){F.dialog('Round could not be started',`<p>${F.esc(error.message)}</p><p>Your round can be started on the event day.</p>`);}
+    finally{busy=false;render();}
+  }
+  function handoff(){
+    if(!canEdit())return;
+    const d=F.dialog('Hand over scoring','<p>Choose the member who will continue entering scores. They should then open this event’s scorecard on their phone.</p><div id="handoffChoices"></div><p class="form-status" role="status"></p>');
+    d.querySelector('#handoffChoices').innerHTML=model.players.filter(p=>p.member_id&&p.member_id!==session.user.id).map(p=>`<button class="button button-outline full-button" data-next-scorer="${p.member_id}">${F.esc(p.display_name)}</button>`).join('');
+    d.querySelectorAll('[data-next-scorer]').forEach(b=>b.onclick=async()=>{
+      busy=true;render();d.querySelectorAll('button').forEach(x=>x.disabled=true);
+      try{if(!navigator.onLine)throw Error('Connect to the internet before handing over scoring.');if(model.cleared.length)throw Error('Enter a replacement for each cleared score first.');if(!await flush()||hasPending())throw Error('Your latest scores must reach the server before you hand over. Please try again.');await F.request(client.rpc('handoff_scorecard',{target_scorecard_id:model.card.id,target_new_scorer_id:b.dataset.nextScorer}));model.card.scorer_id=b.dataset.nextScorer;model.dirty={};model.submitQueued=false;await persist();await S.removeLegacy(model.card.id);d.close();await refresh();}
+      catch(error){d.querySelector('.form-status').textContent=error.message;d.querySelectorAll('button').forEach(x=>x.disabled=false);}
+      finally{busy=false;render();}
+    });
+  }
+  $('viewHole').onclick=()=>{persist();const p=model.players.find(p=>p.id===selected);location.href=`hole-view.html?from=scoring&event=${encodeURIComponent(model.card.event_id)}&card=${encodeURIComponent(model.card.id)}&hole=${hole}&tee=${p?.playing_category==='women'?'women':'men'}`;};
+  document.querySelectorAll('[data-score]').forEach(b=>b.onclick=()=>edit(Number(b.dataset.score)));$('pickupScore').onclick=()=>edit(null,true);$('clearScore').onclick=()=>edit(null,false,true);
+  const next=()=>{if(canEdit()&&!completeHole())return;if(hole===9){halfway();return;}if(hole===18){review();return;}navigate(hole+1);};
+  $('nextHole').onclick=next;$('nextHoleTop').onclick=next;$('previousHole').onclick=()=>navigate(hole-1);$('previousHoleBottom').onclick=()=>navigate(hole-1);
+  $('continueBackNine').onclick=()=>navigate(10);$('backToFrontNine').onclick=()=>navigate(9);$('scoreSyncButton').onclick=async()=>{if(!model){load();return;}if(hasPending()||model.submitQueued)await flush();else if(navigator.onLine)try{await refresh();lastSyncError='';render();}catch{status('Could not refresh — tap to retry');}};
+  $('startRound').onclick=startRound;$('handoffScorecard').onclick=handoff;$('retryScorecard').onclick=load;
+  window.addEventListener('online',()=>{if(model){flush();if(!hasPending()&&!model.submitQueued)refresh().then(render).catch(()=>updateStatus());}else load();});
+  window.addEventListener('offline',()=>{updateStatus();if(model)render();});
+  document.addEventListener('visibilitychange',()=>{if(model)persist();if(document.visibilityState==='visible'&&navigator.onLine){if(hasPending()||model?.submitQueued)flush();else if(model)refresh().then(render).catch(()=>{});}});
+  window.addEventListener('pagehide',()=>persist());
+  setInterval(()=>{if(!model||!navigator.onLine||document.visibilityState==='hidden')return;if(hasPending()||model.submitQueued)flush();else if(!busy&&!loading)refresh().then(()=>{lastSyncError='';render();}).catch(()=>{});},15000);
+  load();
 })();

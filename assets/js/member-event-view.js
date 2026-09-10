@@ -1,0 +1,53 @@
+(() => {
+  "use strict";
+  const F=window.BarfordMemberFlow;
+  if(!F)return;
+  const {esc}=F;
+  const button=(action,label,primary=false)=>`<button type="button" class="button ${primary?'button-primary':'button-outline'}" data-member-action="${action}">${esc(label)}</button>`;
+  function render(host,model,{compact=false}={}) {
+    const {event,rsvp,session,group,card}=model,action=F.nextAction(model),pay=F.payment(event,rsvp);
+    const booked=['playing','reserve'].includes(rsvp?.status),upcoming=event.event_date>=F.today()&&event.status==='scheduled';
+    const showPrimary=compact||action.kind!=='link'||action.href!==F.eventUrl(event.id);
+    const own=group.find(p=>p.is_you),tee=own?.tee_time||group[0]?.tee_time;
+    const notes=String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[0].trim();
+    const reason=event.cancel_reason||String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[1]?.trim();
+    host.innerHTML=`${event.test_mode_active?'<p class="simple-notice"><strong>Practice event</strong> — this is a test round.</p>':''}
+      <article class="simple-card simple-next-event">
+        <p class="eyebrow">${compact?'Your next event':'Your event'}</p>
+        <h${compact?'2':'1'}>${esc(event.name)}</h${compact?'2':'1'}>
+        <p class="simple-event-date">${esc(F.date(event.event_date))}</p><p>${esc(event.venue||'Venue to be confirmed')}</p>
+        <div class="simple-next-action"><strong>${esc(F.bookingLabel(model))}</strong><p>${esc(action.message)}</p>${showPrimary?button('primary',action.label,true):''}</div>
+        ${reason&&event.status==='cancelled'?`<p>${esc(reason)}</p>`:''}
+        <dl class="simple-facts" id="dashboardEventFacts"><div><dt>Your tee time</dt><dd>${tee?esc(F.time(tee)):rsvp?.status==='playing'?'Not announced yet':'Book to join a group'}</dd></div><div><dt>Event price</dt><dd>${esc(F.money(event.price))}</dd></div>${booked?`<div><dt>Payment</dt><dd>${esc(pay.label)}</dd></div><div><dt>Your request</dt><dd>${rsvp.buggy_requested?'Buggy requested':'Walking'} · ${esc(F.preference(rsvp.preferred_tee_time))} tee time</dd></div>`:''}</dl>
+        ${model.availability?`<p>${esc(model.availability.playing_count||0)}${model.availability.capacity!=null?' of '+esc(model.availability.capacity):''} places booked${model.availability.available!=null?' · '+esc(model.availability.available)+' available':''}${model.availability.reserve_count?' · '+esc(model.availability.reserve_count)+' on reserve':''}</p>`:''}
+        ${compact?`<a class="button button-outline full-button" href="${F.eventUrl(event.id)}">View all event details</a>`:''}
+      </article>
+      ${!compact?`<section class="simple-card" id="my-group"><h2>My group</h2>${group.length?`<p><strong>Tee off at ${esc(F.time(tee))}${own?.tee_number?` · Tee ${esc(own.tee_number)}`:""}</strong></p><ul class="simple-player-list">${group.map(p=>`<li>${p.photo_url?`<button class="group-photo" data-group-photo="${esc(p.member_id)}" aria-label="View ${esc(p.full_name||'member')} photo"><span aria-hidden="true">${esc((p.full_name||'M').slice(0,1))}</span></button>`:""}${esc(p.full_name||p.guest_name||'Guest')}${p.is_you?' (You)':''}${p.buggy_requested?' · Buggy requested':''}</li>`).join('')}</ul>`:`<p>${rsvp?.status==='playing'?'Your group will appear here when the committee publishes the tee times.':rsvp?.status==='reserve'?'Your group will be arranged if a place opens for you.':'Book a place to see your group here.'}</p>`}${card?`<a class="button button-outline" href="${F.scoreUrl(model)}">${['submitted','locked'].includes(card.status)?'View group scores':'Open group scorecard'}</a>${card.status==='ready'?button('scorer','Choose or change our scorer'):''}`:model.cardError?'<p>Your scorecard could not be checked. Please refresh to try again.</p>':''}</section>`:''}
+      <details class="simple-card simple-details"><summary>${compact?'Booking and event options':'More event options'}</summary><div class="simple-detail-content">
+        ${session&&upcoming&&!model.bookingError?(model.locked===true?`<p>Bookings are closed. Ask the committee if you need to change your place or preferences.</p>${button('contact','Request a booking change')}`:model.locked===false?`<div class="simple-actions">${button('book',booked?'Change my booking':'Book my place')}${button('withdraw',rsvp?.status==='reserve'?'Leave reserve list':'I can’t play')}</div>`:'<p>Booking changes could not be checked. Please refresh.</p>'):''}
+        <div class="simple-actions">${session?button('roster','See who’s playing'):''}${event.venue||event.address?button('directions','Get directions'):''}<a class="button button-outline" href="payments.html?event=${encodeURIComponent(event.id)}">Payment details</a><a class="button button-outline" href="scores.html?view=rounds&event=${encodeURIComponent(event.id)}">Round results</a><a class="button button-outline" href="gallery.html?event=${encodeURIComponent(event.id)}">Event photos</a>${event.course_video_url?button('video','Watch course video'):''}</div>
+        <p>${event.first_tee_time?`First group tees off at ${esc(F.time(event.first_tee_time))}. This may be different from your own tee time.`:''}</p>${event.address?`<p>${esc(event.address)}</p>`:''}${notes?`<p class="simple-notes">${esc(notes)}</p>`:''}
+        ${session&&rsvp?.status==='playing'&&event.event_date===F.today()?'<button id="dashboardEventCamera" class="button button-outline" type="button">Take event photo</button><input id="dashboardEventCameraInput" class="sr-only" type="file" accept="image/*" capture="environment"><p id="eventPhotoStatus" role="status"></p>':''}
+      </div></details>`;
+    host.querySelectorAll('[data-member-action]').forEach(b=>b.onclick=()=>{
+      const kind=b.dataset.memberAction;
+      if(kind==='primary')F.activate(action,model);
+      else if(kind==='book')F.openBooking(model);
+      else if(kind==='withdraw')F.withdraw(model);
+      else if(kind==='roster')F.showRoster(model);
+      else if(kind==='directions')F.directions(event);
+      else if(kind==='contact')F.contact(event);
+      else if(kind==='scorer')F.chooseScorer(model);
+      else if(kind==='video'){
+        try{const u=new URL(event.course_video_url);if(!['https:','http:'].includes(u.protocol))return;F.dialog('Course video',`<p>Open the course video for ${esc(event.name)}.</p><a class="button button-primary" href="${esc(u.href)}" target="_blank" rel="noopener">Watch video</a>`);}catch{}
+      }
+    });
+    for(const p of group.filter(p=>p.photo_url)){
+      const photo=host.querySelector(`[data-group-photo="${p.member_id}"]`);if(!photo)continue;
+      F.request(window.BarfordSupabase.storage.from('profile-images').createSignedUrl(p.photo_url,3600)).then(data=>{if(data?.signedUrl&&photo.isConnected){const img=document.createElement('img');img.src=data.signedUrl;img.alt='';photo.replaceChildren(img);photo.dataset.profilePhoto=data.signedUrl;}}).catch(()=>{});
+    }
+    window.BarfordDashboardModel=model;
+    window.dispatchEvent(new CustomEvent('barford-dashboard-ready',{detail:model}));
+  }
+  window.BarfordEventView={render};
+})();

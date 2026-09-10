@@ -1,5 +1,15 @@
-(() => {
+(function initialiseMemberAuth() {
   "use strict";
+
+  // A previously cached account page may not yet declare the recovery script.
+  if (document.getElementById("accountContent") && !window.BarfordAccountSession) {
+    const script = document.createElement("script");
+    script.src = "assets/js/account-session.js?v=account73";
+    script.onload = initialiseMemberAuth;
+    script.onerror=()=>{document.getElementById("accountContent")?.classList.add("hidden");const el=document.getElementById("accountConnectionStatus");if(el)el.textContent="Please refresh this page to reconnect your account.";};
+    document.head.appendChild(script);
+    return;
+  }
 
   const client = window.BarfordSupabase;
   const $ = selector => document.querySelector(selector);
@@ -12,11 +22,18 @@
 
   if (!client) {
     message(".form-status", "The secure account connection is unavailable. Please refresh the page.", true);
+    window.BarfordAccountSession?.showProblem("The account connection is unavailable. Try again, or sign out to reset your saved sign-in.");
     return;
   }
 
+  const accountSession = window.BarfordAccountSession;
+  const bounded = operation => accountSession ? accountSession.withTimeout(operation) : window.BarfordMemberFlow.bounded(operation);
+  const returnTo=()=>window.BarfordMemberFlow.safeReturn(new URLSearchParams(location.search).get("returnTo"));
+  document.querySelectorAll('a[href="signup.html"],a[href="account.html"]').forEach(link=>{if(new URLSearchParams(location.search).has('returnTo'))link.href=link.getAttribute('href')+'?returnTo='+encodeURIComponent(returnTo());});
+  const storedEmail=()=>{try{return localStorage.getItem("barford-login-email")||"";}catch{return "";}};
+
   const isIPhone = /iPhone|iPod/i.test(navigator.userAgent);
-  const faceIdReady = () => localStorage.getItem("barford-passkey-offered") === "complete";
+  const faceIdReady = () => {try{return localStorage.getItem("barford-passkey-offered") === "complete";}catch{return false;}};
 
   const escapeHtml = value => String(value ?? "")
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -79,12 +96,12 @@
 
   const loadSignupNames = async () => {
     if (!signupNameSelect) return;
-    const { data, error } = await client.functions.invoke("legacy-2026-stats", { body: { action: "roster" } });
-    const names = !error && Array.isArray(data?.players) ? data.players : [];
-    signupNameSelect.innerHTML = '<option value="">Select your name…</option>' +
-      names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("") +
-      '<option value="__new__">My name isn’t listed / I’m a new member</option>';
-    if (error) message("#signupStatus", "We could not load the member list. Choose ‘My name isn’t listed’ to continue.", true);
+    let data,error;
+    try{({data,error}=await bounded(client.functions.invoke("legacy-2026-stats",{body:{action:"roster"}})));}catch(e){error=e;}
+    if(signupNameSelect.value)return;
+    const names=!error&&Array.isArray(data?.players)?data.players:[];
+    signupNameSelect.innerHTML='<option value="">Select your name…</option>'+names.map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('')+'<option value="__new__">My name isn’t listed / I’m a new member</option>';
+    if(error)message('#signupStatus','Choose “My name isn’t listed” to type your name.');
   };
   signupNameSelect?.addEventListener("change", () => {
     const isNew = signupNameSelect.value === "__new__";
@@ -140,22 +157,16 @@
     button.textContent = "Creating account…";
     message("#signupStatus", "");
 
-    const { data, error } = await client.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName, phone, playing_category: playingCategory, handicap, theme_primary: themePrimary, theme_accent: themeAccent } }
-    });
-    if (error) {
-      message("#signupStatus", error.message, true);
-      button.disabled = false;
-      button.textContent = "Create my account";
-      return;
-    }
+    try{
+      const {data,error}=await bounded(client.auth.signUp({email,password,options:{data:{full_name:fullName,phone,playing_category:playingCategory,handicap,theme_primary:themePrimary,theme_accent:themeAccent}}}));
+      if(error)throw error;
+      try{localStorage.setItem('barford-login-email',email);}catch{}
+      if(data.session){window.location.href=returnTo();return;}
+      message('#signupStatus','Check your email to finish creating your account, then sign in.');
+      button.textContent='Account created — check your email';
+      const link=document.createElement('a');link.href=window.BarfordMemberFlow.loginUrl(returnTo());link.className='button button-outline';link.textContent='Go to sign in';signupForm.append(link);
+    }catch(error){message('#signupStatus',error.message||'Could not connect. Please try again.',true);button.disabled=false;button.textContent='Create my account';}
 
-    localStorage.setItem("barford-login-email", email);
-    sessionStorage.setItem("barford-first-login", "1");
-    if (data.session) await client.auth.signOut();
-    window.location.href = "account.html?account=created";
   });
 
   const loginForm = $("#accountLoginForm");
@@ -170,10 +181,20 @@
     button.disabled = true;
     button.textContent = "Signing in…";
 
-    const { error } = await client.auth.signInWithPassword({
-      email: $("#accountLoginEmail").value.trim().toLowerCase(),
-      password: $("#accountLoginPassword").value
-    });
+    let result;
+    try {
+      result = await bounded(client.auth.signInWithPassword({
+        email: $("#accountLoginEmail").value.trim().toLowerCase(),
+        password: $("#accountLoginPassword").value
+      }));
+    } catch {
+      message("#accountLoginStatus", "Sign-in could not connect. Please try again.", true);
+      button.disabled = false;
+      resetLoginButton();
+      return;
+    }
+    const { error } = result;
+    if (accountSession?.signingOut) return;
 
     if (error) {
       message("#accountLoginStatus", "Email or password not recognised.", true);
@@ -181,19 +202,8 @@
       resetLoginButton();
       return;
     }
-    if (isIPhone && window.BarfordPasskeys?.supported && !faceIdReady()) {
-      button.textContent = "Set up Face ID…";
-      try {
-        await window.BarfordPasskeys.register();
-        localStorage.setItem("barford-passkey-offered", "complete");
-      } catch (passkeyError) {
-        if (passkeyError.name !== "NotAllowedError") {
-          console.warn("Face ID setup was not completed.", passkeyError);
-        }
-      }
-    }
-    sessionStorage.removeItem("barford-first-login");
-    window.location.href = "index.html";
+    try{sessionStorage.removeItem("barford-first-login");}catch{}
+    window.location.href = returnTo();
   });
 
   $("#accountPasskeyLogin")?.addEventListener("click", async event => {
@@ -206,11 +216,11 @@
     button.textContent = "Waiting for your device…";
     try {
       await window.BarfordPasskeys.login();
-      window.location.href = "index.html";
+      window.location.href = returnTo();
     } catch (error) {
       message("#accountLoginStatus", error.name === "NotAllowedError" ? "Device sign-in was cancelled." : error.message, true);
       button.disabled = false;
-      button.innerHTML = '<span aria-hidden="true">⌁</span> Sign in with Face ID';
+      button.innerHTML = '<span aria-hidden="true">⌁</span> Use device sign-in';
     }
   });
 
@@ -280,13 +290,26 @@
     const content = $("#accountContent");
     if (!signedOut || !content) return;
 
-    const { data: { session } } = await client.auth.getSession();
+    accountSession?.loading();
+    let session;
+    try {
+      const result = await bounded(client.auth.getSession());
+      if (result.error) throw result.error;
+      session = result.data.session;
+    } catch {
+      accountSession?.showProblem();
+      return;
+    }
+    if (accountSession?.signingOut) return;
     signedOut.classList.toggle("hidden", Boolean(session));
-    content.classList.toggle("hidden", !session);
     if (!session) {
+      content.classList.add("hidden");
+      accountSession?.ready();
+      document.body.classList.remove("is-admin");
+      $("#accountHeroName").textContent = "Member account";
       const firstLogin = sessionStorage.getItem("barford-first-login") === "1" ||
         new URLSearchParams(window.location.search).get("account") === "created";
-      const showFaceId = isIPhone && window.BarfordPasskeys?.supported && faceIdReady();
+      const showFaceId = Boolean(window.BarfordPasskeys?.supported);
       $("#accountPasskeyLogin")?.classList.toggle("hidden", !showFaceId);
       $("#accountLoginDivider")?.classList.toggle("hidden", !showFaceId);
       const savedEmail = localStorage.getItem("barford-login-email");
@@ -301,35 +324,45 @@
       return;
     }
 
-    const { data: profile, error } = await client
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .single();
-
-    if (error || !profile) {
-      message("#accountSaveStatus", "Your profile could not be loaded. Please refresh.", true);
+    let profile;
+    try {
+      const result = await bounded(client.from("profiles").select("*").eq("id", session.user.id).single());
+      if (result.error || !result.data) throw result.error || new Error("Profile unavailable");
+      profile = result.data;
+    } catch {
+      accountSession?.showProblem("We could not load your account details. Try again, or sign out and sign back in.");
       return;
     }
+    if (accountSession?.signingOut) return;
 
     $("#accountHeroName").textContent = profile.full_name;
     $("#accountMemberNumber").textContent = `Member ${profile.id.slice(0, 8).toUpperCase()}`;
     $("#accountName").value = profile.full_name || "";
-    $("#accountEmail").value = profile.email || "";
+    $("#accountEmail").value = profile.email || session.user.email || "";
     $("#accountPhone").value = profile.phone || "";
     $("#accountHomeClub").value = profile.home_club || "";
     $("#accountHandicap").value = profile.handicap ?? "";
+    $("#accountHandicap").readOnly=profile.handicap!=null;
+    $("#accountHandicap").required=profile.handicap==null;
+    $("#accountHandicap").dataset.needsInitial=String(profile.handicap==null);
+    $("#accountHandicap").setAttribute('aria-readonly',String(profile.handicap!=null));
+    if(profile.handicap==null)$("#accountHandicap").parentElement.querySelector('small').textContent='Enter your starting society handicap (0 to 54), then save your details.';
     $("#accountPlayingCategory").value = profile.playing_category || "";
     if ($("#accountThemePrimary")) $("#accountThemePrimary").value = profile.theme_primary || "#315C4A";
     if ($("#accountThemeAccent")) $("#accountThemeAccent").value = profile.theme_accent || "#C7A96B";
     renderThemePreview("account", profile.theme_primary || "#315C4A", profile.theme_accent || "#C7A96B");
-    await Promise.all([
+    content.classList.remove("hidden");
+    if(location.hash==="#profile-photo")$("#profile-photo details")?.setAttribute("open","");
+    accountSession?.ready();
+    document.body.classList.toggle("is-admin", Boolean(profile.is_admin));
+    $("#removeAccountPhoto")?.classList.toggle("hidden", !profile.photo_url);
+    $("#accountPhotoInput").dataset.currentPath = profile.photo_url || "";
+    // Optional photos and scores must never hold the account form or sign-out.
+    await Promise.allSettled([
       renderProfilePhoto($("#accountHeroAvatar"), profile),
       renderProfilePhoto($("#accountPhotoPreview"), profile),
       loadMemberScores(session.user.id)
     ]);
-    $("#removeAccountPhoto")?.classList.toggle("hidden", !profile.photo_url);
-    $("#accountPhotoInput").dataset.currentPath = profile.photo_url || "";
   };
 
   $("#accountPhotoInput")?.addEventListener("change", async event => {
@@ -408,9 +441,10 @@
 
   $("#accountProfileForm")?.addEventListener("submit", async event => {
     event.preventDefault();
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) return;
-
+    const button=event.currentTarget.querySelector("button[type=submit]");button.disabled=true;button.textContent="Saving…";
+    try{
+    const { user }=await window.BarfordMemberFlow.request(client.auth.getUser());
+    if(!user)throw Error("Please sign in again to save your details.");
     const changes = {
       full_name: $("#accountName").value.trim(),
       phone: $("#accountPhone").value.trim() || null,
@@ -420,21 +454,28 @@
       theme_accent: $("#accountThemeAccent")?.value || "#C7A96B",
       updated_at: new Date().toISOString()
     };
-    const { error } = await client.from("profiles").update(changes).eq("id", user.id);
-    if (error) {
-      message("#accountSaveStatus", error.message, true);
-      return;
+    if($("#accountHandicap").dataset.needsInitial==='true'){
+      const initial=Number($("#accountHandicap").value);
+      if($("#accountHandicap").value===''||!Number.isFinite(initial)||initial<0||initial>54)throw Error('Enter a starting handicap between 0 and 54.');
+      await window.BarfordMemberFlow.request(client.rpc('set_initial_handicap',{initial_handicap:initial}));
+      $("#accountHandicap").dataset.needsInitial='false';$("#accountHandicap").readOnly=true;$("#accountHandicap").setAttribute('aria-readonly','true');
     }
+    const saved=await window.BarfordMemberFlow.request(client.from("profiles").update(changes).eq("id",user.id).select("id").single());
+    if(!saved?.id)throw Error("Your details could not be confirmed. Please try again.");
     $("#accountHeroName").textContent = changes.full_name;
-    setAvatar($("#accountHeroAvatar"), changes);
+    if(!$("#accountHeroAvatar").classList.contains("has-photo"))setAvatar($("#accountHeroAvatar"), changes);
     window.BarfordPersonalTheme?.apply(changes.theme_primary, changes.theme_accent, `barford-personal-theme-${user.id}`);
     message("#accountSaveStatus", "Your changes have been saved.");
+    }catch(error){message("#accountSaveStatus",error.message||"Could not save. Please try again.",true);}
+    finally{button.disabled=false;button.textContent="Save my details";}
   });
 
-  $("#accountSignOut")?.addEventListener("click", async () => {
-    await client.auth.signOut();
-    window.location.reload();
+  $('#setupDeviceSignIn')?.addEventListener('click',async event=>{
+    const button=event.currentTarget;button.disabled=true;
+    try{if(!window.BarfordPasskeys?.supported)throw Error('This browser does not support device sign-in. You can keep using your password.');await window.BarfordPasskeys.register();try{localStorage.setItem('barford-passkey-offered','complete');}catch{}message('#deviceSignInStatus','Device sign-in is ready. You can still use your password.');}
+    catch(error){message('#deviceSignInStatus',error.name==='NotAllowedError'?'Setup cancelled. You can try again whenever you like.':error.message,true);}
+    finally{button.disabled=false;}
   });
-
-  loadAccount();
+  // account-session.js owns sign-out independently of profile loading and the SDK.
+  loadAccount().catch(() => accountSession?.showProblem());
 })();

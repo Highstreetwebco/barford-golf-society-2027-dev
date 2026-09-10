@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="assets/css/styles.css?v=speed72">
   <link rel="stylesheet" href="assets/css/members.css?v=ux100">
   <link rel="stylesheet" href="assets/css/accessible-mobile.css?v=simplenav1">
-<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="stylesheet" href="assets/css/deep-teal-theme.css?v=speed72"><link rel="stylesheet" href="assets/css/matchday-redesign.css?v=3"><link rel="stylesheet" href="assets/css/personal-theme.css?v=3" data-ui-ready></head>
+<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="stylesheet" href="assets/css/deep-teal-theme.css?v=speed72"><link rel="stylesheet" href="assets/css/matchday-redesign.css?v=3"><link rel="stylesheet" href="assets/css/personal-theme.css?v=3" data-ui-ready><link rel="stylesheet" href="assets/css/member-simple.css?v=member73"></head>
 <body>
 <a class="skip-link" href="#main-content">Skip to content</a>
 <header class="site-header">
@@ -39,7 +39,7 @@
       <p class="eyebrow">Member login</p>
       <h2 id="accountLoginHeading">Open My Account</h2>
       <p id="accountLoginIntro">Enter your email address and password.</p>
-      <button id="accountPasskeyLogin" class="button button-passkey full-button hidden" type="button"><span aria-hidden="true">⌁</span> Sign in with Face ID</button>
+      <button id="accountPasskeyLogin" class="button button-passkey full-button hidden" type="button"><span aria-hidden="true">⌁</span> Use device sign-in</button>
       <div id="accountLoginDivider" class="login-divider hidden"><span>or use email and password</span></div>
       <form id="accountLoginForm" class="account-login-form">
         <label>Email address<input id="accountLoginEmail" type="email" autocomplete="email" required></label>
@@ -52,11 +52,21 @@
     </div>
   </section>
 
-  <div id="accountContent" class="shell account-details-layout">
+  <section id="accountConnection" class="section shell" aria-busy="true">
+    <div class="account-panel">
+      <p id="accountConnectionStatus" role="status" aria-live="polite">Loading your account…</p>
+      <div class="account-connection-actions">
+        <button id="accountRetry" class="button button-primary hidden" type="button">Try again</button>
+        <button class="button button-outline" type="button" data-account-sign-out>Sign out</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="accountContent" class="shell account-details-layout hidden">
     <section id="profile-photo" class="account-panel profile-panel">
       <div class="account-panel-heading"><div><p class="eyebrow">My details</p><h2>Your information</h2></div></div>
       <form id="accountProfileForm" class="account-profile-form">
-        <div class="account-photo-editor">
+        <details class="simple-details"><summary>My profile photo (optional)</summary><div class="account-photo-editor">
           <div id="accountPhotoPreview" class="profile-photo-preview"><span>BG</span></div>
           <div>
             <label class="button button-outline photo-picker-button" for="accountPhotoInput">Add or change photo</label>
@@ -66,15 +76,15 @@
             <p id="accountPhotoStatus" class="form-status" aria-live="polite"></p>
           </div>
         </div>
-        <div class="account-form-grid">
+        </details><div class="account-form-grid">
           <label>Full name<input id="accountName" type="text" autocomplete="name" required></label>
-          <label>Email address<input id="accountEmail" type="email" autocomplete="email" required></label>
-          <label>Phone number<input id="accountPhone" type="tel" autocomplete="tel" required></label>
+          <label>Sign-in email<input id="accountEmail" type="email" autocomplete="email" readonly aria-readonly="true"></label>
+          <label>Phone number (optional)<input id="accountPhone" type="tel" autocomplete="tel"></label>
           <label>Home club<input id="accountHomeClub" type="text" placeholder="Optional"></label>
           <label>Society handicap<input id="accountHandicap" type="number" min="0" max="54" step=".1" readonly aria-readonly="true"><small>This updates automatically after each completed round. Contact the committee if it needs correcting.</small></label>
           <label>Playing category<select id="accountPlayingCategory" required><option value="">Select…</option><option value="men">Men’s — yellow tees</option><option value="women">Women’s — red tees</option></select><small>This chooses your default event tee and yardages.</small></label>
         </div>
-        <fieldset class="theme-picker">
+        <details class="simple-details"><summary>Personalise my colours (optional)</summary><fieldset class="theme-picker">
           <legend>My dashboard colours</legend>
           <p>These colours are personal to your account and do not change the site for anybody else.</p>
           <div class="theme-colour-controls">
@@ -85,7 +95,7 @@
             <div class="theme-preview-header">My dashboard</div>
             <div class="theme-preview-body"><span>Next golf event</span><b>Open scorecard</b></div>
           </div>
-        </fieldset>
+        </fieldset></details>
         <button class="button button-primary full-button" type="submit">Save my details</button>
         <p id="accountSaveStatus" class="form-status" aria-live="polite"></p>
       </form>
@@ -105,20 +115,22 @@
       <p id="accountScoresStatus" class="form-status" aria-live="polite"></p>
     </section>
 
-    <div class="account-signout">
-      <button id="accountSignOut" class="button button-outline" type="button">Sign out</button>
+    <details class="simple-card simple-details"><summary>Device sign-in (optional)</summary><p>Use Face ID, fingerprint or your screen lock on a supported device.</p><button id="setupDeviceSignIn" class="button button-outline" type="button">Set up device sign-in</button><p id="deviceSignInStatus" role="status"></p></details><div class="account-signout">
+      <button id="accountSignOut" class="button button-outline" type="button" data-account-sign-out>Sign out</button>
     </div>
   </div>
 </main>
 
 <footer class="site-footer"><div class="shell footer-inner"><div class="footer-brand"><img decoding="async" loading="lazy" src="assets/images/barford-golf-society-logo-320.webp" alt=""><span>Barford Golf Society</span></div><p>© <span id="year"></span> Barford Golf Society</p></div></footer>
-<script src="assets/js/app.js?v=speed72" defer></script>
+<script src="assets/js/account-session.js?v=account73" defer></script>
+<script src="assets/js/app.js?v=member73" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=live1" defer></script>
-<script src="assets/js/supabase-client.js?v=speed72" defer></script>
-<script src="assets/js/passkeys.js?v=faceid1" defer></script>
-<script src="assets/js/member-auth.js?v=personal-theme1" defer></script>
-<script src="assets/js/accessible-mobile.js?v=royalnav1" defer></script>
+<script src="assets/js/supabase-client.js?v=member73" defer></script>
+<script src="assets/js/passkeys.js?v=member73" defer></script>
+<script src="assets/js/member-workflow.js?v=member73" defer></script>
+<script src="assets/js/member-auth.js?v=member73" defer></script>
+<script src="assets/js/accessible-mobile.js?v=member73" defer></script>
 
 </body>
 </html>

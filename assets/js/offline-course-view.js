@@ -3,6 +3,8 @@
   const $ = id => document.getElementById(id);
   const params = new URLSearchParams(location.search);
   const activeCard = (() => { try { return JSON.parse(localStorage.getItem("barford-fast-scorecard-v4") || "null"); } catch { return null; } })();
+  const redTee=params.get('tee')==='women';
+  const scoringReturn=()=>{const q=new URLSearchParams({hole:String(hole),tee:redTee?'women':'men'});if(eventId)q.set('event',eventId);if(params.get('card')||activeCard?.card?.id)q.set('card',params.get('card')||activeCard.card.id);return 'scoring.html?'+q;};
   const eventId = params.get("event") || activeCard?.card?.event_id || null;
   let hole = Math.min(18, Math.max(1, Number(params.get("hole")) || 1));
   let data = null;
@@ -40,15 +42,16 @@
     return `<svg viewBox="0 0 300 330" role="img" aria-label="Saved route for hole ${hole}"><path d="M20 315 Q150 250 280 315 L280 15 Q150 75 20 15 Z" fill="#315c4a" opacity=".28"/><polyline points="${plotted}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${first[0]}" cy="${first[1]}" r="12" fill="#e6c75a" stroke="#fff" stroke-width="4"/><circle cx="${last[0]}" cy="${last[1]}" r="13" fill="#315c4a" stroke="#fff" stroke-width="4"/><text x="${first[0]}" y="${Number(first[1]) - 20}" text-anchor="middle">TEE</text><text x="${last[0]}" y="${Number(last[1]) - 21}" text-anchor="middle">GREEN</text></svg>`;
   };
   const paint = () => {
-    const details = holeData(), mapped = view();
+    const raw=holeData(),mapped=view(),details=redTee?{par:raw?.red_par||raw?.par,yards:raw?.red_yards,stroke_index:raw?.red_stroke_index||raw?.stroke_index,yellow_tee_name:raw?.red_tee_name||"Red"}:raw;
     $("holeNumber").firstChild.nodeValue = String(hole);
     $("bottomHole").textContent = hole;
     $("holePar").textContent = details?.par ?? "—";
     $("teeYards").textContent = details?.yards ?? "—";
     $("teeLabel").textContent = (details?.yellow_tee_name || "Yellow").replace(/^Men\s+/, "");
     $("holeSI").textContent = details?.stroke_index ?? "—";
-    const yards = mapped?.tee_lat && mapped?.green_lat ? distance(Number(mapped.tee_lat), Number(mapped.tee_lng), Number(mapped.green_lat), Number(mapped.green_lng)) : details?.yards;
-    $("totalYards").textContent = yards ? `${yards} yds` : "—";
+    const yards = mapped?.tee_lat && mapped?.green_lat ? distance(Number(mapped.tee_lat), Number(mapped.tee_lng), Number(mapped.green_lat), Number(mapped.green_lng)) : null;
+    $("totalYards").textContent = details?.yards ? `${details.yards} yds` : "—";
+    $("distanceOrigin").textContent=mapped?.tee_lat ? "From mapped tee (saved map)" : "Map distance unavailable";
     $("toPinDistance").textContent = yards ? `${yards} yds` : "—";
     $("toTargetDistance").textContent = "—";
     $("frontGreen").textContent = "—";
@@ -56,7 +59,7 @@
     $("backGreen").textContent = "—";
     $("previousHole").disabled = hole === 1;
     $("nextHole").disabled = hole === 18;
-    $("quickScore").textContent = params.get("from") === "scoring" ? "‹ Back to scoring" : `Hole ${hole} · Enter score`;
+    $("quickScore").textContent = "Back to scorecard";
     const visual = document.querySelector(".offline-hole-visual");
     if (visual) visual.innerHTML = routeSvg(mapped);
   };
@@ -66,14 +69,15 @@
     data = readCourse() || { holes: activeCard?.holes || [], views: [] };
     const fallback = document.createElement("div");
     fallback.className = "offline-fallback";
-    fallback.innerHTML = '<div class="offline-connection-modal" role="alertdialog" aria-labelledby="offlineConnectionTitle" aria-describedby="offlineConnectionMessage"><span aria-hidden="true">⛳</span><small>NO SIGNAL</small><strong id="offlineConnectionTitle">No internet or mobile signal available</strong><p id="offlineConnectionMessage">Looks like your signal has found the rough.</p><em>Your scores are safely saved on this phone.</em><button id="offlineBackToScoring" type="button">Back to scoring</button></div>';
+    fallback.innerHTML='<div class="offline-connection-modal" role="alert" aria-labelledby="offlineConnectionTitle"><strong id="offlineConnectionTitle">Course map unavailable</strong><p>Your scorecard is still available. Return to scoring to continue your round.</p><button id="offlineBackToScoring" type="button">Back to scorecard</button><button id="showSavedMap" type="button">View saved hole layout</button></div><div class="offline-hole-visual" hidden></div>';
     document.body.prepend(fallback);
     $("previousHole").onclick = () => { if (hole > 1) { hole--; paint(); } };
     $("nextHole").onclick = () => { if (hole < 18) { hole++; paint(); } };
-    $("quickScore").onclick = () => history.length > 1 ? history.back() : location.href = `scoring.html?hole=${hole}`;
-    $("offlineBackToScoring").onclick = () => history.length > 1 ? history.back() : location.href = `scoring.html?hole=${hole}`;
-    $("exitGps").onclick = () => history.length > 1 ? history.back() : location.href = "index.html";
+    $("quickScore").onclick = () => location.href = scoringReturn();
+    $("offlineBackToScoring").onclick = () => location.href = scoringReturn();
+    $("exitGps").onclick = () => location.href = scoringReturn();
     $("recenterMap").disabled = true;
+    $('showSavedMap').onclick=()=>{document.querySelector('.offline-connection-modal').hidden=true;document.querySelector('.offline-hole-visual').hidden=false;};
     paint();
   };
   window.addEventListener("offline", () => setTimeout(start, 250));

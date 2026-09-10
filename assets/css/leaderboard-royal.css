@@ -4,13 +4,7 @@ body.matchday-ui #leaderboardView{
   margin:0 auto!important;
   padding:22px 0 116px!important;
 }
-body.matchday-ui #leaderboardView>.leaderboard-context,
-body.matchday-ui #leaderboardView>.season-progress-card,
-body.matchday-ui #leaderboardView>.search-panel,
-body.matchday-ui #scoresNav,
-body.matchday-ui #roundsView,
-body.matchday-ui #handicapsView,
-body.matchday-ui #statisticsView{display:none!important}
+
 
 .royal-championship-board{
   position:relative!important;
