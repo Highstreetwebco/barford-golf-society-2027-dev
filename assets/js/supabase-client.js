@@ -54,7 +54,10 @@
     document.head.appendChild(personalThemeStyle);
   }
   window.BarfordMemberContext = (async () => {
-    const { data: { session } } = await window.BarfordSupabase.auth.getSession();
+    const authResult=await window.BarfordSupabase.auth.getSession();
+    if(authResult.error)throw authResult.error;
+    const session=authResult.data.session;
+    try{if(session)localStorage.setItem("barford-score-active-member",session.user.id);else localStorage.removeItem("barford-score-active-member");}catch{}
     if (!session) return { session: null, profile: null };
     const { data: profile } = await window.BarfordSupabase.from("profiles")
       .select("id,full_name,is_admin,photo_url,theme_primary,theme_accent").eq("id", session.user.id).maybeSingle();

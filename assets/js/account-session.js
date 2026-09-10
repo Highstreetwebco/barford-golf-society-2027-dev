@@ -53,6 +53,7 @@
   const signOut = async () => {
     if (signingOut) return;
     signingOut = true;
+    try{localStorage.removeItem("barford-score-active-member");}catch{}
     clearTimeout(loadingTimer);
     document.querySelectorAll("#accountSignOut, [data-account-sign-out]").forEach(button => {
       button.disabled = true;

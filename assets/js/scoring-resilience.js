@@ -17,7 +17,8 @@
     // Serialize backup writes so an earlier save cannot overwrite a newer score.
     const backup=writeChain.catch(()=>{}).then(async()=>{await transaction('snapshots','readwrite',store=>store.put(record));return true;});
     writeChain=backup;
-    return backup.then(()=>({local,backup:true}),()=>({local,backup:false}));
+    if(local){backup.catch(()=>{});return Promise.resolve({local:true,backup:false});}
+    return window.BarfordMemberFlow.bounded(backup,2500).then(()=>({local:false,backup:true}),()=>({local:false,backup:false}));
   }
   async function read(userId,cardId,eventId){
     const matches=m=>m?.userId===userId&&m.card?.id&&(!cardId||m.card.id===cardId)&&(!eventId||m.card.event_id===eventId);
