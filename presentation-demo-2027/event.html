@@ -16,7 +16,7 @@
 <main id="main-content" class="shell simple-shell"><a class="simple-back" href="events.html">← All events</a><div id="memberEventHub" aria-live="polite"><p>Loading your event…</p></div></main><footer class="site-footer"><div class="shell footer-inner"><div class="footer-brand"><img decoding="async" src="../assets/images/barford-golf-society-logo-320.webp" alt=""><span>Barford Golf Society</span></div><p>© <span id="year"></span> Barford Golf Society</p></div></footer>
 <script src="demo-data.js"></script><script>const body=document.body;
 const currentPage=location.pathname.split("/").pop()||"index.html";
-document.querySelectorAll(".site-header .brand img,.global-site-header .global-brand img").forEach(image=>{image.src="../assets/images/barford-presentation-golf-society-logo-320.webp";image.width=320;image.height=320;image.alt="Barford Golf Society";});
+document.querySelectorAll(".site-header .brand img,.global-site-header .global-brand img").forEach(image=>{image.src="../assets/images/barford-golf-society-logo-320.webp";image.width=320;image.height=320;image.alt="Barford Golf Society";});
 const addCss=(href,key)=>{if(document.querySelector("link[data-ui-ready]"))return;const attr=`data-${key.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`;if(document.querySelector(`link[${attr}]`))return;const link=document.createElement("link");link.rel="stylesheet";link.href=href;link.dataset[key]="1";document.head.appendChild(link);};
 addCss("assets/css/deep-teal-theme.css?v=global-header1","deepTealTheme");
 // Keep the established feature layout, then apply one shared redesign layer.
