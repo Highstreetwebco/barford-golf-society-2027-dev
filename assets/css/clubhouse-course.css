@@ -1,0 +1,45 @@
+/* The course map keeps its existing fixed, touch-through interface. */
+html:has(.clubhouse-course){font-size:18px}
+body.clubhouse-course{--course-green:#073c2f;--course-gold:#d6b66d;--course-ink:#173b2b;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body.clubhouse-course .gps-ui{pointer-events:none}
+body.clubhouse-course .gps-ui button{pointer-events:auto;min-height:52px;touch-action:manipulation;font-family:inherit}
+body.clubhouse-course .gps-ui :is(button,.hole-grid):focus-visible{outline:3px solid #a37313!important;outline-offset:3px;box-shadow:0 0 0 3px #fff!important}
+body.clubhouse-course .gps-top{top:max(10px,env(safe-area-inset-top))!important;left:10px!important;right:10px!important;gap:8px;height:78px!important;max-width:760px;margin:auto}
+body.clubhouse-course .gps-back{min-width:52px!important;width:52px!important;height:78px!important;border-radius:8px!important;background:var(--course-green)!important;color:#fff!important;border:0!important;box-shadow:none!important}
+body.clubhouse-course .hole-card{height:78px!important;min-width:0;padding:8px 10px!important;grid-template-columns:44px minmax(0,1.3fr) .6fr .8fr .6fr!important;gap:4px;border-radius:8px!important;background:#fff!important;color:var(--course-ink)!important;border:1px solid #c5d7cb!important;box-shadow:0 3px 14px #052d241a!important;backdrop-filter:none}
+body.clubhouse-course .hole-number{font-size:28px!important;color:var(--course-green);line-height:1.2;border-right:1px solid #c6d7cb}
+body.clubhouse-course .hole-card small{font-size:12px!important;line-height:1.3;color:#4c6756;white-space:normal}
+body.clubhouse-course .hole-main strong{font-size:22px!important;line-height:1.4}
+body.clubhouse-course .hole-stat b{font-size:20px!important;line-height:1.4}
+body.clubhouse-course .distance-stack{top:calc(max(10px,env(safe-area-inset-top)) + 86px)!important;left:10px!important;right:10px!important;max-width:760px;margin:auto;gap:8px!important}
+body.clubhouse-course .distance-card{height:auto!important;min-height:70px;padding:12px 16px!important;border-radius:8px!important;background:var(--course-green)!important;color:#fff!important;border:1px solid #275e49!important;box-shadow:none!important;backdrop-filter:none}
+body.clubhouse-course .distance-card b{font-size:30px!important;font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
+body.clubhouse-course .distance-card span{font-size:14px!important;font-weight:600;letter-spacing:0!important;line-height:1.35;margin-top:5px!important;color:#fff!important}
+body.clubhouse-course .distance-card.target{background:#fff!important;color:var(--course-green)!important;border-color:#c5d7cb!important}
+body.clubhouse-course .distance-card.target span{color:#405d4b!important}
+body.clubhouse-course .green-yardages{height:auto!important;min-height:64px;flex-wrap:wrap;gap:6px;padding:10px!important;border-radius:8px!important;background:#fff!important;color:var(--course-green)!important;border:1px solid #c5d7cb!important;box-shadow:none!important;backdrop-filter:none}
+body.clubhouse-course #distanceOrigin{font-size:14px;line-height:1.4;width:100%;color:#496352}
+body.clubhouse-course .green-yardages span{font-size:12px;line-height:1.4;white-space:normal;color:#496352}
+body.clubhouse-course .green-yardages b{font-size:19px!important;color:var(--course-green)!important;line-height:1.35}
+body.clubhouse-course .gps-bottom{left:10px!important;right:10px!important;bottom:max(12px,env(safe-area-inset-bottom))!important;max-width:760px;margin:auto;grid-template-columns:minmax(0,1fr) 82px;gap:8px}
+body.clubhouse-course.is-admin .gps-bottom{grid-template-columns:72px minmax(0,1fr) 82px}
+body.clubhouse-course .hole-nav{grid-template-columns:52px minmax(0,1fr) 52px;height:68px!important;border-radius:8px!important;border:1px solid #c5d7cb!important;background:#fff!important;color:var(--course-green)!important;box-shadow:0 3px 14px #052d241a!important}
+body.clubhouse-course .hole-nav button{color:var(--course-green);min-width:0;line-height:1.25}
+body.clubhouse-course .hole-nav .current-hole{font-size:20px;background:var(--course-green)!important;color:#fff!important;font-weight:700}
+body.clubhouse-course .current-hole small{font-size:12px;line-height:1.4;font-weight:500}
+body.clubhouse-course .side-button{height:68px!important;border-radius:8px!important;background:#fff!important;color:var(--course-green)!important;border:1px solid #c5d7cb!important;box-shadow:none!important;font-size:13px!important;line-height:1.5}
+body.clubhouse-course .quick-score{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 80px)!important;min-height:58px!important;max-width:calc(100% - 40px);background:var(--course-gold)!important;color:var(--course-green)!important;border:2px solid #fff!important;border-radius:8px!important;font-size:18px!important;line-height:1.4;font-weight:750;padding:12px 20px!important;animation:none!important;box-shadow:0 4px 18px #052d2440!important}
+body.clubhouse-course .hole-grid{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 80px);max-height:55dvh;overflow:auto;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;background:#fff!important;border:1px solid #bdcfc2!important;border-radius:10px!important;box-shadow:0 8px 30px #052d2440!important;padding:14px}
+body.clubhouse-course .hole-grid button{min-height:52px;background:#eff4f0;color:var(--course-green);font-size:18px;border-radius:6px}
+body.clubhouse-course .hole-grid button.active{background:var(--course-green);color:#fff}
+body.clubhouse-course .setup-card{max-height:70dvh;overflow-y:auto;bottom:92px;border-radius:10px!important;background:#fff!important;color:var(--course-green)!important;border:1px solid #c5d7cb!important}
+body.clubhouse-course .setup-step{font-size:16px;line-height:1.5}
+body.clubhouse-course .setup-actions button{font-size:16px}
+body.clubhouse-course .setup-actions :is(.primary,.save){background:var(--course-green)}
+body.clubhouse-course .setup-close{color:var(--course-green)!important}
+body.clubhouse-course .mapping-hint{top:260px;font-size:14px;line-height:1.4;background:var(--course-green)}
+body.clubhouse-course .confirm-marker{bottom:170px;background:var(--course-green);font-size:16px}
+body.clubhouse-course #holeMapAttribution{bottom:calc(max(12px,env(safe-area-inset-bottom)) + 146px)!important;font-size:11px!important}
+@media(max-width:390px){body.clubhouse-course .hole-card{grid-template-columns:34px minmax(0,1.25fr) .55fr .75fr .55fr!important;padding-inline:6px!important;gap:2px}body.clubhouse-course .hole-card small{font-size:11px!important}body.clubhouse-course .hole-main strong{font-size:20px!important}body.clubhouse-course .hole-stat b{font-size:18px!important}body.clubhouse-course .hole-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-height:560px) and (min-width:700px){body.clubhouse-course .distance-stack{max-width:460px;margin-left:0}body.clubhouse-course .distance-card{min-height:56px;padding:8px 12px!important}body.clubhouse-course .distance-card b{font-size:23px!important}}
+@media(prefers-reduced-motion:reduce){body.clubhouse-course *,body.clubhouse-course *::before,body.clubhouse-course *::after{animation:none!important;transition:none!important}}

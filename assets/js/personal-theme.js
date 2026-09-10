@@ -11,11 +11,15 @@
   const hex = values => `#${values.map(value => Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, "0")).join("")}`.toUpperCase();
   const mix = (colour, target, amount) => hex(rgb(colour).map((value, index) => value + (rgb(target)[index] - value) * amount));
   const readable = colour => {
-    const channels = rgb(colour).map(value => {
-      const normal = value / 255;
-      return normal <= .03928 ? normal / 12.92 : ((normal + .055) / 1.055) ** 2.4;
-    });
-    return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2] > .46 ? "#17231D" : "#FFFFFF";
+    const luminance = value => {
+      const channels=rgb(value).map(v=>{const n=v/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});
+      return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
+    };
+    const background=luminance(colour),dark=luminance('#17231D');
+    const whiteContrast=1.05/(background+.05);
+    const darkContrast=(Math.max(background,dark)+.05)/(Math.min(background,dark)+.05);
+    if(Math.max(darkContrast,whiteContrast)<4.5)return '#000000';
+    return darkContrast>whiteContrast?'#17231D':'#FFFFFF';
   };
   const contrast = colour => {
     const [maximum, minimum] = [Math.max(...rgb(colour)), Math.min(...rgb(colour))];

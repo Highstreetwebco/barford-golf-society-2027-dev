@@ -1,64 +1,64 @@
-html.member-personal-theme body:not(.gps-page){background-color:var(--member-primary-dark)!important;background-image:radial-gradient(ellipse at 18% 8%,rgba(255,255,255,.11),transparent 38%),radial-gradient(ellipse at 82% 34%,rgba(0,0,0,.18),transparent 46%),repeating-linear-gradient(94deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px),linear-gradient(135deg,var(--member-primary),var(--member-primary-dark))!important}
-html.member-personal-theme body.matchday-ui:not(.scoring-page) .site-header,
-html.member-personal-theme body.matchday-ui:not(.scoring-page) .global-site-header,
-html.member-personal-theme .site-header,
-html.member-personal-theme .account-hero,
-html.member-personal-theme .page-hero{background-color:var(--member-primary)!important;background-image:linear-gradient(135deg,var(--member-primary-dark),var(--member-primary))!important}
-html.member-personal-theme .member-home-hero{background-color:var(--member-primary)!important;background-image:radial-gradient(ellipse at 70% 18%,rgba(255,255,255,.16),transparent 31%),linear-gradient(125deg,var(--member-primary-dark),var(--member-primary))!important}
-html.member-personal-theme body.home-photo-page .member-home,
-html.member-personal-theme body.home-photo-page .member-home-grid,
-html.member-personal-theme .member-home{background-color:var(--member-primary)!important;background-image:radial-gradient(ellipse at 16% 9%,rgba(255,255,255,.12),transparent 37%),radial-gradient(ellipse at 84% 38%,rgba(0,0,0,.2),transparent 48%),repeating-linear-gradient(93deg,rgba(255,255,255,.019) 0 1px,transparent 1px 3px),linear-gradient(138deg,var(--member-primary),var(--member-primary-dark))!important}
-html.member-personal-theme .page-hero h1,
-html.member-personal-theme .page-hero p,
-html.member-personal-theme .member-home-hero h1,
-html.member-personal-theme .member-home-hero p{color:var(--member-primary-text)!important;text-shadow:0 2px 10px rgba(0,0,0,.2)!important}
-html.member-personal-theme .page-hero .eyebrow,
-html.member-personal-theme .member-home-hero .eyebrow{color:var(--member-accent)!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important}
-html.member-personal-theme .page-hero p:last-child{color:var(--member-primary-text)!important;opacity:.82}
-html.member-personal-theme .site-header::after,
-html.member-personal-theme .member-home-hero::after,
-html.member-personal-theme .card::before,
-html.member-personal-theme .dashboard-card::before,
-html.member-personal-theme .account-panel::before,
-html.member-personal-theme .event-card::before{background:var(--metal-bar)!important}
-html.member-personal-theme .button-primary,
-html.member-personal-theme .button-gold,
-html.member-personal-theme .button-small,
-html.member-personal-theme body.event-day-dashboard .event-scorecard-cta.event-scorecard-main{border-color:var(--member-action-dark)!important;background:var(--member-action)!important;color:var(--member-action-text)!important;text-shadow:none!important}
-html.member-personal-theme .button-outline{border-color:var(--member-primary)!important;color:var(--member-primary)!important}
-html.member-personal-theme .eyebrow,
-html.member-personal-theme .text-link,
-html.member-personal-theme .attendance-count,
-html.member-personal-theme .dashboard-card h2,
-html.member-personal-theme .dashboard-card h3{color:var(--member-primary-dark)!important}
-html.member-personal-theme .dashboard-next-event{border-top-color:var(--member-accent)!important}
-html.member-personal-theme .site-header .brand::after,
-html.member-personal-theme .global-site-header .global-brand::after{border-bottom-color:var(--member-accent)!important}
-html.member-personal-theme .menu-button,
-html.member-personal-theme body.matchday-ui .menu-button{border-color:var(--member-accent)!important;background:var(--member-primary-dark)!important}
-html.member-personal-theme .menu-button .menu-button-label{color:var(--member-primary-text)!important}
-html.member-personal-theme .menu-button span:not(.sr-only):not(.menu-button-label),
-html.member-personal-theme .menu-button .menu-button-lines>span{background:var(--member-accent)!important}
-html.member-personal-theme main>.section .section-heading h2,
-html.member-personal-theme main>.section .toolbar h2,
-html.member-personal-theme main>.section>h1,
-html.member-personal-theme main>.section>h2{color:var(--member-primary-text)!important;text-shadow:0 2px 7px rgba(0,0,0,.22)!important}
-html.member-personal-theme main>.section>.muted,
-html.member-personal-theme main>.section>.toolbar .muted,
-html.member-personal-theme main>.section>.section-heading .muted{color:var(--member-primary-text)!important;opacity:.76}
-html.member-personal-theme body.matchday-ui:not(.scoring-page) .mobile-quick-nav,
-html.member-personal-theme .mobile-quick-nav{background:var(--member-primary)!important;border-top-color:var(--member-accent)!important}
-html.member-personal-theme .mobile-quick-nav a{color:var(--member-primary-text)!important}
-html.member-personal-theme .mobile-quick-nav a.active{background:var(--member-accent-soft)!important;color:var(--member-primary-dark)!important}
-html.member-personal-theme .score-app-header{background:var(--member-primary)!important;color:var(--member-primary-text)!important;border-bottom-color:var(--member-accent)!important}
-html.member-personal-theme .royal-board-heading{background-color:var(--member-primary)!important;background-image:radial-gradient(ellipse at 18% 0,rgba(255,255,255,.14),transparent 43%),linear-gradient(145deg,var(--member-primary),var(--member-primary-dark))!important;color:var(--member-primary-text)!important}
-html.member-personal-theme .royal-board-heading h1,
-html.member-personal-theme .royal-board-heading b,
-html.member-personal-theme .royal-board-heading span{color:var(--member-primary-text)!important}
-html.member-personal-theme .royal-board-heading>small{border-color:var(--member-accent)!important;color:var(--member-accent-text)!important;background:var(--member-accent)!important}
-html.member-personal-theme .royal-round-selector .leaderboard-round-tab[aria-selected="true"]{border-color:var(--member-accent-dark)!important;background:var(--member-action)!important;color:var(--member-action-text)!important}
-html.member-personal-theme .leaderboard-avatar,
-html.member-personal-theme .leaderboard-initials{background:var(--member-primary)!important;color:var(--member-primary-text)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) body:not(.gps-page){background-color:var(--member-primary-dark)!important;background-image:radial-gradient(ellipse at 18% 8%,rgba(255,255,255,.11),transparent 38%),radial-gradient(ellipse at 82% 34%,rgba(0,0,0,.18),transparent 46%),repeating-linear-gradient(94deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px),linear-gradient(135deg,var(--member-primary),var(--member-primary-dark))!important}
+html.member-personal-theme:not(:has(body.clubhouse)) body.matchday-ui:not(.scoring-page) .site-header,
+html.member-personal-theme:not(:has(body.clubhouse)) body.matchday-ui:not(.scoring-page) .global-site-header,
+html.member-personal-theme:not(:has(body.clubhouse)) .site-header,
+html.member-personal-theme:not(:has(body.clubhouse)) .account-hero,
+html.member-personal-theme:not(:has(body.clubhouse)) .page-hero{background-color:var(--member-primary)!important;background-image:linear-gradient(135deg,var(--member-primary-dark),var(--member-primary))!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .member-home-hero{background-color:var(--member-primary)!important;background-image:radial-gradient(ellipse at 70% 18%,rgba(255,255,255,.16),transparent 31%),linear-gradient(125deg,var(--member-primary-dark),var(--member-primary))!important}
+html.member-personal-theme:not(:has(body.clubhouse)) body.home-photo-page .member-home,
+html.member-personal-theme:not(:has(body.clubhouse)) body.home-photo-page .member-home-grid,
+html.member-personal-theme:not(:has(body.clubhouse)) .member-home{background-color:var(--member-primary)!important;background-image:radial-gradient(ellipse at 16% 9%,rgba(255,255,255,.12),transparent 37%),radial-gradient(ellipse at 84% 38%,rgba(0,0,0,.2),transparent 48%),repeating-linear-gradient(93deg,rgba(255,255,255,.019) 0 1px,transparent 1px 3px),linear-gradient(138deg,var(--member-primary),var(--member-primary-dark))!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .page-hero h1,
+html.member-personal-theme:not(:has(body.clubhouse)) .page-hero p,
+html.member-personal-theme:not(:has(body.clubhouse)) .member-home-hero h1,
+html.member-personal-theme:not(:has(body.clubhouse)) .member-home-hero p{color:var(--member-primary-text)!important;text-shadow:0 2px 10px rgba(0,0,0,.2)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .page-hero .eyebrow,
+html.member-personal-theme:not(:has(body.clubhouse)) .member-home-hero .eyebrow{color:var(--member-accent)!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .page-hero p:last-child{color:var(--member-primary-text)!important;opacity:.82}
+html.member-personal-theme:not(:has(body.clubhouse)) .site-header::after,
+html.member-personal-theme:not(:has(body.clubhouse)) .member-home-hero::after,
+html.member-personal-theme:not(:has(body.clubhouse)) .card::before,
+html.member-personal-theme:not(:has(body.clubhouse)) .dashboard-card::before,
+html.member-personal-theme:not(:has(body.clubhouse)) .account-panel::before,
+html.member-personal-theme:not(:has(body.clubhouse)) .event-card::before{background:var(--metal-bar)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .button-primary,
+html.member-personal-theme:not(:has(body.clubhouse)) .button-gold,
+html.member-personal-theme:not(:has(body.clubhouse)) .button-small,
+html.member-personal-theme:not(:has(body.clubhouse)) body.event-day-dashboard .event-scorecard-cta.event-scorecard-main{border-color:var(--member-action-dark)!important;background:var(--member-action)!important;color:var(--member-action-text)!important;text-shadow:none!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .button-outline{border-color:var(--member-primary)!important;color:var(--member-primary)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .eyebrow,
+html.member-personal-theme:not(:has(body.clubhouse)) .text-link,
+html.member-personal-theme:not(:has(body.clubhouse)) .attendance-count,
+html.member-personal-theme:not(:has(body.clubhouse)) .dashboard-card h2,
+html.member-personal-theme:not(:has(body.clubhouse)) .dashboard-card h3{color:var(--member-primary-dark)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .dashboard-next-event{border-top-color:var(--member-accent)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .site-header .brand::after,
+html.member-personal-theme:not(:has(body.clubhouse)) .global-site-header .global-brand::after{border-bottom-color:var(--member-accent)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .menu-button,
+html.member-personal-theme:not(:has(body.clubhouse)) body.matchday-ui .menu-button{border-color:var(--member-accent)!important;background:var(--member-primary-dark)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .menu-button .menu-button-label{color:var(--member-primary-text)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .menu-button span:not(.sr-only):not(.menu-button-label),
+html.member-personal-theme:not(:has(body.clubhouse)) .menu-button .menu-button-lines>span{background:var(--member-accent)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section .section-heading h2,
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section .toolbar h2,
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section>h1,
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section>h2{color:var(--member-primary-text)!important;text-shadow:0 2px 7px rgba(0,0,0,.22)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section>.muted,
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section>.toolbar .muted,
+html.member-personal-theme:not(:has(body.clubhouse)) main>.section>.section-heading .muted{color:var(--member-primary-text)!important;opacity:.76}
+html.member-personal-theme:not(:has(body.clubhouse)) body.matchday-ui:not(.scoring-page) .mobile-quick-nav,
+html.member-personal-theme:not(:has(body.clubhouse)) .mobile-quick-nav{background:var(--member-primary)!important;border-top-color:var(--member-accent)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .mobile-quick-nav a{color:var(--member-primary-text)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .mobile-quick-nav a.active{background:var(--member-accent-soft)!important;color:var(--member-primary-dark)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .score-app-header{background:var(--member-primary)!important;color:var(--member-primary-text)!important;border-bottom-color:var(--member-accent)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .royal-board-heading{background-color:var(--member-primary)!important;background-image:radial-gradient(ellipse at 18% 0,rgba(255,255,255,.14),transparent 43%),linear-gradient(145deg,var(--member-primary),var(--member-primary-dark))!important;color:var(--member-primary-text)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .royal-board-heading h1,
+html.member-personal-theme:not(:has(body.clubhouse)) .royal-board-heading b,
+html.member-personal-theme:not(:has(body.clubhouse)) .royal-board-heading span{color:var(--member-primary-text)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .royal-board-heading>small{border-color:var(--member-accent)!important;color:var(--member-accent-text)!important;background:var(--member-accent)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .royal-round-selector .leaderboard-round-tab[aria-selected="true"]{border-color:var(--member-accent-dark)!important;background:var(--member-action)!important;color:var(--member-action-text)!important}
+html.member-personal-theme:not(:has(body.clubhouse)) .leaderboard-avatar,
+html.member-personal-theme:not(:has(body.clubhouse)) .leaderboard-initials{background:var(--member-primary)!important;color:var(--member-primary-text)!important}
 
 .theme-picker{margin:1.15rem 0;padding:1rem;border:1px solid #d9dfdb;border-radius:18px;background:#f8faf8}.theme-picker legend{padding:0 .4rem;color:#173f32;font-weight:900}.theme-picker>p{margin:.1rem 0 .85rem;color:#68716c;font-size:.82rem}.theme-colour-controls{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}.theme-colour-controls label{display:grid;grid-template-columns:48px 1fr;align-items:center;gap:.65rem;padding:.65rem;border:1px solid #dce3df;border-radius:13px;background:#fff;font-size:.78rem;font-weight:850}.theme-colour-controls input[type="color"]{width:48px;height:48px;padding:2px;border:0;border-radius:11px;background:transparent}.theme-preview{overflow:hidden;margin-top:.85rem;border:1px solid #d8dfda;border-radius:16px;background:#fff;box-shadow:0 8px 20px rgba(28,55,44,.08)}.theme-preview-header{height:48px;padding:13px 16px;color:#fff;font-weight:900}.theme-preview-body{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px}.theme-preview-body span{color:#25312b;font-weight:850}.theme-preview-body b{padding:8px 12px;border-radius:10px;font-size:.75rem}
 @media(max-width:520px){.theme-colour-controls{grid-template-columns:1fr}.theme-picker{padding:.85rem}}

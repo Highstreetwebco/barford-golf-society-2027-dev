@@ -10,17 +10,21 @@
     const showPrimary=compact||action.kind!=='link'||action.href!==F.eventUrl(event.id);
     const own=group.find(p=>p.is_you),tee=own?.tee_time||group[0]?.tee_time;
     const notes=String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[0].trim();
+    const date=new Date(`${event.event_date}T12:00:00`);
+    const dateTicket=Number.isNaN(date.getTime())?'':`<div class="clubhouse-date-ticket" aria-hidden="true"><small>${date.toLocaleDateString('en-GB',{month:'short'})}</small><strong>${date.getDate()}</strong><small>${date.getFullYear()}</small></div>`;
     const reason=event.cancel_reason||String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[1]?.trim();
     host.innerHTML=`${event.test_mode_active?'<p class="simple-notice"><strong>Practice event</strong> — this is a test round.</p>':''}
       <article class="simple-card simple-next-event">
-        <p class="eyebrow">${compact?'Your next event':'Your event'}</p>
+        <header class="clubhouse-event-heading"><div><p class="eyebrow">${compact?'Your next event':'Your event'}</p>
         <h${compact?'2':'1'}>${esc(event.name)}</h${compact?'2':'1'}>
-        <p class="simple-event-date">${esc(F.date(event.event_date))}</p><p>${esc(event.venue||'Venue to be confirmed')}</p>
+        <p>${esc(event.venue||'Venue to be confirmed')}</p></div>${dateTicket}</header>
+        <div class="clubhouse-event-body"><p class="simple-event-date">${esc(F.date(event.event_date))}</p>
         <div class="simple-next-action"><strong>${esc(F.bookingLabel(model))}</strong><p>${esc(action.message)}</p>${showPrimary?button('primary',action.label,true):''}</div>
         ${reason&&event.status==='cancelled'?`<p>${esc(reason)}</p>`:''}
         <dl class="simple-facts" id="dashboardEventFacts"><div><dt>Your tee time</dt><dd>${tee?esc(F.time(tee)):rsvp?.status==='playing'?'Not announced yet':'Book to join a group'}</dd></div><div><dt>Event price</dt><dd>${esc(F.money(event.price))}</dd></div>${booked?`<div><dt>Payment</dt><dd>${esc(pay.label)}</dd></div><div><dt>Your request</dt><dd>${rsvp.buggy_requested?'Buggy requested':'Walking'} · ${esc(F.preference(rsvp.preferred_tee_time))} tee time</dd></div>`:''}</dl>
-        ${model.availability?`<p>${esc(model.availability.playing_count||0)}${model.availability.capacity!=null?' of '+esc(model.availability.capacity):''} places booked${model.availability.available!=null?' · '+esc(model.availability.available)+' available':''}${model.availability.reserve_count?' · '+esc(model.availability.reserve_count)+' on reserve':''}</p>`:''}
+        ${model.availability?`<p class="clubhouse-availability">${esc(model.availability.playing_count||0)}${model.availability.capacity!=null?' of '+esc(model.availability.capacity):''} places booked${model.availability.available!=null?' · '+esc(model.availability.available)+' available':''}${model.availability.reserve_count?' · '+esc(model.availability.reserve_count)+' on reserve':''}</p>`:''}
         ${compact?`<a class="button button-outline full-button" href="${F.eventUrl(event.id)}">View all event details</a>`:''}
+        </div>
       </article>
       ${!compact?`<section class="simple-card" id="my-group"><h2>My group</h2>${group.length?`<p><strong>Tee off at ${esc(F.time(tee))}${own?.tee_number?` · Tee ${esc(own.tee_number)}`:""}</strong></p><ul class="simple-player-list">${group.map(p=>`<li>${p.photo_url?`<button class="group-photo" data-group-photo="${esc(p.member_id)}" aria-label="View ${esc(p.full_name||'member')} photo"><span aria-hidden="true">${esc((p.full_name||'M').slice(0,1))}</span></button>`:""}${esc(p.full_name||p.guest_name||'Guest')}${p.is_you?' (You)':''}${p.buggy_requested?' · Buggy requested':''}</li>`).join('')}</ul>`:`<p>${rsvp?.status==='playing'?'Your group will appear here when the committee publishes the tee times.':rsvp?.status==='reserve'?'Your group will be arranged if a place opens for you.':'Book a place to see your group here.'}</p>`}${card?`<a class="button button-outline" href="${F.scoreUrl(model)}">${['submitted','locked'].includes(card.status)?'View group scores':'Open group scorecard'}</a>${card.status==='ready'?button('scorer','Choose or change our scorer'):''}`:model.cardError?'<p>Your scorecard could not be checked. Please refresh to try again.</p>':''}</section>`:''}
       <details class="simple-card simple-details"><summary>${compact?'Booking and event options':'More event options'}</summary><div class="simple-detail-content">

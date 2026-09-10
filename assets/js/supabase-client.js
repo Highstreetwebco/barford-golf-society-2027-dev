@@ -50,7 +50,7 @@
   if (!document.querySelector('link[href*="personal-theme.css"]')) {
     const personalThemeStyle = document.createElement("link");
     personalThemeStyle.rel = "stylesheet";
-    personalThemeStyle.href = "assets/css/personal-theme.css?v=3";
+    personalThemeStyle.href = "assets/css/personal-theme.css?v=clubhouse76";
     document.head.appendChild(personalThemeStyle);
   }
   window.BarfordMemberContext = (async () => {
@@ -65,7 +65,7 @@
     return { session, profile };
   })();
   const personalThemeScript = document.createElement("script");
-  personalThemeScript.src = "assets/js/personal-theme.js?v=2";
+  personalThemeScript.src = "assets/js/personal-theme.js?v=clubhouse76";
   document.body.appendChild(personalThemeScript);
 
   // Keep the shared assignment/tee guard, which is not declared in page HTML.

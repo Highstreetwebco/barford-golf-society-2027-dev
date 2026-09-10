@@ -11,7 +11,7 @@
       if (title.textContent.trim() === "Upload your golf photos") title.textContent = "Add your golf photos";
     });
     const upload = document.querySelector(".upload-card button");
-    if (upload) upload.textContent = "Choose photos";
+    if (upload) upload.textContent = "Upload photos";
   }
   if (currentPage === "worldevents.html") {
     document.title = "Society Trips | Barford Golf Society";
