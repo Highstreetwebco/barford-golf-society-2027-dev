@@ -51,16 +51,28 @@
     element.textContent = initials(profile?.full_name);
   };
 
+  const photoRequests = new Map();
+  const signedPhoto = path => {
+    if(!photoRequests.has(path)) {
+      const pending=bounded(client.storage.from("profile-images").createSignedUrl(path,3600))
+        .then(result=>{if(result.error||!result.data?.signedUrl){photoRequests.delete(path);return null;}return result.data.signedUrl;})
+        .catch(()=>{photoRequests.delete(path);return null;});
+      photoRequests.set(path,pending);
+    }
+    return photoRequests.get(path);
+  };
   const renderProfilePhoto = async (element, profile) => {
     if (!element) return;
     setAvatar(element, profile);
     element.classList.remove("has-photo");
-    if (!profile?.photo_url) return;
-    const { data } = await client.storage.from("profile-images").createSignedUrl(profile.photo_url, 3600);
-    if (!data?.signedUrl) return;
-    element.innerHTML = `<img src="${data.signedUrl}" alt="">`;
+    delete element.dataset.profilePhoto;delete element.dataset.photoPath;
+    if (!profile?.photo_url){element.removeAttribute("role");element.removeAttribute("tabindex");element.removeAttribute("aria-label");return;}
+    const path=profile.photo_url;element.dataset.photoPath=path;
+    const url=await signedPhoto(path);
+    if(!url||accountSession?.signingOut||element.dataset.photoPath!==path)return;
+    element.innerHTML = `<img src="${escapeHtml(url)}" alt="" decoding="async">`;
     element.classList.add("has-photo");
-    element.dataset.profilePhoto = data.signedUrl;
+    element.dataset.profilePhoto = url;
     element.tabIndex = 0;
     element.setAttribute("role", "button");
     element.setAttribute("aria-label", `View ${profile.full_name || "member"} profile photo`);
@@ -285,7 +297,9 @@
     }).join("");
   };
 
+  let initialAccountLoad=true;
   const loadAccount = async () => {
+    const useInitial=initialAccountLoad;initialAccountLoad=false;
     const signedOut = $("#accountSignedOut");
     const content = $("#accountContent");
     if (!signedOut || !content) return;
@@ -293,7 +307,7 @@
     accountSession?.loading();
     let session;
     try {
-      const result = await bounded(client.auth.getSession());
+      const result = await bounded(useInitial && window.BarfordInitialSession ? window.BarfordInitialSession : client.auth.getSession());
       if (result.error) throw result.error;
       session = result.data.session;
     } catch {
@@ -326,7 +340,8 @@
 
     let profile;
     try {
-      const result = await bounded(client.from("profiles").select("*").eq("id", session.user.id).single());
+      const shared=useInitial && window.BarfordMemberContext ? await bounded(window.BarfordMemberContext) : null;
+      const result=shared ? {data:shared.session?.user.id===session.user.id ? shared.profile : null} : await bounded(client.from("profiles").select("*").eq("id",session.user.id).single());
       if (result.error || !result.data) throw result.error || new Error("Profile unavailable");
       profile = result.data;
     } catch {
@@ -429,10 +444,9 @@
     }
     await client.storage.from("profile-images").remove([path]);
     const profile = { full_name: $("#accountName").value };
-    setAvatar($("#accountHeroAvatar"), profile);
-    setAvatar($("#accountPhotoPreview"), profile);
-    $("#accountHeroAvatar")?.classList.remove("has-photo");
-    $("#accountPhotoPreview")?.classList.remove("has-photo");
+    photoRequests.delete(path);
+    renderProfilePhoto($("#accountHeroAvatar"), profile);
+    renderProfilePhoto($("#accountPhotoPreview"), profile);
     input.dataset.currentPath = "";
     event.currentTarget.classList.add("hidden");
     event.currentTarget.disabled = false;

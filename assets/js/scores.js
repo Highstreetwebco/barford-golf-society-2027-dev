@@ -23,7 +23,7 @@ async function refresh() {
     $$('.view').forEach(view=>{view.innerHTML=`<article class="simple-card"><h2>Sign in to see society results</h2><p>View the leaderboard, round results and your handicap.</p><a class="button button-primary" href="${window.BarfordMemberFlow.loginUrl(location.href)}">Sign in to view results</a></article>`;});
     setView(new URLSearchParams(location.search).get('view')||'leaderboard');return;
   }
-  state.data=await ScoresData.getSnapshot();
+  state.data=await ScoresData.getSnapshot(state.currentUserId);
   const eventId=new URLSearchParams(location.search).get('event');
   if(eventId){const result=await window.BarfordMemberFlow.request(window.BarfordSupabase.from('rounds').select('id').eq('event_id',eventId).eq('season',2027).maybeSingle());if(result&&state.data.rounds.some(r=>r.id===result.id))state.selectedRoundId=result.id;}
   const requestedRound=new URLSearchParams(location.search).get('round');
@@ -230,6 +230,7 @@ function renderLeaderboard() {
     const initials = player.name.split(/\s+/).filter(Boolean).slice(0,2).map(part => part[0]).join("").toUpperCase();
     node.querySelector(".leaderboard-initials").textContent = initials || "BG";
     const avatar = node.querySelector(".leaderboard-avatar img");
+    avatar.dataset.playerPhoto=player.id;avatar.loading="lazy";avatar.decoding="async";
     if (player.photoUrl) {
       avatar.src = player.photoUrl;
       avatar.alt = `${player.name} profile picture`;
@@ -434,6 +435,15 @@ if (scoresMenuButton) {
 }
 $("#playerSearch").addEventListener("input",event=>{state.search=event.target.value.trim().toLowerCase();renderLeaderboard();renderRound();if(state.activeView==="statistics")renderStatistics()});
 $("#handicapPlayerSelect").addEventListener("change",event=>{state.selectedPlayerId=event.target.value;renderHandicapHistory()});
+window.addEventListener("scores:photos-ready",event=>{
+  if(event.detail.userId!==state.currentUserId||!state.data)return;
+  const photos=new Map(event.detail.photos.map(photo=>[photo.id,photo.url]));
+  state.data.players.forEach(player=>{player.photoUrl=photos.get(player.id)||null;});
+  document.querySelectorAll('[data-player-photo]').forEach(avatar=>{
+    const url=photos.get(avatar.dataset.playerPhoto);if(!url)return;
+    avatar.src=url;avatar.hidden=false;avatar.addEventListener("error",()=>{avatar.hidden=true;},{once:true});
+  });
+});
 window.addEventListener("scores:data-changed",refresh);
 
 

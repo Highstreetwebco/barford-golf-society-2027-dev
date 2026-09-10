@@ -46,10 +46,11 @@
         try{const u=new URL(event.course_video_url);if(!['https:','http:'].includes(u.protocol))return;F.dialog('Course video',`<p>Open the course video for ${esc(event.name)}.</p><a class="button button-primary" href="${esc(u.href)}" target="_blank" rel="noopener">Watch video</a>`);}catch{}
       }
     });
-    for(const p of group.filter(p=>p.photo_url)){
-      const photo=host.querySelector(`[data-group-photo="${p.member_id}"]`);if(!photo)continue;
-      F.request(window.BarfordSupabase.storage.from('profile-images').createSignedUrl(p.photo_url,3600)).then(data=>{if(data?.signedUrl&&photo.isConnected){const img=document.createElement('img');img.src=data.signedUrl;img.alt='';photo.replaceChildren(img);photo.dataset.profilePhoto=data.signedUrl;}}).catch(()=>{});
-    }
+    const pictured=group.filter(p=>p.photo_url).map(p=>({...p,element:host.querySelector(`[data-group-photo="${p.member_id}"]`)})).filter(p=>p.element);
+    if(pictured.length)F.request(window.BarfordSupabase.storage.from('profile-images').createSignedUrls([...new Set(pictured.map(p=>p.photo_url))],3600)).then(rows=>{
+      const urls=new Map((rows||[]).filter(row=>!row.error&&row.signedUrl).map(row=>[row.path,row.signedUrl]));
+      for(const p of pictured){const photo=p.element,url=urls.get(p.photo_url);if(!photo||!url||!photo.isConnected)continue;const img=document.createElement('img');img.src=url;img.alt='';img.loading='lazy';img.decoding='async';photo.replaceChildren(img);photo.dataset.profilePhoto=url;}
+    }).catch(()=>{});
     window.BarfordDashboardModel=model;
     window.dispatchEvent(new CustomEvent('barford-dashboard-ready',{detail:model}));
   }

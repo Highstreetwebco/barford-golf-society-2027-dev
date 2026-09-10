@@ -1,0 +1,1 @@
+(()=>{"use strict";if(!("serviceWorker"in navigator)||window.BarfordOfflineRegister)return;window.BarfordOfflineRegister=!0;const r=()=>navigator.serviceWorker.register("./sw.js?v=78",{updateViaCache:"none"}).catch(()=>{}),e=()=>setTimeout(r,1500);document.readyState==="complete"?e():window.addEventListener("load",e,{once:!0})})();

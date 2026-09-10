@@ -1,1 +1,10 @@
-(()=>{"use strict";if(!("serviceWorker" in navigator))return;navigator.serviceWorker.register("./sw.js?v=77",{updateViaCache:"none"}).then(reg=>{const key="barford-sw-last-update",last=Number(localStorage.getItem(key)||0);if(Date.now()-last>36e5){localStorage.setItem(key,String(Date.now()));reg.update()}}).catch(()=>{})})();
+(() => {
+  'use strict';
+  if(!('serviceWorker' in navigator)||window.BarfordOfflineRegister)return;
+  window.BarfordOfflineRegister=true;
+  const register=()=>navigator.serviceWorker.register('./sw.js?v=78',{updateViaCache:'none'}).catch(()=>{});
+  // Let the visible page and its member data start first. Updates apply at the next
+  // navigation; never reload a page while someone is entering scores or a booking.
+  const schedule=()=>setTimeout(register,1500);
+  if(document.readyState==='complete')schedule();else window.addEventListener('load',schedule,{once:true});
+})();

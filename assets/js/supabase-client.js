@@ -47,26 +47,33 @@
     }
   );
 
-  if (!document.querySelector('link[href*="personal-theme.css"]')) {
+  if (!document.querySelector('link[data-personal-theme],link[href*="personal-theme.css"]')) {
     const personalThemeStyle = document.createElement("link");
     personalThemeStyle.rel = "stylesheet";
     personalThemeStyle.href = "assets/css/personal-theme.css?v=clubhouse76";
     document.head.appendChild(personalThemeStyle);
   }
+  window.BarfordInitialSession = window.BarfordSupabase.auth.getSession();
   window.BarfordMemberContext = (async () => {
-    const authResult=await window.BarfordSupabase.auth.getSession();
+    const authResult=await window.BarfordInitialSession;
     if(authResult.error)throw authResult.error;
     const session=authResult.data.session;
     try{if(session)localStorage.setItem("barford-score-active-member",session.user.id);else localStorage.removeItem("barford-score-active-member");}catch{}
     if (!session) return { session: null, profile: null };
-    const { data: profile } = await window.BarfordSupabase.from("profiles")
-      .select("id,full_name,is_admin,photo_url,theme_primary,theme_accent").eq("id", session.user.id).maybeSingle();
+    const { data: profile, error } = await window.BarfordSupabase.from("profiles")
+      .select(document.getElementById("accountContent") ? "*" : "id,full_name,is_admin,photo_url,theme_primary,theme_accent").eq("id", session.user.id).maybeSingle();
+    if(error)throw error;
     document.body.classList.toggle("is-admin", Boolean(profile?.is_admin));
     return { session, profile };
   })();
   const personalThemeScript = document.createElement("script");
   personalThemeScript.src = "assets/js/personal-theme.js?v=clubhouse76";
   document.body.appendChild(personalThemeScript);
+
+  if(document.body.classList.contains("gps-page"))window.BarfordMemberContext.then(context=>{
+    if(!context.profile?.is_admin)return;
+    const setup=document.createElement("script");setup.src="assets/js/course-view-guided-setup.js?v=78";document.body.appendChild(setup);
+  }).catch(()=>{});
 
   // Keep the shared assignment/tee guard, which is not declared in page HTML.
   if (document.body.classList.contains("admin-page")) {

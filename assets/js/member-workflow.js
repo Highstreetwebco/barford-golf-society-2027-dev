@@ -48,21 +48,26 @@
     return {kind:"book",label:full ? "Join reserve list" : rsvp?.status ? "Change to playing" : "Book my place",message:full ? "This event is full. You can join the reserve list." : rsvp?.status ? "You’re marked as not playing. You can still change your choice." : "Would you like to play at this event?"};
   };
   const getCard = async (eventId,userId) => {
-    const memberships = await request(client.from("event_scorecard_players").select("scorecard_id").eq("member_id",userId));
-    if (!memberships?.length) return null;
-    const cards = await request(client.from("event_scorecards").select("id,event_id,status,scorer_id").eq("event_id",eventId).in("id",memberships.map(p=>p.scorecard_id)));
-    return cards?.[0] || null;
+    const memberships = await request(client.from("event_scorecard_players")
+      .select("event_scorecards!inner(id,event_id,status,scorer_id)")
+      .eq("member_id",userId).eq("event_scorecards.event_id",eventId).limit(1));
+    return memberships?.[0]?.event_scorecards || null;
   };
-  const loadEvent = async id => {
+  // Supplied records must come from the current page's completed, authorised reads.
+  // Mutations call this without records so lock, booking and payment stay fresh.
+  const loadEvent = async (id, initial = {}) => {
     if (!client) throw new Error("The account connection is unavailable. Please refresh the page.");
-    const [event,auth] = await Promise.all([request(client.from("events").select("*").eq("id",id).single()),request(client.auth.getSession())]);
+    const [event,auth] = await Promise.all([
+      initial.event?.id === id ? initial.event : request(client.from("events").select("*").eq("id",id).single()),
+      Object.prototype.hasOwnProperty.call(initial,"session") ? {session:initial.session} : request(client.auth.getSession())
+    ]);
     const model={event,session:auth.session,rsvp:null,locked:false,group:[],card:null,availability:null};
     if (!auth.session) return model;
     const reads = await Promise.allSettled([
-      request(client.from("rsvps").select("id,event_id,status,payment_status,buggy_requested,preferred_tee_time").eq("event_id",id).eq("member_id",auth.session.user.id).maybeSingle()),
+      Object.prototype.hasOwnProperty.call(initial,"rsvp") ? Promise.resolve(initial.rsvp) : request(client.from("rsvps").select("id,event_id,status,payment_status,buggy_requested,preferred_tee_time").eq("event_id",id).eq("member_id",auth.session.user.id).maybeSingle()),
       request(client.rpc("get_event_rsvp_lock_status",{target_event_id:id})),
       request(client.rpc("get_event_availability",{p_event_id:id})),
-      request(client.rpc("get_my_event_tee_group",{target_event_id:id})),
+      event.tee_times_status === "published" ? request(client.rpc("get_my_event_tee_group",{target_event_id:id})) : Promise.resolve([]),
       getCard(id,auth.session.user.id)
     ]);
     model.rsvp=reads[0].status === "fulfilled" ? reads[0].value : null;

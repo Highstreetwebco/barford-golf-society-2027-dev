@@ -1,0 +1,12 @@
+{
+  "name": "barford-golf-society-2027",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-assets.mjs",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.116.0",
+    "esbuild": "0.28.2"
+  }
+}

@@ -20,6 +20,7 @@
   let touchStartX = 0;
   const legacyPhotos = Array.from({ length: 26 }, (_, index) => ({
     url: `assets/images/gallery-2026/legacy-${String(index + 1).padStart(2, "0")}.webp`,
+    thumbnail: [2,4].includes(index)?null:`assets/images/performance/legacy-${String(index + 1).padStart(2, "0")}.webp`,
     caption: "Barford Golf Society 2026 photograph"
   }));
   const showStatus = (text, error = false) => {
@@ -42,14 +43,22 @@
   const loadGallery = async () => {
     let data,error;
     try{if(!memberSession&&eventId){data=[];}else{const query=client.from('gallery_photos').select('id,storage_path,caption,taken_at,created_at,event_id').eq('approved',true).order('created_at',{ascending:false});({data,error}=await window.BarfordMemberFlow.bounded(eventId?query.eq('event_id',eventId):query));}}catch(e){error=e;}
-    if(error&&memberSession){count.textContent='Photos could not be loaded';grid.innerHTML='<button class="button button-primary" id="retryGallery">Try again</button>';document.getElementById('retryGallery').onclick=loadGallery;return;}
+    if(error&&memberSession){
+      count.textContent=eventId?'Photos could not be loaded':'Showing 2026 photos. Recent photos could not be loaded.';
+      const retry=document.getElementById('retryGallery')||document.createElement('button');retry.className='button button-primary';retry.id='retryGallery';retry.textContent='Try again';retry.onclick=()=>{retry.remove();loadGallery();};count.after(retry);return;
+    }
 
     const currentPhotos = error ? [] : (data || []).map(photo => ({
       url: client.storage.from(config.galleryBucket).getPublicUrl(photo.storage_path).data.publicUrl,
       caption: photo.caption || "Barford Golf Society photograph"
     }));
     const photos = [...currentPhotos, ...(eventId?[]:legacyPhotos)];
+    renderPhotos(photos);
+  };
+  const renderPhotos = photos => {
+    const openUrl=lightbox.open?activePhotos[activeIndex]?.url:null;
     activePhotos = photos;
+    if(openUrl){const index=photos.findIndex(photo=>photo.url===openUrl);if(index>=0)showPhoto(index);}
 
     count.textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}`;
     if(!memberSession&&eventId){grid.innerHTML=`<article class="simple-card"><h2>Sign in to see event photos</h2><a class="button button-primary" href="${window.BarfordMemberFlow.loginUrl(location.href)}">Sign in</a></article>`;return;}
@@ -66,7 +75,7 @@
       const image = document.createElement("img");
       image.loading = index < 4 ? "eager" : "lazy";
       image.decoding = "async";
-      image.src = photo.url;
+      image.src = photo.thumbnail || photo.url;
       image.alt = photo.caption;
       button.append(image);
       button.addEventListener("click", () => openPhoto(index));
@@ -90,7 +99,7 @@
 
   const initialise = async () => {
     if (!client) return;
-    const { data: { session } } = await client.auth.getSession();
+    const {session}=await window.BarfordMemberFlow.request(window.BarfordInitialSession||client.auth.getSession());
     memberSession=session;
     form.classList.toggle("hidden", !session);
     note.textContent = session ? "Choose one or more images to add to the society gallery." : "Sign in to upload photographs.";
@@ -120,5 +129,6 @@
     });
     loadGallery();
   };
-  initialise();
+  if(!eventId){renderPhotos(legacyPhotos);count.textContent='2026 society photos · Loading recent photos…';}
+  initialise().catch(()=>{note.textContent='Your account could not be checked. Refresh to try again.';if(eventId)count.textContent='Sign in to view event photos.';else count.textContent='2026 society photos';});
 })();

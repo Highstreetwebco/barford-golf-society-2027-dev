@@ -64,7 +64,7 @@
     if (visual) visual.innerHTML = routeSvg(mapped);
   };
   const start = () => {
-    if (active || window.google?.maps || document.querySelector(".offline-fallback")) return;
+    if (active || window.__barfordCourseMap || document.querySelector(".offline-fallback")) return;
     active = true;
     data = readCourse() || { holes: activeCard?.holes || [], views: [] };
     const fallback = document.createElement("div");
@@ -80,6 +80,8 @@
     $('showSavedMap').onclick=()=>{document.querySelector('.offline-connection-modal').hidden=true;document.querySelector('.offline-hole-visual').hidden=false;};
     paint();
   };
+  window.addEventListener("barford-map-ready",()=>{document.querySelector('.offline-fallback')?.remove();active=false;});
+  window.addEventListener("barford-map-failed",start);
   window.addEventListener("offline", () => setTimeout(start, 250));
-  setTimeout(() => { if (!navigator.onLine || !window.google?.maps) start(); }, 5000);
+  setTimeout(() => { if (!window.__barfordCourseMap) start(); }, 5000);
 })();
