@@ -7,15 +7,25 @@
   function render(host,model,{compact=false}={}) {
     const {event,rsvp,session,group,card}=model,action=F.nextAction(model),pay=F.payment(event,rsvp);
     const booked=['playing','reserve'].includes(rsvp?.status),upcoming=event.event_date>=F.today()&&event.status==='scheduled';
-    const showPrimary=compact||action.kind!=='link'||action.href!==F.eventUrl(event.id);
+    const matchDay=compact&&session&&event.event_date===F.today()&&event.status!=='cancelled'&&(card||rsvp?.status==='playing');
+    const scoreAction=matchDay&&card&&(action.kind==='scorer'||action.href===F.scoreUrl(model));
+    const showPrimary=!scoreAction&&(compact||action.kind!=='link'||action.href!==F.eventUrl(event.id));
     const own=group.find(p=>p.is_you),tee=own?.tee_time||group[0]?.tee_time;
     const notes=String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[0].trim();
     const date=new Date(`${event.event_date}T12:00:00`);
     const dateTicket=Number.isNaN(date.getTime())?'':`<div class="clubhouse-date-ticket" aria-hidden="true"><small>${date.toLocaleDateString('en-GB',{month:'short'})}</small><strong>${date.getDate()}</strong><small>${date.getFullYear()}</small></div>`;
     const reason=event.cancel_reason||String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[1]?.trim();
     host.innerHTML=`${event.test_mode_active?'<p class="simple-notice"><strong>Practice event</strong> — this is a test round.</p>':''}
+      ${matchDay?`<section class="simple-card" id="dashboardScorecard" aria-labelledby="dashboardScorecardTitle">
+        <p class="eyebrow">Playing today</p><h2 id="dashboardScorecardTitle">Today’s scorecard</h2>
+        <p><strong>${esc(event.name)}</strong>${tee?` · Tee off ${esc(F.time(tee))}`:''}</p>
+        ${card?`<a class="button button-primary full-button" href="${F.scoreUrl(model)}">Open my group’s scorecard</a>
+        <p>${['submitted','locked'].includes(card.status)?'Your group’s scores are available to view.':card.scorer_id===session.user.id?'You are keeping score. Open your card to start or continue your round.':card.scorer_id?'You can follow the scorecard here. Your chosen scorer enters the scores.':'Everyone in your group can open this card. Choose one person to enter the scores.'}</p>
+        ${card.status==='ready'&&!card.scorer_id?button('scorer','Choose our scorer'):''}`:
+        `<p role="status">${model.cardError?'We couldn’t load your scorecard. Try again to check it.':'Your scorecard will appear here when the committee has prepared your group.'}</p>${button('refresh-card','Check for my scorecard')}`}
+      </section>`:''}
       <article class="simple-card simple-next-event">
-        <header class="clubhouse-event-heading"><div><p class="eyebrow">${compact?'Your next event':'Your event'}</p>
+        <header class="clubhouse-event-heading"><div><p class="eyebrow">${matchDay?'Today’s event':compact?'Your next event':'Your event'}</p>
         <h${compact?'2':'1'}>${esc(event.name)}</h${compact?'2':'1'}>
         <p>${esc(event.venue||'Venue to be confirmed')}</p></div>${dateTicket}</header>
         <div class="clubhouse-event-body"><p class="simple-event-date">${esc(F.date(event.event_date))}</p>
@@ -42,6 +52,7 @@
       else if(kind==='directions')F.directions(event);
       else if(kind==='contact')F.contact(event);
       else if(kind==='scorer')F.chooseScorer(model);
+      else if(kind==='refresh-card')window.dispatchEvent(new CustomEvent('barford-booking-changed',{detail:{eventId:event.id}}));
       else if(kind==='video'){
         try{const u=new URL(event.course_video_url);if(!['https:','http:'].includes(u.protocol))return;F.dialog('Course video',`<p>Open the course video for ${esc(event.name)}.</p><a class="button button-primary" href="${esc(u.href)}" target="_blank" rel="noopener">Watch video</a>`);}catch{}
       }

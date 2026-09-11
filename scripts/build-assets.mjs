@@ -4,7 +4,7 @@ import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import * as esbuild from 'esbuild';
-const root=process.cwd(), out='assets/dist', release=78;
+const root=process.cwd(), out='assets/dist', release=80;
 await mkdir(out,{recursive:true});
 const read=file=>readFile(file,'utf8');
 const hash=content=>createHash('sha256').update(content).digest('hex').slice(0,12);

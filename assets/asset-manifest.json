@@ -1,5 +1,5 @@
 {
-  "release": 78,
+  "release": 80,
   "assets": {
     "assets/css/styles.css": "assets/dist/styles.25b6981ca7d7.css",
     "assets/css/deep-teal-theme.css": "assets/dist/deep-teal-theme.a6bf11a5de26.css",
@@ -37,7 +37,7 @@
     "assets/js/admin-osm-hole-import.js": "assets/dist/admin-osm-hole-import.31bb7e681f8d.js",
     "assets/js/admin-member-manager-v2.js": "assets/dist/admin-member-manager-v2.64e45bf500e4.js",
     "assets/css/events.css": "assets/dist/events.2ac7ad53f7f7.css",
-    "assets/js/member-event-view.js": "assets/dist/member-event-view.c059a772e85b.js",
+    "assets/js/member-event-view.js": "assets/dist/member-event-view.8befa8058af8.js",
     "assets/js/event-hub.js": "assets/dist/event-hub.592321327215.js",
     "assets/js/events-live.js": "assets/dist/events-live.5c7a2b98b455.js",
     "assets/css/gallery.css": "assets/dist/gallery.73401303f5c1.css",
@@ -45,7 +45,7 @@
     "assets/css/clubhouse-course.css": "assets/dist/clubhouse-course.153cb4a54a66.css",
     "assets/js/offline-course-view.js": "assets/dist/offline-course-view.41bd60256c8d.js",
     "assets/js/course-view.js": "assets/dist/course-view.a93de75df2d4.js",
-    "assets/js/member-dashboard.js": "assets/dist/member-dashboard.2ac1496ca9a2.js",
+    "assets/js/member-dashboard.js": "assets/dist/member-dashboard.0b34c886e22b.js",
     "assets/js/member-season.js": "assets/dist/member-season.8732c42a394f.js",
     "assets/js/payments-hub.js": "assets/dist/payments-hub.4fd9a87a863b.js",
     "assets/js/scores.js": "assets/dist/scores.412db72a5d3a.js",
@@ -106,7 +106,7 @@
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.fedbdb18f939.js",
       "assets/dist/member-workflow.3bd4b64f82f8.js",
-      "assets/dist/member-event-view.c059a772e85b.js",
+      "assets/dist/member-event-view.8befa8058af8.js",
       "assets/dist/event-hub.592321327215.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -154,8 +154,8 @@
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.fedbdb18f939.js",
       "assets/dist/member-workflow.3bd4b64f82f8.js",
-      "assets/dist/member-event-view.c059a772e85b.js",
-      "assets/dist/member-dashboard.2ac1496ca9a2.js",
+      "assets/dist/member-event-view.8befa8058af8.js",
+      "assets/dist/member-dashboard.0b34c886e22b.js",
       "assets/dist/member-season.8732c42a394f.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -226,18 +226,18 @@
     "about.html": "0e28c1e7b24d",
     "account.html": "c4605587fe6e",
     "admin.html": "29a29d546c94",
-    "event.html": "58d863fefc4e",
+    "event.html": "ca5736290fdc",
     "events.html": "442ec843192d",
     "gallery.html": "0ed51e86cc54",
-    "hole-view.html": "d27ee5190b66",
-    "index.html": "ecbd817e4901",
+    "hole-view.html": "738b50064047",
+    "index.html": "7d8bb045233e",
     "payments.html": "7ad8baa7d683",
     "scores.html": "733ef19cf0df",
-    "scoring.html": "b4c885c2749f",
+    "scoring.html": "a816607c8675",
     "shop.html": "2d81fd485c02",
     "signup.html": "521dae5d7aca",
     "worldevents.html": "c3d2118ecd24"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "9512bc135b50"
+  "build": "d19af84f4c0f"
 }

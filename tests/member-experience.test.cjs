@@ -125,3 +125,28 @@ test('a signed-out or explicitly rejected session cannot be restored from the of
 test('offline identity recovery requires the remembered member and an already started card',async()=>{
  for(const options of [{rememberedMember:false},{cardStatus:'ready'}]){const h=scoringHarness({authFailure:'network',...options});try{await settle();assert.equal(h.document.getElementById('scoreReady').classList.contains('hidden'),true);assert.equal(h.calls.some(c=>c.rpc),false);}finally{h.cleanup();}}
 });
+
+test('event-day dashboard gives every group member direct scorecard access above event details',()=>{
+ const document=documentStub(),host=new Element({},document);
+ const context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
+ vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+ for(const status of ['ready','in_progress','submitted','locked'])for(const scorer_id of [null,'member-1','member-2']){
+  const m=base();m.event.event_date=F.today();m.event.name='Today’s golf';m.rsvp={status:'playing',payment_status:'payment_due'};m.card={id:'group-card',status,scorer_id};
+  context.window.BarfordEventView.render(host,m,{compact:true});
+  assert.ok(host.innerHTML.indexOf('id="dashboardScorecard"')<host.innerHTML.indexOf('simple-next-event'));
+  assert.match(host.innerHTML,/href="scoring.html\?event=event-1&card=group-card">Open my group’s scorecard/);
+ }
+});
+test('dashboard scorecard handles preparation and connection failure without exposing another group',()=>{
+ const document=documentStub(),host=new Element({},document);
+ const context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
+ vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+ const m=base();m.event.event_date=F.today();m.rsvp={status:'playing'};
+ context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/committee has prepared your group/);assert.doesNotMatch(host.innerHTML,/href="scoring/);
+ m.cardError=true;context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/couldn’t load your scorecard/);
+ for(const change of [{rsvp:{status:'reserve'}},{session:null},{event:{...m.event,event_date:'2099-01-01'}},{event:{...m.event,status:'cancelled'}}]){
+  context.window.BarfordEventView.render(host,{...m,...change},{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"/);
+ }
+ m.card={id:'own-card',status:'locked',scorer_id:'member-1'};m.event.status='completed';context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/Open my group’s scorecard/);
+ context.window.BarfordEventView.render(host,m,{compact:false});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"/);
+});
