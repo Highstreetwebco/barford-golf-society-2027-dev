@@ -1,0 +1,1 @@
+document.addEventListener('pointerdown',e=>{if(window.parent!==window)window.parent.postMessage({type:'demo-tap',x:e.clientX,y:e.clientY},location.origin);},true);

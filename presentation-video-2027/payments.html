@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="robots" content="noindex,nofollow">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Barford Golf Society event payments">
+  <meta name="theme-color" content="#073c2f">
+  <title>Payments | Barford Golf Society</title>
+  <link rel="stylesheet" href="../assets/dist/styles.25b6981ca7d7.css" data-css-sources="../assets/css/styles.css">
+<link rel="stylesheet" href="../assets/dist/member-ui.49d5a6a1e11e.css" data-css-sources="../assets/css/accessible-mobile.css,assets/css/personal-theme.css,assets/css/member-simple.css,assets/css/clubhouse.css" data-ui-ready data-personal-theme>
+<script src="demo-data.js"></script><script src="tap-marker.js" defer></script></head>
+<body class="clubhouse page-payments">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="brand" href="index.html" aria-label="Barford Golf Society home"><img decoding="async" fetchpriority="high" src="../assets/images/barford-golf-society-logo-320.webp" alt="Barford Golf Society"><span class="brand-wordmark" aria-hidden="true"><strong>Barford</strong><small>Golf Society</small></span></a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation"><span class="sr-only">Open menu</span><span></span><span></span><span></span></button>
+    <nav id="primary-navigation" class="site-nav" aria-label="Primary navigation">
+      <a href="index.html">Home</a><a href="events.html">Events</a><a href="scores.html">League Table</a><a href="gallery.html">Photos</a><a href="account.html">My Account</a><a href="admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+<main id="main-content" class="shell simple-shell"><a class="simple-back" id="paymentBack" href="index.html">← Dashboard</a><h1>My payments</h1><div id="memberPayments" aria-live="polite"><p>Checking your payments…</p></div></main><footer class="site-footer"><div class="shell footer-inner"><div class="footer-brand"><img decoding="async" src="../assets/images/barford-golf-society-logo-320.webp" alt=""><span>Barford Golf Society</span></div><p>© <span id="year"></span> Barford Golf Society</p></div></footer>
+  <script>const body=document.body;
+const currentPage=location.pathname.split("/").pop()||"index.html";
+document.querySelectorAll(".site-header .brand img,.global-site-header .global-brand img").forEach(image=>{image.src="../assets/images/barford-golf-society-logo-320.webp";image.width=320;image.height=320;image.alt="Barford Golf Society";});
+const addCss=(href,key)=>{if(document.querySelector("link[data-ui-ready]"))return;const attr=`data-${key.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`;if(document.querySelector(`link[${attr}]`))return;const link=document.createElement("link");link.rel="stylesheet";link.href=href;link.dataset[key]="1";document.head.appendChild(link);};
+addCss("../assets/css/deep-teal-theme.css?v=global-header1","deepTealTheme");
+// Keep the established feature layout, then apply one shared redesign layer.
+if(currentPage==="index.html"){
+  body.classList.add("product-premium");
+  addCss("../assets/css/product-premium.css?v=4","productPremium");
+  addCss("../assets/css/mobile-redesign.css?v=4","mobileRedesign");
+  addCss("../assets/css/brilliant.css?v=3","brilliantProduct");
+}
+body.classList.add("matchday-ui");
+addCss("../assets/css/matchday-redesign.css?v=3","matchdayRedesign");
+if("serviceWorker" in navigator){const script=document.createElement("script");script.src="../assets/js/offline-register.js?v=78";script.defer=true;document.body.appendChild(script);}
+const standardPages=[["index.html","Dashboard"],["events.html","Events"],["scores.html","Leaderboard"],["gallery.html","Gallery"],["account.html","My account"],["payments.html","My payments"],["worldevents.html","Society trips"],["shop.html","Shop"],["about.html","About us"],["admin.html","Committee admin"]];
+document.querySelectorAll('.site-nav').forEach(nav=>{nav.innerHTML=standardPages.map(([href,label])=>`<a href="${href}"${currentPage===href?' class="active" aria-current="page"':''}>${label}</a>`).join('');});
+document.querySelectorAll('.site-header .menu-button').forEach(button=>{const nav=document.createElement('nav');nav.className='desktop-primary';nav.setAttribute('aria-label','Main pages');nav.innerHTML=standardPages.slice(0,4).map(([href,label])=>`<a href="${href}"${currentPage===href?' aria-current="page"':''}>${label}</a>`).join('');button.before(nav);});
+document.querySelectorAll(".menu-button").forEach(menuButton=>{const navigationId=menuButton.getAttribute("aria-controls");const navigation=navigationId?document.getElementById(navigationId):menuButton.closest(".site-header")?.querySelector(".site-nav");if(!navigation)return;const closeMenu=()=>{navigation.classList.remove("is-open");menuButton.setAttribute("aria-expanded","false");body.classList.remove("mobile-menu-open");const label=menuButton.querySelector(".menu-button-label");if(label)label.textContent="More";menuButton.setAttribute("aria-label","Open more pages")};menuButton.addEventListener("click",event=>{event.stopPropagation();const open=navigation.classList.toggle("is-open");menuButton.setAttribute("aria-expanded",String(open));body.classList.toggle("mobile-menu-open",open)});navigation.querySelectorAll("a").forEach(link=>link.addEventListener("click",closeMenu));document.addEventListener("click",event=>{if(!navigation.contains(event.target)&&!menuButton.contains(event.target))closeMenu()},{passive:true});document.addEventListener("keydown",event=>{if(event.key==="Escape"&&navigation.classList.contains("is-open")){closeMenu();menuButton.focus()}});});
+const year=document.querySelector("#year");if(year)year.textContent=new Date().getFullYear();const installBtn=document.querySelector("#installHelpBtn"),installHelp=document.querySelector("#installHelp");if(installBtn&&installHelp)installBtn.addEventListener("click",()=>{installHelp.classList.toggle("hidden");installBtn.textContent=installHelp.classList.contains("hidden")?"Show instructions":"Hide instructions"});
+
+const mobileNav=document.createElement("nav");mobileNav.className="mobile-quick-nav";mobileNav.dataset.playerNav="true";mobileNav.setAttribute("aria-label","Player navigation");const quickItems=[["index.html",'<svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V20H4Z"/><path d="M9 20v-6h6v6"/></svg>',"Dashboard"],["events.html",'<svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17M7 14h3M14 14h3M7 17h3"/></svg>',"Events"],["scores.html",'<svg viewBox="0 0 24 24"><path d="M8 4h8v4a4 4 0 0 1-8 0Z"/><path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 12v4M8 20h8M9 16h6v4"/></svg>',"Leaderboard"],["gallery.html",'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4.5 18 5-5 3.5 3 2.5-2.5 4 4"/></svg>',"Gallery"]];mobileNav.innerHTML=quickItems.map(([href,icon,label])=>`<a href="${href}" class="${(currentPage===href||(["event.html","payments.html"].includes(currentPage)&&href==="events.html"))?"active":""}"${currentPage===href?' aria-current="page"':""}><span class="quick-icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`).join("");if(!body.classList.contains("gps-page"))body.appendChild(mobileNav);
+const initialiseSharedUi=()=>{const dialog=document.createElement("dialog");dialog.className="profile-photo-lightbox";dialog.setAttribute("aria-label","Profile photo");dialog.innerHTML='<form method="dialog"><button class="profile-photo-lightbox-close" value="cancel" aria-label="Close profile photo">×</button><img alt="Enlarged profile photo"><a class="button button-primary profile-photo-change hidden" href="account.html#profile-photo">Change profile picture</a><button class="button button-outline" value="cancel">Close</button></form>';document.body.append(dialog);const openPhoto=element=>{const source=element?.dataset?.profilePhoto||element?.querySelector?.("img")?.src;if(!source){location.href="account.html#profile-photo";return}dialog.querySelector("img").src=source;dialog.querySelector(".profile-photo-change")?.classList.toggle("hidden",element.dataset.profileOwner!=="self");dialog.showModal()};document.addEventListener("click",event=>{const target=event.target.closest('[data-profile-photo], [data-profile-owner="self"]');if(target)openPhoto(target)});document.addEventListener("profile-photo:open",event=>openPhoto(event.target));};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initialiseSharedUi,{once:true});else initialiseSharedUi();
+const loadEnhancement=(src,key,done)=>{if(document.querySelector(`script[data-${key}]`)){done?.();return;}const script=document.createElement("script");script.src=src;script.async=true;script.dataset[key.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]="1";script.onload=()=>done?.();document.body.appendChild(script);};
+
+const idleEnhancements=async()=>{if(currentPage==="admin.html"){loadEnhancement("../assets/js/test-event-controls.js?v=3","test-event-controls");loadEnhancement("../assets/js/event-course-setup.js?v=multicourse1","event-course-setup",()=>loadEnhancement("../assets/js/admin-brilliant.js?v=3","admin-brilliant"));loadEnhancement("../assets/js/admin-scorecard-preview.js?v=2","admin-scorecard-preview");loadEnhancement("../assets/js/admin-member-golf-settings.js?v=1","admin-member-golf-settings");}else if(currentPage==="index.html"||currentPage==="event.html"){const auth=await(window.BarfordInitialSession||Promise.resolve(null)).catch(()=>null);if(!auth?.data?.session)return;loadEnhancement("../assets/js/dashboard-weather.js?v=member74","dashboard-weather");loadEnhancement("../assets/js/event-day-camera.js?v=member74","event-day-camera");}};const scheduleEnhancements=()=>{if("requestIdleCallback" in window)requestIdleCallback(idleEnhancements,{timeout:1000});else setTimeout(idleEnhancements,300);};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",scheduleEnhancements,{once:true});else scheduleEnhancements();
+</script>
+  
+  
+  
+  <script>(() => {
+  "use strict";
+  const client = window.BarfordSupabase;
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+  const money = value => value == null || value === "" || !Number.isFinite(Number(value)) ? "Price to be confirmed" : Number(value) === 0 ? "Free" : `£${Number(value).toFixed(2)}`;
+  const date = value => value ? new Intl.DateTimeFormat("en-GB", {weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date(`${value}T12:00:00`)) : "Date to be confirmed";
+  const time = value => value ? String(value).slice(0,5) : "Coming soon";
+  const preference = value => ({dont_mind:"No preference",first:"Early",middle:"Middle",end:"Later"}[value] || "No preference");
+  const eventUrl = id => `event.html?event=${encodeURIComponent(id)}`;
+  const scoreUrl = model => `scoring.html?event=${encodeURIComponent(model.event.id)}${model.card ? `&card=${encodeURIComponent(model.card.id)}` : ""}`;
+  const safeReturn = value => {
+    try { const u = new URL(value || "index.html", location.href); const base = new URL("./", location.href); return u.origin === base.origin && u.pathname.startsWith(base.pathname) && /\.html$/.test(u.pathname) ? u.pathname+u.search+u.hash : "index.html"; } catch { return "index.html"; }
+  };
+  const loginUrl = destination => `account.html?returnTo=${encodeURIComponent(safeReturn(destination))}`;
+  const bounded = (operation, ms = 12000) => new Promise((resolve,reject) => {
+    const timer = setTimeout(() => reject(new Error("The connection is taking too long. Please try again.")),ms);
+    Promise.resolve(operation).then(resolve,reject).finally(() => clearTimeout(timer));
+  });
+  const request = async operation => { const result = await bounded(operation); if(result?.error) throw result.error; return result?.data; };
+  const payment = (event,rsvp) => {
+    if (event.status === "cancelled") return {label:rsvp?.payment_status === "refunded" ? "Payment refunded" : "Event cancelled",due:false};
+    if (rsvp?.payment_status === "refunded") return {label:"Payment refunded",due:false};
+    if (rsvp?.payment_status === "paid") return {label:"Paid",due:false};
+    if (rsvp?.payment_status === "waived" || (event.price != null && Number(event.price) === 0)) return {label:"No payment needed",due:false};
+    if (rsvp?.status !== "playing") return {label:rsvp?.status === "reserve" ? "No payment requested while on reserve" : "Book before paying",due:false};
+    if (event.price == null) return {label:"Price to be confirmed",due:false};
+    return {label:`${money(event.price)} outstanding`,due:true};
+  };
+  const bookingLabel = model => model.event.status === "cancelled" ? "Event cancelled" : model.bookingError ? "Booking could not be checked" : ({playing:"You’re playing",reserve:"You’re on the reserve list",not_playing:"You’re not playing",cancelled:"You’re not playing"}[model.rsvp?.status] || "Please tell us if you’re playing");
+  const nextAction = model => {
+    const {event,rsvp,card,session,locked,group=[],bookingError}=model;
+    const details = {label:"View event",href:eventUrl(event.id),kind:"link"};
+    if (event.status === "cancelled") return {...details,message:"This event has been cancelled."};
+    if (!session && (event.status === "completed" || event.event_date < today())) return {...details,label:"View results",href:`scores.html?view=rounds&event=${encodeURIComponent(event.id)}`,message:"This event has finished."};
+    if (!session) return {...details,label:"Sign in to book",href:loginUrl(eventUrl(event.id)),message:"Sign in to see your booking and tee time."};
+    if (bookingError) return {label:"Try again",kind:"retry",message:"Your booking could not be checked. Please try again."};
+    if (card && ["submitted","locked"].includes(card.status)) return {...details,label:card.status === "locked" ? "View results" : "View submitted scores",href:card.status === "locked" ? `scores.html?view=rounds&event=${encodeURIComponent(event.id)}` : scoreUrl(model),message:card.status === "locked" ? "The round is complete." : "Scores submitted. Awaiting committee approval."};
+    if (event.status === "completed" || event.event_date < today()) return {...details,label:"View results",href:`scores.html?view=rounds&event=${encodeURIComponent(event.id)}`,message:"This event has finished."};
+    if (rsvp?.status === "reserve") return {...details,label:"View reserve booking",message:"You’re on reserve. We’ll move you into the playing list if a place opens."};
+    if (rsvp?.status === "playing" && event.event_date === today() && card) return {kind:card.scorer_id ? "link" : "scorer",href:scoreUrl(model),label:!card.scorer_id ? "Choose our scorer" : card.scorer_id === session.user.id ? card.status === "in_progress" ? "Continue round" : "Open scorecard" : "View group scorecard",message:card.scorer_id === session.user.id ? "You’re scoring for your group today." : card.scorer_id ? "Your group’s scorer is ready." : "Choose one person to enter your group’s scores."};
+    const pay = payment(event,rsvp);
+    if (rsvp?.status === "playing" && pay.due) return {kind:"link",label:"Payment details",href:`payments.html?event=${encodeURIComponent(event.id)}`,message:`You’re playing. ${pay.label}.`};
+    if (rsvp?.status === "playing") return {...details,label:group.length ? "View my group" : "View booking",href:eventUrl(event.id)+(group.length ? "#my-group" : ""),message:group.length ? `Your tee time is ${time(group.find(p=>p.is_you)?.tee_time || group[0].tee_time)}.` : "You’re all set. Your tee time will appear here when it is ready."};
+    if (locked === null) return {kind:"retry",label:"Try again",message:"We couldn’t check whether bookings are open."};
+    if (locked) return {kind:"contact",label:"Request a change",message:"Bookings are closed while the committee arranges the groups."};
+    const full = model.availability?.available != null && Number(model.availability.available) === 0;
+    return {kind:"book",label:full ? "Join reserve list" : rsvp?.status ? "Change to playing" : "Book my place",message:full ? "This event is full. You can join the reserve list." : rsvp?.status ? "You’re marked as not playing. You can still change your choice." : "Would you like to play at this event?"};
+  };
+  const getCard = async (eventId,userId) => {
+    const memberships = await request(client.from("event_scorecard_players")
+      .select("event_scorecards!inner(id,event_id,status,scorer_id)")
+      .eq("member_id",userId).eq("event_scorecards.event_id",eventId).limit(1));
+    return memberships?.[0]?.event_scorecards || null;
+  };
+  // Supplied records must come from the current page's completed, authorised reads.
+  // Mutations call this without records so lock, booking and payment stay fresh.
+  const loadEvent = async (id, initial = {}) => {
+    if (!client) throw new Error("The account connection is unavailable. Please refresh the page.");
+    const [event,auth] = await Promise.all([
+      initial.event?.id === id ? initial.event : request(client.from("events").select("*").eq("id",id).single()),
+      Object.prototype.hasOwnProperty.call(initial,"session") ? {session:initial.session} : request(client.auth.getSession())
+    ]);
+    const model={event,session:auth.session,rsvp:null,locked:false,group:[],card:null,availability:null};
+    if (!auth.session) return model;
+    const reads = await Promise.allSettled([
+      Object.prototype.hasOwnProperty.call(initial,"rsvp") ? Promise.resolve(initial.rsvp) : request(client.from("rsvps").select("id,event_id,status,payment_status,buggy_requested,preferred_tee_time").eq("event_id",id).eq("member_id",auth.session.user.id).maybeSingle()),
+      request(client.rpc("get_event_rsvp_lock_status",{target_event_id:id})),
+      request(client.rpc("get_event_availability",{p_event_id:id})),
+      event.tee_times_status === "published" ? request(client.rpc("get_my_event_tee_group",{target_event_id:id})) : Promise.resolve([]),
+      getCard(id,auth.session.user.id)
+    ]);
+    model.rsvp=reads[0].status === "fulfilled" ? reads[0].value : null;
+    model.bookingError=reads[0].status === "rejected";
+    model.locked=reads[1].status === "fulfilled" ? Boolean(reads[1].value) : null;
+    model.availability=reads[2].status === "fulfilled" ? reads[2].value?.[0] : null;
+    model.group=reads[3].status === "fulfilled" && event.tee_times_status === "published" ? reads[3].value || [] : [];
+    model.card=reads[4].status === "fulfilled" ? reads[4].value : null;
+    model.cardError=reads[4].status === "rejected";
+    return model;
+  };
+  let activeDialog;
+  const dialog = (title,html) => {
+    activeDialog?.close(); activeDialog?.remove();
+    const previous=document.activeElement;
+    const d=document.createElement("dialog");d.className="simple-dialog";
+    d.setAttribute("aria-labelledby","simpleDialogTitle");
+    d.innerHTML=`<div class="simple-dialog-panel"><button class="button simple-dialog-close" type="button" data-dialog-close>Close</button><h2 id="simpleDialogTitle">${esc(title)}</h2>${html}</div>`;
+    document.body.append(d);d.querySelector("[data-dialog-close]").onclick=()=>d.close();
+    d.addEventListener("close",()=>{previous?.focus();d.remove();if(activeDialog===d)activeDialog=null;},{once:true});
+    activeDialog=d;d.showModal();return d;
+  };
+  const contact = (event,reason="change my booking") => {
+    const text=`Hi, please could you help me ${reason}${event ? ` for ${event.name} on ${date(event.event_date)}` : ""}? Thank you.`;
+    const d=dialog("Ask the committee",`<p>Send this message to your usual committee contact.</p><label>Your message<textarea id="committeeMessage" rows="5">${esc(text)}</textarea></label><div class="simple-actions"><button type="button" class="button button-primary" id="copyCommitteeMessage">Copy message</button>${navigator.share ? '<button type="button" class="button button-outline" id="shareCommitteeMessage">Share message</button>' : ""}</div><p id="committeeMessageStatus" role="status"></p>`);
+    d.querySelector("#copyCommitteeMessage").onclick=async()=>{try{await navigator.clipboard.writeText(d.querySelector("textarea").value);d.querySelector("#committeeMessageStatus").textContent="Copied. Paste it into a message to the committee.";}catch{d.querySelector("textarea").select();d.querySelector("#committeeMessageStatus").textContent="Select and copy the message, then send it to the committee.";}};
+    d.querySelector("#shareCommitteeMessage")?.addEventListener("click",async()=>{try{await navigator.share({text:d.querySelector("textarea").value});}catch{}});
+  };
+  const saveBooking = async (model,wantsToPlay,buggy,windowChoice) => {
+    if (!model.session) {location.href=loginUrl(eventUrl(model.event.id));return null;}
+    const locked=await request(client.rpc("get_event_rsvp_lock_status",{target_event_id:model.event.id}));
+    if (locked) throw new Error("Bookings have now closed. Please ask the committee to make this change.");
+    await request(client.rpc("set_my_event_rsvp",{p_event_id:model.event.id,p_status:wantsToPlay ? "playing" : "not_playing",p_buggy_requested:Boolean(buggy),p_preferred_tee_time:windowChoice || "dont_mind"}));
+    return loadEvent(model.event.id);
+  };
+  const openBooking = model => {
+    if (!model.session) {location.href=loginUrl(eventUrl(model.event.id));return;}
+    if(model.locked) {contact(model.event);return;}
+    const own=model.rsvp,full=model.availability?.available != null && Number(model.availability.available)===0 && own?.status!=="playing";
+    const d=dialog(own?.status === "playing" || own?.status === "reserve" ? "Change booking" : full ? "Join the reserve list" : "Book my place",`<p><strong>${esc(model.event.name)}</strong><br>${esc(date(model.event.event_date))} · ${esc(money(model.event.price))}</p><form id="simpleBookingForm"><fieldset><legend>Walking or buggy?</legend><div class="simple-choices"><label><input type="radio" name="travel" value="walking" ${!own?.buggy_requested ? "checked" : ""}><span>Walking</span></label><label><input type="radio" name="travel" value="buggy" ${own?.buggy_requested ? "checked" : ""}><span>Buggy requested</span></label></div></fieldset><label>Tee-time preference <small>Optional</small><select name="teeWindow">${["dont_mind","first","middle","end"].map(v=>`<option value="${v}" ${v===(own?.preferred_tee_time||"dont_mind") ? "selected" : ""}>${preference(v)}</option>`).join("")}</select></label><p>We’ll do our best to match your preference.</p>${full ? '<p>If a place opens, you’ll automatically move into the playing list.</p>' : ""}<button class="button button-primary full-button" type="submit">${full ? "Confirm reserve place" : "Confirm booking"}</button><p class="form-status" role="status"></p></form>`);
+    d.querySelector("form").onsubmit=async e=>{
+      e.preventDefault();const button=d.querySelector('[type="submit"]'),status=d.querySelector(".form-status"),data=new FormData(e.currentTarget);button.disabled=true;button.textContent="Saving booking…";
+      try{
+        const fresh=await saveBooking(model,true,data.get("travel")==="buggy",data.get("teeWindow"));
+        if(!fresh || fresh.bookingError || fresh.session?.user.id !== model.session.user.id || !["playing","reserve"].includes(fresh.rsvp?.status)) throw new Error("Your request was sent, but we could not check the confirmation. Close this message and refresh before trying again.");
+        d.close();window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id,model:fresh}}));
+        dialog(fresh.rsvp?.status === "reserve" ? "You’re on the reserve list" : "Your place is booked",`<p>${esc(model.event.name)} · ${esc(date(model.event.event_date))}</p><p>${fresh.rsvp?.buggy_requested ? "Buggy requested" : "Walking"} · ${esc(preference(fresh.rsvp?.preferred_tee_time))} tee-time preference</p><p>${esc(payment(fresh.event,fresh.rsvp).label)}</p><a class="button button-primary full-button" href="${eventUrl(model.event.id)}">View my booking</a>`);
+      }catch(error){status.textContent=error.message||"Your booking could not be saved. Please try again.";button.disabled=false;button.textContent="Try again";}
+    };
+  };
+  const withdraw = model => {
+    if(model.locked) {contact(model.event);return;}
+    const reserve=model.rsvp?.status==="reserve";
+    const d=dialog(reserve ? "Leave the reserve list?" : "Confirm you can’t play",`<p>${esc(model.event.name)} · ${esc(date(model.event.event_date))}</p><p>${model.rsvp?.status === "playing" ? "Your place may be offered to someone on the reserve list." : "You can change your choice again while bookings are open."}</p><button id="confirmWithdrawal" class="button button-primary" type="button">${reserve ? "Leave reserve list" : "Confirm I can’t play"}</button><p class="form-status" role="status"></p>`);
+    d.querySelector("#confirmWithdrawal").onclick=async e=>{e.currentTarget.disabled=true;try{const fresh=await saveBooking(model,false,model.rsvp?.buggy_requested,model.rsvp?.preferred_tee_time);if(fresh.bookingError || fresh.rsvp?.status!=="not_playing" || fresh.session?.user.id!==model.session.user.id)throw new Error("Please refresh to check your booking.");d.close();window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id,model:fresh}}));}catch(error){d.querySelector(".form-status").textContent=error.message;e.target.disabled=false;}};
+  };
+  const showRoster = async model => {
+    const d=dialog("Who’s playing",'<p id="simpleRosterStatus" role="status">Loading the player list…</p><div id="simpleRosterList"></div>');
+    try{const rows=await request(client.rpc("get_event_rsvp_roster",{p_event_id:model.event.id}));d.querySelector("#simpleRosterStatus").textContent=model.event.name;d.querySelector("#simpleRosterList").innerHTML=["playing","reserve"].map(status=>`<h3>${status==="playing" ? "Playing" : "Reserve list"}</h3><ol class="simple-player-list">${rows.filter(p=>p.status===status).map(p=>`<li>${esc(p.full_name)}${p.member_id===model.session?.user.id ? " (You)" : ""}</li>`).join("")||"<li>No members yet</li>"}</ol>`).join("");}catch{d.querySelector("#simpleRosterStatus").textContent="The player list could not be loaded. Please close and try again.";}
+  };
+  const chooseScorer = async model => {
+    if(!model.card || model.card.status!=="ready") {location.href=scoreUrl(model);return;}
+    const d=dialog("Who will enter the scores?",'<p>Choose one member to score for your group.</p><div id="simpleScorerChoices">Loading your group…</div><p class="form-status" role="status"></p>');
+    try{
+      const players=await request(client.from("event_scorecard_players").select("member_id,display_name").eq("scorecard_id",model.card.id));
+      d.querySelector("#simpleScorerChoices").innerHTML=players.filter(p=>p.member_id).map(p=>`<button class="button button-outline full-button" type="button" data-scorer-id="${esc(p.member_id)}">${esc(p.display_name)}${p.member_id===model.session.user.id ? " (You)" : ""}</button>`).join("");
+      d.querySelectorAll("[data-scorer-id]").forEach(b=>b.onclick=async()=>{d.querySelectorAll("[data-scorer-id]").forEach(x=>x.disabled=true);try{await request(client.rpc("select_scorecard_scorer",{target_event_id:model.event.id,target_scorer_id:b.dataset.scorerId}));d.close();window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id}}));}catch(error){d.querySelector(".form-status").textContent=error.message;d.querySelectorAll("[data-scorer-id]").forEach(x=>x.disabled=false);}});
+    }catch{d.querySelector("#simpleScorerChoices").textContent="Your group could not be loaded. Please close and try again.";}
+  };
+  const directions = event => {
+    const destination=[event.venue,event.address].filter(Boolean).join(", "),encoded=encodeURIComponent(destination);
+    dialog("Directions",`<p>${esc(destination)}</p><div class="simple-actions"><a class="button button-primary" href="https://www.google.com/maps/dir/?api=1&destination=${encoded}" target="_blank" rel="noopener">Google Maps</a><a class="button button-outline" href="https://maps.apple.com/?daddr=${encoded}&dirflg=d" target="_blank" rel="noopener">Apple Maps</a><a class="button button-outline" href="https://waze.com/ul?q=${encoded}&navigate=yes" target="_blank" rel="noopener">Waze</a></div>`);
+  };
+  const activate = (action,model) => {
+    if(action.kind==="book")openBooking(model);else if(action.kind==="contact")contact(model.event);else if(action.kind==="scorer")chooseScorer(model);else if(action.kind==="retry")window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id}}));else location.href=action.href;
+  };
+  const promotions = async () => {if(!client)return;try{const auth=await request(client.auth.getSession());if(!auth?.session)return;const rows=await request(client.rpc("get_my_unseen_rsvp_promotions"));const p=rows?.[0];if(!p || activeDialog)return;const d=dialog("A place has opened for you",`<p>You’ve moved from reserve to the playing list for <strong>${esc(p.event_name)}</strong>.</p><button class="button button-primary full-button" id="promotionSeen" type="button">View my booking</button><p class="form-status" role="status"></p>`);d.querySelector("#promotionSeen").onclick=async()=>{try{await request(client.rpc("mark_my_rsvp_promotion_seen",{p_id:p.id}));location.href=eventUrl(p.event_id);}catch{d.querySelector(".form-status").textContent="Please try again.";}};}catch{}};
+  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,payment,bookingLabel,nextAction,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
+})();
+</script><script>(() => {
+  const F=window.BarfordMemberFlow,client=window.BarfordSupabase,host=document.getElementById('memberPayments'),id=new URLSearchParams(location.search).get('event');
+  if(!F||!host)return;
+  if(id){const back=document.getElementById('paymentBack');back.href=F.eventUrl(id);back.textContent='← Back to my event';}
+  async function load(){
+    try{
+      const auth=await F.request(client.auth.getSession());
+      if(!auth.session){host.innerHTML=`<article class="simple-card"><h2>Sign in to see your payments</h2><a class="button button-primary" href="${F.loginUrl(location.href)}">Sign in</a></article>`;return;}
+      const query=client.from('rsvps').select('event_id,status,payment_status').eq('member_id',auth.session.user.id);
+      const rsvps=await F.request(id?query.eq('event_id',id):query);
+      const ids=id?[id]:rsvps.filter(r=>r.status==='playing'||['paid','refunded','waived'].includes(r.payment_status)).map(r=>r.event_id);
+      if(!ids.length){host.innerHTML='<article class="simple-card"><h2>No event payments to show</h2><p>Your payments will appear here when you book an event.</p><a class="button button-primary" href="events.html">View events</a></article>';return;}
+      const events=await F.request(client.from('events').select('*').in('id',ids).order('event_date'));
+      host.innerHTML=events.map(e=>{const r=rsvps.find(x=>x.event_id===e.id),pay=F.payment(e,r);return `<article class="simple-card"><h2>${F.esc(e.name)}</h2><p>${F.esc(F.date(e.event_date))}</p><p class="simple-payment-state"><strong>${F.esc(pay.label)}</strong></p>${pay.due?'<p>Online payment is not available yet. Ask the committee for payment instructions. They will mark your payment as paid when it is confirmed.</p>':e.status==='cancelled'&&r?.payment_status==='paid'?'<p>If you need to discuss a refund, please ask the committee.</p>':r?.status==='reserve'?'<p>You do not need to pay while waiting for a place.</p>':''}${pay.due?`<button class="button button-primary" data-payment-help="${F.esc(e.id)}">Ask for payment details</button><details class="simple-details"><summary>Already paid?</summary><p>Your payment has not yet been marked as paid. Ask the committee to check it before making another payment.</p><button class="button button-outline" data-payment-check="${F.esc(e.id)}">Ask the committee to check</button></details>`:''}<a class="button button-outline" href="${F.eventUrl(e.id)}">Back to event</a></article>`;}).join('')||'<p>The event could not be found.</p>';
+      host.querySelectorAll('[data-payment-help],[data-payment-check]').forEach(b=>b.onclick=()=>F.contact(events.find(e=>e.id===(b.dataset.paymentHelp||b.dataset.paymentCheck)),b.dataset.paymentCheck?'check a payment I have already made':'get the payment details'));
+    }catch{host.innerHTML='<article class="simple-card"><h2>Payments could not be checked</h2><p>Please try again to see the latest payment status.</p><button class="button button-primary" id="retryPayments">Try again</button></article>';host.querySelector('#retryPayments').onclick=load;}
+  }
+  load();
+})();
+</script>
+  <script>(() => {
+  const mobileQuery = window.matchMedia("(max-width: 850px)");
+  const currentPage = location.pathname.split("/").pop() || "index.html";
+
+  if (currentPage === "gallery.html") {
+    document.title = "Gallery | Barford Golf Society";
+    const heading = document.querySelector(".page-hero h1");
+    if (heading) heading.textContent = "Gallery";
+    document.querySelectorAll("h2").forEach(title => {
+      if (title.textContent.trim() === "Society gallery") title.textContent = "Society photos";
+      if (title.textContent.trim() === "Upload your golf photos") title.textContent = "Add your golf photos";
+    });
+    const upload = document.querySelector(".upload-card button");
+    if (upload) upload.textContent = "Upload photos";
+  }
+  if (currentPage === "worldevents.html") {
+    document.title = "Society Trips | Barford Golf Society";
+    const heading = document.querySelector(".page-hero h1");
+    if (heading) heading.textContent = "Society trips";
+    const featured = [...document.querySelectorAll("h2")].find(title => title.textContent.trim() === "Featured trip ideas");
+    if (featured) featured.textContent = "Future society trips";
+  }
+  if (currentPage === "index.html") {
+    document.querySelectorAll('a[href="events.html"]').forEach(link => {
+      if (link.textContent.trim() === "RSVP to next event") link.textContent = "Book my place";
+      if (link.textContent.trim() === "RSVP now") link.textContent = "View event";
+    });
+  }
+
+  document.querySelectorAll(".menu-button").forEach(button => {
+    if (button.querySelector(".menu-button-label")) return;
+    const bars = document.createElement("span");
+    bars.className = "menu-button-lines";
+    [...button.children].filter(child => !child.classList.contains("sr-only")).forEach(child => bars.appendChild(child));
+    const label = document.createElement("span");
+    label.className = "menu-button-label";
+    label.textContent = "More";
+    button.append(bars, label);
+    button.setAttribute("aria-label", "Open more pages");
+    button.addEventListener("click", () => {
+      const open = button.getAttribute("aria-expanded") === "true";
+      label.textContent = open ? "Close" : "More";
+      button.setAttribute("aria-label", open ? "Close more pages" : "Open more pages");
+    });
+  });
+
+  document.querySelectorAll('a[href="worldevents.html"]').forEach(link => {
+    if (link.textContent.trim() === "World Events") link.textContent = "Society Trips";
+  });
+
+  const quickNav = document.querySelector(".mobile-quick-nav");
+  if (quickNav && !quickNav.dataset.playerNav) {
+    const items = [
+      ["index.html", "⌂", "Dashboard"],
+      ["events.html", "▣", "Events"],
+      ["scores.html", "♛", "Leaderboard"],
+      ["gallery.html", "▧", "Gallery"]
+    ];
+    const current = currentPage;
+    quickNav.innerHTML = items.map(([href, icon, label]) =>
+      `<a href="${href}" class="${current === href ? "active" : ""}"${current === href ? ' aria-current="page"' : ""}><span class="quick-icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`
+    ).join("");
+  }
+
+  // Admin visibility is handled once by supabase-client.js; avoid a duplicate profile request.\n
+  document.querySelectorAll(".rsvp-event-button").forEach(button => {
+    if (button.textContent.trim() === "RSVP") button.textContent = "Choose yes or no";
+  });
+  document.querySelectorAll(".event-button-row button").forEach(button => {
+    if (button.textContent.trim() === "Course video") button.textContent = "Watch course video";
+    if (button.textContent.trim() === "More details") button.textContent = "View event details";
+  });
+  document.querySelectorAll(".payment-status.due").forEach(status => {
+    status.textContent = "Payment required";
+  });
+
+  document.querySelectorAll(".event-rsvp-section").forEach(section => {
+    const list = section.querySelector(".public-rsvp-list");
+    if (!list || list.children.length <= 5) return;
+    const button = document.createElement("button");
+    button.className = "button button-outline players-toggle";
+    button.type = "button";
+    const total = list.children.length;
+    button.textContent = `View all ${total} players`;
+    button.setAttribute("aria-expanded", "false");
+    button.addEventListener("click", () => {
+      const open = list.classList.toggle("is-expanded");
+      button.setAttribute("aria-expanded", String(open));
+      button.textContent = open ? "Show fewer players" : `View all ${total} players`;
+    });
+    section.appendChild(button);
+  });
+
+  const message = document.createElement("div");
+  message.className = "site-message";
+  message.setAttribute("role", "status");
+  message.setAttribute("aria-live", "polite");
+  document.body.appendChild(message);
+  window.showSiteMessage = text => {
+    message.textContent = text;
+    message.classList.add("show");
+    clearTimeout(window.siteMessageTimer);
+    window.siteMessageTimer = setTimeout(() => message.classList.remove("show"), 2600);
+  };
+})();
+</script>
+</body>
+</html>
