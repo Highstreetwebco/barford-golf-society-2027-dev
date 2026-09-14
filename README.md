@@ -1,15 +1,7 @@
-# Barford Golf Society 2027 — Compact Events Layout
+# Barford Golf Society 2027
 
-The Events page is now organised in a single-line desktop layout and a clean stacked mobile layout.
+Development website for the 2027 Barford Golf Society season.
 
-Each event shows:
-- date
-- event name and course
-- first tee time
-- available slots shown as remaining/total
-- RSVP button
-- optional Course video button
-- More details button
-- full player list with Paid or Payment Due status
+## Release verification
 
-Course videos are opened only when requested and are no longer always displayed.
+The site-update repair is being tested using browser-based checks of old-cache recovery, the member/guest gateway, offline shell fallback and the live GitHub Pages URL. A successful source commit alone is not evidence that the browser experience has updated.
