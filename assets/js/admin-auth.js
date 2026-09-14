@@ -521,7 +521,15 @@
     if(error){setStatus("#adminTeeStatus",error.message);return;}
     const { error: workflowError } = await client.from("events").update({ tee_times_status: "published", updated_at: new Date().toISOString() }).eq("id", eventId);
     if (workflowError) { setStatus("#adminTeeStatus", workflowError.message); return; }
-    setStatus("#adminTeeStatus","Tee times published. When you are ready, use Create group scorecards below — no scorer has been chosen.");
+    const {data:cards,error:cardCheckError}=await client.from('event_scorecards').select('id').eq('event_id',eventId).limit(1);
+    if(cardCheckError){setStatus('#adminTeeStatus','Tee times published, but scorecards could not be checked. Use Create group scorecards below.');return;}
+    if(!cards?.length){
+      const {error:prepareError}=await client.rpc('prepare_event_scorecards',{target_event_id:eventId});
+      if(prepareError){setStatus('#adminTeeStatus','Tee times published. Scorecards need attention before members can choose a scorer: '+prepareError.message);return;}
+      const {error:publishError}=await client.from('events').update({scorecards_status:'published',results_status:'collecting',updated_at:new Date().toISOString()}).eq('id',eventId);
+      if(publishError){setStatus('#adminTeeStatus','Scorecards prepared, but their publication status could not be saved. Use Create group scorecards below to retry.');return;}
+    }
+    setStatus('#adminTeeStatus','Tee times published. Group scorecards are on members’ dashboards, ready for each group to choose its scorer.');
   });
 
   let dropoutRsvps = [];

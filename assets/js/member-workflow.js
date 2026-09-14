@@ -155,7 +155,22 @@
     try{
       const players=await request(client.from("event_scorecard_players").select("member_id,display_name").eq("scorecard_id",model.card.id));
       d.querySelector("#simpleScorerChoices").innerHTML=players.filter(p=>p.member_id).map(p=>`<button class="button button-outline full-button" type="button" data-scorer-id="${esc(p.member_id)}">${esc(p.display_name)}${p.member_id===model.session.user.id ? " (You)" : ""}</button>`).join("");
-      d.querySelectorAll("[data-scorer-id]").forEach(b=>b.onclick=async()=>{d.querySelectorAll("[data-scorer-id]").forEach(x=>x.disabled=true);try{await request(client.rpc("select_scorecard_scorer",{target_event_id:model.event.id,target_scorer_id:b.dataset.scorerId}));d.close();window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id}}));}catch(error){d.querySelector(".form-status").textContent=error.message;d.querySelectorAll("[data-scorer-id]").forEach(x=>x.disabled=false);}});
+      d.querySelectorAll("[data-scorer-id]").forEach(b=>b.onclick=()=>{
+        const player=players.find(p=>p.member_id===b.dataset.scorerId);
+        if(!player)return;
+        const confirmation=dialog('Confirm your group’s scorer',`<p>You are confirming that <strong>${esc(player.display_name)}</strong> will score for your group in <strong>${esc(model.event.name)}</strong>.</p><p>Are you sure you want to select ${esc(player.display_name)} to score?</p><p>The other players can view the live scorecard, but only your scorer can enter scores.</p><div class="simple-actions"><button class="button button-outline" type="button" id="cancelScorerSelection">Go back</button><button class="button button-primary" type="button" id="confirmScorerSelection">Yes, select ${esc(player.display_name)}</button></div><p class="form-status" role="status"></p>`);
+        confirmation.querySelector('#cancelScorerSelection').onclick=()=>chooseScorer(model);
+        let saving=false;
+        confirmation.querySelector('#confirmScorerSelection').onclick=async()=>{
+          if(saving)return;saving=true;
+          confirmation.querySelectorAll('button').forEach(x=>x.disabled=true);
+          try{
+            const saved=await request(client.rpc('select_scorecard_scorer',{target_event_id:model.event.id,target_scorer_id:player.member_id}));
+            if(!saved||saved.scorer_id!==player.member_id)throw Error('The scorer selection could not be confirmed. Please refresh and check your group.');
+            confirmation.close();window.dispatchEvent(new CustomEvent('barford-booking-changed',{detail:{eventId:model.event.id}}));
+          }catch(error){confirmation.querySelector('.form-status').textContent=error.message;confirmation.querySelectorAll('button').forEach(x=>x.disabled=false);saving=false;}
+        };
+      });
     }catch{d.querySelector("#simpleScorerChoices").textContent="Your group could not be loaded. Please close and try again.";}
   };
   const directions = event => {

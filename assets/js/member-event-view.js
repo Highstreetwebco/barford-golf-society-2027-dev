@@ -8,7 +8,9 @@
     const {event,rsvp,session,group,card}=model,action=F.nextAction(model),pay=F.payment(event,rsvp);
     const booked=['playing','reserve'].includes(rsvp?.status),upcoming=event.event_date>=F.today()&&event.status==='scheduled';
     const matchDay=compact&&session&&event.event_date===F.today()&&event.status!=='cancelled'&&(card||rsvp?.status==='playing');
-    const scoreAction=matchDay&&card&&(action.kind==='scorer'||action.href===F.scoreUrl(model));
+    const groupAnnounced=compact&&session&&upcoming&&rsvp?.status==='playing'&&event.tee_times_status==='published';
+    const dashboardCard=matchDay||groupAnnounced;
+    const scoreAction=dashboardCard&&card&&(action.kind==='scorer'||action.href===F.scoreUrl(model));
     const showPrimary=!scoreAction&&(compact||action.kind!=='link'||action.href!==F.eventUrl(event.id));
     const own=group.find(p=>p.is_you),tee=own?.tee_time||group[0]?.tee_time;
     const notes=String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[0].trim();
@@ -16,12 +18,12 @@
     const dateTicket=Number.isNaN(date.getTime())?'':`<div class="clubhouse-date-ticket" aria-hidden="true"><small>${date.toLocaleDateString('en-GB',{month:'short'})}</small><strong>${date.getDate()}</strong><small>${date.getFullYear()}</small></div>`;
     const reason=event.cancel_reason||String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[1]?.trim();
     host.innerHTML=`${event.test_mode_active?'<p class="simple-notice"><strong>Practice event</strong> — this is a test round.</p>':''}
-      ${matchDay?`<section class="simple-card" id="dashboardScorecard" aria-labelledby="dashboardScorecardTitle">
-        <p class="eyebrow">Playing today</p><h2 id="dashboardScorecardTitle">Today’s scorecard</h2>
+      ${dashboardCard?`<section class="simple-card" id="dashboardScorecard" aria-labelledby="dashboardScorecardTitle">
+        <p class="eyebrow">${matchDay?'Playing today':'Tee groups announced'}</p><h2 id="dashboardScorecardTitle">${matchDay?'Today’s scorecard':'Your group scorecard'}</h2>
         <p><strong>${esc(event.name)}</strong>${tee?` · Tee off ${esc(F.time(tee))}`:''}</p>
         ${card?`<a class="button button-primary full-button" href="${F.scoreUrl(model)}">Open my group’s scorecard</a>
         <p>${['submitted','locked'].includes(card.status)?'Your group’s scores are available to view.':card.scorer_id===session.user.id?'You are keeping score. Open your card to start or continue your round.':card.scorer_id?'You can follow the scorecard here. Your chosen scorer enters the scores.':'Everyone in your group can open this card. Choose one person to enter the scores.'}</p>
-        ${card.status==='ready'&&!card.scorer_id?button('scorer','Choose our scorer'):''}`:
+        ${card.status==='ready'?button('scorer',card.scorer_id?'Change our scorer':'Choose our scorer'):''}${card.scorer_id?`<p><strong>Scorer:</strong> ${esc(group.find(p=>p.member_id===card.scorer_id)?.full_name||(card.scorer_id===session.user.id?'You':'A member of your group'))}</p>`:''}`:
         `<p role="status">${model.cardError?'We couldn’t load your scorecard. Try again to check it.':'Your scorecard will appear here when the committee has prepared your group.'}</p>${button('refresh-card','Check for my scorecard')}`}
       </section>`:''}
       <article class="simple-card simple-next-event">
