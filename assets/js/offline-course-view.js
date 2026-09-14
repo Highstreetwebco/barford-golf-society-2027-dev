@@ -4,7 +4,7 @@
   const params = new URLSearchParams(location.search);
   const activeCard = (() => { try { return JSON.parse(localStorage.getItem("barford-fast-scorecard-v4") || "null"); } catch { return null; } })();
   const redTee=params.get('tee')==='women';
-  const scoringReturn=()=>{const q=new URLSearchParams({hole:String(hole),tee:redTee?'women':'men'});if(eventId)q.set('event',eventId);if(params.get('card')||activeCard?.card?.id)q.set('card',params.get('card')||activeCard.card.id);return 'scoring.html?'+q;};
+  const scoringReturn=()=>{const q=new URLSearchParams({hole:String(hole),tee:redTee?'women':'men'});if(eventId)q.set('event',eventId);if(params.get('card')||activeCard?.card?.id)q.set('card',params.get('card')||activeCard.card.id);return eventId?'scoring.html?'+q:'events.html';};
   const eventId = params.get("event") || activeCard?.card?.event_id || null;
   let hole = Math.min(18, Math.max(1, Number(params.get("hole")) || 1));
   let data = null;
@@ -75,7 +75,7 @@
     $("nextHole").onclick = () => { if (hole < 18) { hole++; paint(); } };
     $("quickScore").onclick = () => location.href = scoringReturn();
     $("offlineBackToScoring").onclick = () => location.href = scoringReturn();
-    $("exitGps").onclick = () => location.href = scoringReturn();
+    $("exitGps").onclick = () => location.href = params.get('from')==='scoring'?scoringReturn():eventId?'event.html?event='+encodeURIComponent(eventId):'events.html';
     $("recenterMap").disabled = true;
     $('showSavedMap').onclick=()=>{document.querySelector('.offline-connection-modal').hidden=true;document.querySelector('.offline-hole-visual').hidden=false;};
     paint();

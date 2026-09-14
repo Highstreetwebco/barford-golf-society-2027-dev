@@ -2,6 +2,7 @@
   'use strict';
   const F=window.BarfordMemberFlow,M=window.BarfordScoreModel,S=window.BarfordScoreSafety,client=window.BarfordSupabase,$=id=>document.getElementById(id);
   const params=new URLSearchParams(location.search),requestedCard=params.get('card'),requestedEvent=params.get('event');
+  if(requestedEvent){for(const id of ['scoreBack','scoreEventLink'])if(document.getElementById(id))document.getElementById(id).href=F.eventUrl(requestedEvent);}
   let session,model,selected,hole=1,view='card',loading=false,flushing=null,refreshing=null,busy=false,syncTimer,storageOK=true,lastSyncError="",verifiedCard=null,offlineMemberId=null,identityBlocked=false,saveVersion=0;
   const show=id=>$(id)?.classList.remove('hidden'),hide=id=>$(id)?.classList.add('hidden');
   const activeUserId=()=>session?.user?.id||offlineMemberId;
