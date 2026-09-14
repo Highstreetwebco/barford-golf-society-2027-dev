@@ -450,3 +450,12 @@ html body.clubhouse .live-card-row button small{font-size:.72rem}
   html body.clubhouse .mobile-quick-nav a>span:last-child{font-size:.73rem!important}
 }
 @media(prefers-reduced-motion:reduce){html body.clubhouse *,html body.clubhouse *::before,html body.clubhouse *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Shared header and role-checked admin shortcut. */
+html body.clubhouse .header-admin-link{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:8px 14px;border:1px solid var(--club-gold);border-radius:8px;color:var(--club-green);font-size:.85rem;font-weight:750;text-decoration:none;white-space:nowrap;flex-shrink:0}
+html body.clubhouse .header-admin-link[aria-current]{background:var(--club-green);color:#fff}
+html body.clubhouse .header-admin-link[hidden],html body.clubhouse a[hidden]{display:none!important}
+html body.clubhouse .site-nav a[aria-current="location"]{background:#edf3ee}
+@media(max-width:1050px) and (min-width:851px){html body.clubhouse .header-inner{gap:12px}html body.clubhouse .desktop-primary{gap:12px}html body.clubhouse .brand-wordmark{display:none}}
+@media(max-width:850px){html body.clubhouse .header-admin-link{margin-left:auto}html body.clubhouse .header-inner>.menu-button{margin-left:auto}html body.clubhouse.is-admin .header-inner>.menu-button{margin-left:0}}
+@media(max-width:520px){html body.clubhouse.is-admin .brand-wordmark{display:none}html body.clubhouse .header-admin-link{padding:8px 12px}}

@@ -54,18 +54,37 @@
     document.head.appendChild(personalThemeStyle);
   }
   window.BarfordInitialSession = window.BarfordSupabase.auth.getSession();
-  window.BarfordMemberContext = (async () => {
-    const authResult=await window.BarfordInitialSession;
-    if(authResult.error)throw authResult.error;
-    const session=authResult.data.session;
-    try{if(session)localStorage.setItem("barford-score-active-member",session.user.id);else localStorage.removeItem("barford-score-active-member");}catch{}
-    if (!session) return { session: null, profile: null };
-    const { data: profile, error } = await window.BarfordSupabase.from("profiles")
-      .select(document.getElementById("accountContent") ? "*" : "id,full_name,is_admin,photo_url,theme_primary,theme_accent").eq("id", session.user.id).maybeSingle();
-    if(error)throw error;
-    document.body.classList.toggle("is-admin", Boolean(profile?.is_admin));
-    return { session, profile };
-  })();
+  let contextRevision = 0;
+  const publishContext = context => {
+    document.body.classList.toggle('is-admin',Boolean(context.session && context.profile?.is_admin === true));
+    window.dispatchEvent(new CustomEvent('barford-member-context',{detail:context}));
+    return context;
+  };
+  const loadContext = async session => {
+    const revision = ++contextRevision;
+    publishContext({session:null,profile:null});
+    try {
+      try{if(session)localStorage.setItem('barford-score-active-member',session.user.id);else localStorage.removeItem('barford-score-active-member');}catch{}
+      if (!session) return {session:null,profile:null};
+      const {data:profile,error}=await window.BarfordSupabase.from('profiles')
+        .select(document.getElementById('accountContent')?'*':'id,full_name,is_admin,photo_url,theme_primary,theme_accent').eq('id',session.user.id).maybeSingle();
+      if(error)throw error;
+      const context={session,profile};
+      if(revision===contextRevision)publishContext(context);
+      return context;
+    } catch(error) { if(revision===contextRevision)publishContext({session:null,profile:null}); throw error; }
+  };
+  window.BarfordMemberContext = window.BarfordInitialSession.then(result=>{
+    if(result.error)throw result.error;
+    return loadContext(result.data.session);
+  });
+  window.BarfordSupabase.auth.onAuthStateChange((event,session)=>{
+    if(event==='INITIAL_SESSION')return;
+    // Hide privileged navigation immediately; fetch outside the auth callback lock.
+    ++contextRevision;
+    publishContext({session:null,profile:null});
+    setTimeout(()=>{window.BarfordMemberContext=loadContext(session);window.BarfordMemberContext.catch(()=>{});},0);
+  });
   const personalThemeScript = document.createElement("script");
   personalThemeScript.src = "assets/js/personal-theme.js?v=clubhouse76";
   document.body.appendChild(personalThemeScript);

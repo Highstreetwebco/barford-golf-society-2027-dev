@@ -16,6 +16,9 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 const formatChange = value => value == null ? "DNP" : value > 0 ? `+${value}` : `${value}`;
 const latestResult = (playerId) => [...state.data.rounds].reverse().map(r => r.results.find(x => x.playerId === playerId)).find(Boolean);
 
+const originEvent = new URLSearchParams(location.search).get('event');
+if(originEvent){const back=document.createElement('a');back.className='simple-back';back.href=window.BarfordMemberFlow.eventUrl(originEvent);back.textContent='← Back to my event';document.getElementById('main-content').prepend(back);}
+
 async function refresh() {
   const auth=await window.BarfordMemberFlow.request(window.BarfordSupabase.auth.getSession());
   state.currentUserId=auth.session?.user?.id||null;
