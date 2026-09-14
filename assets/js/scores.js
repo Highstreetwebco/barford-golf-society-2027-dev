@@ -230,7 +230,7 @@ function renderLeaderboard() {
 
     node.querySelector(".rank-badge").textContent = player.position;
     node.querySelector(".player-position-label").textContent = player.position;
-    node.querySelector(".player-name").textContent = player.name;
+    node.querySelector(".player-name").textContent = player.name+(player.id===state.currentUserId?" (You)":"");
     const initials = player.name.split(/\s+/).filter(Boolean).slice(0,2).map(part => part[0]).join("").toUpperCase();
     node.querySelector(".leaderboard-initials").textContent = initials || "BG";
     const avatar = node.querySelector(".leaderboard-avatar img");
@@ -346,10 +346,10 @@ function renderRound() {
   const round = state.data.rounds.find(r => r.id === state.selectedRoundId);
   const list = $("#roundList"); list.innerHTML = "";
   if (!round) { $("#roundSummary").innerHTML = state.eventResultsUnavailable?'<strong>Results are not published for this event yet.</strong><p>They will appear after the committee approves the scores. You can choose another round above.</p>':'<strong>No rounds created</strong>'; return; }
-  const played = round.results.filter(result => Number.isFinite(result.points));
-  const winner = [...played].sort((a,b)=>b.points-a.points)[0];
+  const played = round.results.filter(result => !result.dnp && Number.isFinite(result.points));
+  const winner = state.data.achievements.find(a=>a.roundId===round.id&&a.type==='win');
   const winnerName = state.data.players.find(p => p.id === winner?.playerId)?.name ?? "Not recorded";
-  $("#roundSummary").innerHTML = `<strong>${escapeHtml(round.name)}</strong><br>${round.date || "Date not set"} · Winner: ${escapeHtml(winnerName)}`;
+  $("#roundSummary").innerHTML = `<strong>${escapeHtml(round.name)}</strong><br>${escapeHtml(friendlyDate(round.date))}<p>${round.locked===true?'Published results':'Awaiting committee approval'} · ${played.length} players</p>${round.locked===true?`<p>Winner: ${escapeHtml(winnerName)}</p>`:''}`;
 
   if(round.locked===true&&played.some(result=>!result.dnp)) {
     const share=document.createElement('button');share.type='button';share.className='button button-outline';share.textContent='Share round report';
@@ -361,10 +361,10 @@ function renderRound() {
     const player = state.data.players.find(p => p.id === result.playerId);
     if (!player || !player.name.toLowerCase().includes(state.search)) return;
     const row = document.createElement("article"); row.className = "round-row";
-    row.innerHTML = `<div><h4>${escapeHtml(player.name)}</h4><div class="metric-line">
-      <span>HCP <strong>${result.handicapUsed}</strong></span><span>Points <strong>${result.dnp ? "DNP" : result.points}</strong></span>
-      <span>Adjustment <strong class="change ${changeClass(result.adjustment)}">${formatChange(result.adjustment)}</strong></span>
-      <span>Next HCP <strong>${result.nextHandicap}</strong></span></div></div>`;
+    row.innerHTML = `<details class="round-result-detail"><summary><strong>${escapeHtml(player.name)}${player.id===state.currentUserId?' (You)':''}</strong><span>${result.dnp?'Did not play':Number.isFinite(result.points)?result.points+' pts':'Not recorded'}</span></summary><div class="metric-line">
+      <span>Round handicap <strong>${result.handicapUsed ?? '—'}</strong></span>
+      <span>Handicap change <strong class="change ${changeClass(result.adjustment)}">${formatChange(result.adjustment)}</strong></span>
+      <span>Next handicap <strong>${result.nextHandicap ?? '—'}</strong></span></div></details>`;
     list.append(row);
   });
 }
