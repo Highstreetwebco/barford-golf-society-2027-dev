@@ -7,7 +7,7 @@
   <meta name="description" content="Barford Golf Society 2027 leaderboard, handicaps and round results.">
   <title>League Table | Barford Golf Society 2027</title>
   <link rel="stylesheet" href="assets/dist/styles.25b6981ca7d7.css" data-css-sources="assets/css/styles.css">
-<link rel="stylesheet" href="assets/dist/member-ui.4dbbe6d14219.css" data-css-sources="assets/css/accessible-mobile.css,assets/css/personal-theme.css,assets/css/member-simple.css,assets/css/clubhouse.css,assets/css/scores.css,assets/css/mobile-menu-fix.css" data-ui-ready data-personal-theme>
+<link rel="stylesheet" href="assets/dist/member-ui.2b6e36cc1464.css" data-css-sources="assets/css/accessible-mobile.css,assets/css/personal-theme.css,assets/css/member-simple.css,assets/css/clubhouse.css,assets/css/scores.css,assets/css/mobile-menu-fix.css" data-ui-ready data-personal-theme>
 <link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin></head>
 <body class="clubhouse page-scores">
   <a class="skip-link" href="#main-content">Skip to league table</a>
@@ -42,6 +42,13 @@
       <button class="nav-tab" data-view="statistics" type="button">Statistics</button>
     </nav>
     <section id="leaderboardView" class="view is-active leaderboard-first" aria-labelledby="leaderboardHeading"><button id="findMyPosition" class="button button-outline" type="button" hidden>Find my position</button><p id="myPositionStatus" role="status"></p>
+      <section class="search-panel compact-search" aria-label="Player search">
+        <label for="playerSearch">Find a player</label>
+        <div class="search-control">
+          <span aria-hidden="true">⌕</span>
+          <input id="playerSearch" type="search" inputmode="search" autocomplete="off" placeholder="Type a player name">
+        </div>
+      </section>
       <section class="league-table-panel royal-championship-board" aria-label="Barford Golf Society championship standings">
         <header class="league-table-brand royal-board-heading">
           <img src="assets/images/barford-golf-society-logo-320.webp" alt="" width="76" height="76">
@@ -85,13 +92,7 @@
           </article>
         </div>
       </section>
-      <section class="search-panel compact-search" aria-label="Player search">
-        <label for="playerSearch">Find a player</label>
-        <div class="search-control">
-          <span aria-hidden="true">⌕</span>
-          <input id="playerSearch" type="search" inputmode="search" autocomplete="off" placeholder="Type a player name">
-        </div>
-      </section>
+
       <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
     </section>
 
@@ -140,7 +141,7 @@
           <span class="leaderboard-avatar"><img alt="" hidden><span class="leaderboard-initials"></span></span>
           <span class="player-main"><strong class="player-name"></strong><small>Position <span class="player-position-label"></span></small></span>
         </span>
-        <span class="points-block"><strong class="player-points"></strong><span>Total points</span></span>
+        <span class="points-block"><strong class="player-points"></strong><span>Season points</span></span>
         <span class="player-meta championship-metrics">
           <span class="championship-metric round-handicap"><small>Round handicap</small><strong></strong></span>
           <span class="championship-metric round-points"><small>Round points</small><strong></strong></span>
@@ -157,8 +158,8 @@
   <script src="assets/dist/supabase-2.116.0.5d9469dec2ac.js" defer></script>
   <script src="assets/dist/supabase-config.6f1d58a2a0b2.js" defer></script>
   <script src="assets/dist/supabase-client.bd4aa0131b3e.js" defer></script>
-  <script src="assets/dist/member-workflow.d1b1985b027b.js" defer></script>
-<script type="module" src="assets/dist/scores.6aaeb5fa1605.js"></script>
+  <script src="assets/dist/member-workflow.361f89323430.js" defer></script>
+<script type="module" src="assets/dist/scores.d039487ef9c9.js"></script>
 <script src="assets/dist/accessible-mobile.dea27d303f10.js" defer></script>
 
 </body>

@@ -65,11 +65,11 @@ function documentStub(){
  d.body=new Element({},d);d.parse(fs.readFileSync(path.join(root,'scoring.html'),'utf8'));return d;
 }
 const settle=async()=>{for(let i=0;i<15;i++)await new Promise(resolve=>setImmediate(resolve));};
-function scoringHarness({offline=false,cardStatus='in_progress',view='card',hole=7,networkFailure=false,submitFailure=false,syncFailure=false,authFailure=null,rememberedMember=true}={}){
+function scoringHarness({offline=false,cardStatus='in_progress',view='card',hole=7,networkFailure=false,submitFailure=false,syncFailure=false,authFailure=null,rememberedMember=true,scorerId='member-1'}={}){
  const document=documentStub(),timers=new Set(),calls=[],storage=new Map();
  const players=[{id:'player-1',member_id:'member-1',display_name:'First Member',position:1,playing_category:'women',handicap_used:18},{id:'player-2',member_id:'member-2',display_name:'Second Member',position:2,playing_category:'men',handicap_used:18}];
  const holes=Array.from({length:18},(_,i)=>({hole_number:i+1,par:4,red_par:4,yards:350,red_yards:310,stroke_index:i+1,red_stroke_index:i+1}));
- const card={id:'card-1',event_id:'event-1',scorer_id:'member-1',status:cardStatus};
+ const card={id:'card-1',event_id:'event-1',scorer_id:scorerId,status:cardStatus};
  const event={id:'event-1',name:'Society round',event_date:F.today(),status:'scheduled'};
  const scores=Object.fromEntries(players.flatMap(p=>holes.map(h=>[M.key(p.id,h.hole_number),{scorecard_player_id:p.id,hole_number:h.hole_number,strokes:4,picked_up:false,changed_at:'2026-09-10T09:00:00Z'}])));
  let cache={userId:'member-1',card:clone(card),players,holes,event,scores,dirty:{},cleared:[],submitQueued:false,hole,selected:'player-1',view,savedAt:1};
@@ -162,4 +162,11 @@ test('payment overview excludes reserves, cancellations and settled amounts and 
 test('round report excludes DNP and unscored rows and preserves tied standings',()=>{
  const report=F.roundReport({name:'Test round',date:'2027-04-01',results:[{playerId:'a',points:30},{playerId:'b',points:35},{playerId:'c',points:35},{playerId:'d',points:50,dnp:true},{playerId:'e',points:null}]},[{id:'a',name:'Alex'},{id:'b',name:'Ben'},{id:'c',name:'Chris'}]);
  assert.match(report,/3 players/);assert.match(report,/1\. Ben — 35 pts/);assert.match(report,/1\. Chris — 35 pts/);assert.match(report,/3\. Alex — 30 pts/);assert.doesNotMatch(report,/50 pts|null/);
+});
+
+test('group overview shows both players and front/back totals without submitting',async()=>{
+ const h=scoringHarness();try{await settle();await h.document.getElementById('groupOverview').click();const html=h.document.getElementById('roundReview').innerHTML;assert.match(html,/<th scope="col">Front 9/);assert.match(html,/First Member/);assert.match(html,/Second Member/);assert.match(html,/18\/18 holes recorded/);assert.match(html,/<strong>54<\/strong>/);assert.equal(h.calls.some(c=>c.rpc==='submit_scorecard'),false);assert.equal(h.document.getElementById('finaliseScores').disabled,false);}finally{h.cleanup();}
+});
+test('a viewer can open the group overview but cannot submit or change scores',async()=>{
+ const h=scoringHarness({scorerId:'member-2'});try{await settle();assert.equal(h.document.getElementById('scoreKeypad').classList.contains('hidden'),true);await h.document.getElementById('groupOverview').click();assert.doesNotMatch(h.document.getElementById('roundReview').innerHTML,/id="finaliseScores"/);await h.document.querySelectorAll('[data-score]').find(b=>b.dataset.score==='5').click();assert.equal(Object.keys(h.cache().dirty).length,0);assert.equal(h.calls.some(c=>c.rpc==='sync_scorecard'||c.rpc==='submit_scorecard'),false);}finally{h.cleanup();}
 });
