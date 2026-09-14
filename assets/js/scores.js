@@ -351,9 +351,9 @@ function renderRound() {
   const winnerName = state.data.players.find(p => p.id === winner?.playerId)?.name ?? "Not recorded";
   $("#roundSummary").innerHTML = `<strong>${escapeHtml(round.name)}</strong><br>${round.date || "Date not set"} · Winner: ${escapeHtml(winnerName)}`;
 
-  if(played.some(result=>!result.dnp)) {
+  if(round.locked===true&&played.some(result=>!result.dnp)) {
     const share=document.createElement('button');share.type='button';share.className='button button-outline';share.textContent='Share round report';
-    share.onclick=()=>window.BarfordMemberFlow.shareText('Share round report',window.BarfordMemberFlow.roundReport(round,state.data.players));
+    share.onclick=()=>window.BarfordMemberFlow.shareText('Share round report',window.BarfordMemberFlow.roundReport(round,state.data.players,state.data.achievements));
     $('#roundSummary').append(document.createElement('br'),share);
   }
 
