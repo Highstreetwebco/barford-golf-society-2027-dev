@@ -13,9 +13,9 @@ function worker({fail=false,quota=false}={}){
 test('critical offline installation completes atomically at a maximum of three downloads',async()=>{
  const w=worker();await w.dispatch('install');assert.equal(w.skipped(),true);assert.ok(w.maxActive()<=3);const broken=worker({fail:true});await assert.rejects(broken.dispatch('install'));assert.equal(broken.skipped(),false);assert.equal(broken.stores.has(cacheName),false);
 });
-test('saved scoring navigation preserves query-driven rounds and makes no network request',async()=>{
- const w=worker();await w.dispatch('install');const before=w.calls.length;w.offline();const result=await w.get('https://example.com/golf/scoring.html?event=one&card=two&hole=7');assert.match(await result.text(),/scoring.html$/);assert.equal(w.calls.length,before);
- const m=JSON.parse(source('assets/asset-manifest.json'));await w.get('https://example.com/golf/'+m.sdk);assert.equal(w.calls.length,before);
+test('offline scoring navigation tries the network then preserves query-driven rounds from cache',async()=>{
+ const w=worker();await w.dispatch('install');const before=w.calls.length;w.offline();const result=await w.get('https://example.com/golf/scoring.html?event=one&card=two&hole=7');assert.match(await result.text(),/scoring.html$/);assert.equal(w.calls.length,before+1);
+ const m=JSON.parse(source('assets/asset-manifest.json'));await w.get('https://example.com/golf/'+m.sdk);assert.equal(w.calls.length,before+1);
 });
 test('service worker excludes member APIs and neighbouring sites',()=>{
  const w=worker();for(const url of ['https://db.supabase.co/rest/v1/profiles','https://example.com/other-site/index.html','https://example.com/golf/private-api'])assert.equal(w.get(url),undefined);
@@ -59,4 +59,21 @@ test('course restore skips corrupt entries and failed refresh preserves saved ho
 test('every declared scoring, map and return-page asset belongs to the offline core',()=>{
  const manifest=JSON.parse(source('assets/asset-manifest.json')),core=new Set(JSON.parse(source('sw.js').match(/^const CORE=(.+);$/m)[1]));
  for(const page of ['index.html','scoring.html','hole-view.html'])for(const asset of manifest.pages[page])assert.ok(core.has(asset),`${page}: ${asset}`);
+});
+
+test('online HTML replaces a stale cached homepage even with a version query',async()=>{
+ const w=worker();await w.dispatch('install');const c=await w.caches.open(cacheName);await c.put('https://example.com/golf/index.html',new Response('STALE HOMEPAGE'));
+ const result=await w.get('https://example.com/golf/index.html?v=new');assert.equal(await result.text(),'https://example.com/golf/index.html?v=new');
+ assert.equal(await(await c.match('https://example.com/golf/index.html')).text(),'https://example.com/golf/index.html?v=new');
+});
+test('mutable scripts never reuse a different version from a previous cache',async()=>{
+ const w=worker();const old=await w.caches.open('barford-golf-2027-offline-v77');await old.put('https://example.com/golf/assets/js/gateway.js',new Response('OLD SCRIPT'));
+ assert.equal(await(await w.get('https://example.com/golf/assets/js/gateway.js?v=new')).text(),'https://example.com/golf/assets/js/gateway.js?v=new');
+});
+test('the update recovery route bypasses the service-worker cache',()=>{
+ const w=worker();assert.equal(w.get('https://example.com/golf/update.html'),undefined);
+});
+test('the gateway retains dashboard DOM dependencies and hides visitor navigation',()=>{
+ const html=source('index.html');assert.match(html,/id="publicHome"/);assert.match(html,/id="mySeasonDetails"/);assert.match(html,/data-ui-ready/);assert.match(html,/offline-register/);
+ assert.match(source('assets/css/member-guest-gateway.css'),/mobile-quick-nav/);
 });
