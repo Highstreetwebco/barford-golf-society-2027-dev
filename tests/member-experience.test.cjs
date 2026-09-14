@@ -170,3 +170,20 @@ test('group overview shows both players and front/back totals without submitting
 test('a viewer can open the group overview but cannot submit or change scores',async()=>{
  const h=scoringHarness({scorerId:'member-2'});try{await settle();assert.equal(h.document.getElementById('scoreKeypad').classList.contains('hidden'),true);await h.document.getElementById('groupOverview').click();assert.doesNotMatch(h.document.getElementById('roundReview').innerHTML,/id="finaliseScores"/);await h.document.querySelectorAll('[data-score]').find(b=>b.dataset.score==='5').click();assert.equal(Object.keys(h.cache().dirty).length,0);assert.equal(h.calls.some(c=>c.rpc==='sync_scorecard'||c.rpc==='submit_scorecard'),false);}finally{h.cleanup();}
 });
+test('announced groups expose scorer selection on the dashboard before event day',()=>{
+ const document=documentStub(),host=new Element({},document),context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
+ vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+ const m=base();m.rsvp={status:'playing'};m.event.tee_times_status='published';m.card={id:'card',status:'ready',scorer_id:null};
+ context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/Tee groups announced/);assert.match(host.innerHTML,/Choose our scorer/);assert.match(host.innerHTML,/id="dashboardScorecard"/);
+ m.event.tee_times_status='draft';context.window.BarfordEventView.render(host,m,{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"/);
+});
+test('choosing a scorer requires explicit confirmation; going back makes no write',async()=>{
+ const document=documentStub(),calls=[],dialogs=[];document.body.append=el=>dialogs.push(el);
+ document.createElement=()=>{const el=new Element({},document);el.showModal=()=>{};el.remove=()=>{};el.querySelectorAll=selector=>{const flatten=node=>node.children.flatMap(child=>[child,...flatten(child)]);return flatten(el).filter(child=>document.matches(child,selector));};return el;};
+ const client={from(){return{select(){return this;},eq:async()=>({data:[{member_id:'member-2',display_name:'Sam Example'}]})};},rpc:async(name,args)=>{calls.push({name,args});return{data:{id:'card',scorer_id:args.target_scorer_id}};}};
+ const context={window:{BarfordSupabase:client,dispatchEvent(){}},document,location:{href:'https://example.com/event.html'},URL,Date,setTimeout,clearTimeout,Promise,CustomEvent:class{}};
+ vm.createContext(context);vm.runInContext(source('member-workflow.js'),context);const m=base();m.event.name='Summer round';m.card={id:'card',status:'ready'};
+ await context.window.BarfordMemberFlow.chooseScorer(m);await dialogs.at(-1).querySelectorAll('[data-scorer-id]')[0].click();assert.equal(calls.length,0);assert.match(dialogs.at(-1).innerHTML,/Sam Example/);assert.match(dialogs.at(-1).innerHTML,/Summer round/);
+ await dialogs.at(-1).querySelector('#cancelScorerSelection').click();assert.equal(calls.length,0);
+ await dialogs.at(-1).querySelectorAll('[data-scorer-id]')[0].click();await dialogs.at(-1).querySelector('#confirmScorerSelection').click();assert.equal(calls.length,1);assert.equal(calls[0].args.target_scorer_id,'member-2');
+});
