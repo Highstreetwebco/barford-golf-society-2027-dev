@@ -26,7 +26,7 @@
     "assets/js/supabase-client.js": "assets/dist/supabase-client.bd4aa0131b3e.js",
     "assets/js/account-session.js": "assets/dist/account-session.fc381c6f666a.js",
     "assets/js/passkeys.js": "assets/dist/passkeys.62ea9831687c.js",
-    "assets/js/member-workflow.js": "assets/dist/member-workflow.84e8b23384f3.js",
+    "assets/js/member-workflow.js": "assets/dist/member-workflow.d1b1985b027b.js",
     "assets/js/member-auth.js": "assets/dist/member-auth.d9a7155bf5e5.js",
     "assets/css/accessible-mobile.css": "assets/dist/accessible-mobile.94f5c043e76a.css",
     "assets/js/course-layout-library.js": "assets/dist/course-layout-library.a14421d2dfd6.js",
@@ -48,7 +48,7 @@
     "assets/js/member-season.js": "assets/dist/member-season.8732c42a394f.js",
     "assets/js/member-guest-gateway.js": "assets/dist/member-guest-gateway.784feb950d4e.js",
     "assets/js/payments-hub.js": "assets/dist/payments-hub.b0717d9918f8.js",
-    "assets/js/scores.js": "assets/dist/scores.28811f134dfe.js",
+    "assets/js/scores.js": "assets/dist/scores.6aaeb5fa1605.js",
     "assets/js/score-model.js": "assets/dist/score-model.d5a4f3094f8b.js",
     "assets/js/scoring-resilience.js": "assets/dist/scoring-resilience.762a870a61b7.js",
     "assets/js/scoring.js": "assets/dist/scoring.f9112075bfc5.js"
@@ -78,7 +78,7 @@
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/passkeys.62ea9831687c.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/member-auth.d9a7155bf5e5.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -110,7 +110,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/member-event-view.ce6865f1e711.js",
       "assets/dist/guest-events.53d3b907553b.js",
       "assets/dist/event-hub.6ddd145ba589.js",
@@ -124,7 +124,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/events-live.96bcacfdb9e4.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -136,7 +136,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/gallery-live.be6c800f9a38.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -161,7 +161,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/member-event-view.ce6865f1e711.js",
       "assets/dist/member-dashboard.0b34c886e22b.js",
       "assets/dist/member-season.8732c42a394f.js",
@@ -175,7 +175,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/payments-hub.b0717d9918f8.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -187,8 +187,8 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
-      "assets/dist/scores.28811f134dfe.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
+      "assets/dist/scores.6aaeb5fa1605.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
     "scoring.html": [
@@ -199,7 +199,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/score-model.d5a4f3094f8b.js",
       "assets/dist/scoring-resilience.762a870a61b7.js",
       "assets/dist/scoring.f9112075bfc5.js"
@@ -223,7 +223,7 @@
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/passkeys.62ea9831687c.js",
-      "assets/dist/member-workflow.84e8b23384f3.js",
+      "assets/dist/member-workflow.d1b1985b027b.js",
       "assets/dist/member-auth.d9a7155bf5e5.js",
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
@@ -242,22 +242,22 @@
   "pageHashes": {
     "404.html": "2b0764bb4b49",
     "about.html": "130b8e1da6a7",
-    "account.html": "5442a524b08c",
+    "account.html": "653831cd4c87",
     "admin.html": "364ed213ff29",
-    "event.html": "f1873b9beb7f",
-    "events.html": "60b6aaf55bbc",
-    "gallery.html": "a5d96e24a4d2",
+    "event.html": "c743f072d206",
+    "events.html": "4fae7f92ae0e",
+    "gallery.html": "c7ae7417ae55",
     "halfway-preview.html": "d7cdf5d5657b",
     "hole-view.html": "a5ff85ec3649",
-    "index.html": "c319723daf59",
-    "payments.html": "b461b5cd7c58",
-    "scores.html": "aa9047503b51",
-    "scoring.html": "94a4b3cd85f6",
+    "index.html": "ff7672141b29",
+    "payments.html": "20c1c28d21f4",
+    "scores.html": "3cfff173e2b0",
+    "scoring.html": "775c9bec6e4d",
     "shop.html": "4831ad7db49a",
-    "signup.html": "c3f7a7d4f22b",
+    "signup.html": "ae2e87067f2a",
     "update.html": "9de99fd84908",
     "worldevents.html": "a268a1650fa2"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "9f1f730b0c99"
+  "build": "75e79c47a6ba"
 }

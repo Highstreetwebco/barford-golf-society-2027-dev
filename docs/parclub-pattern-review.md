@@ -14,13 +14,14 @@ Reviewed the [App Store listing](https://apps.apple.com/gb/app/parclub-golf-soci
 | Pairings and tee times | Existing committee pairing tools and published personal groups retained. No unverified balancing algorithm copied. |
 | Money overview | Added outstanding total, number of events due, unpriced bookings and refresh. Totals use the existing eligibility rules; reserve, cancelled, refunded, waived and paid bookings do not ask for payment. This is an event-fee summary, not a bank balance or full society cash ledger. |
 | Direct payment links | Official materials describe external captain payment methods. No verified Barford payment destination is configured, so the existing committee contact flow remains. Never mark a payment paid just because a payment link was opened. |
-| Shareable round report | Published round results can be reviewed, copied or sent through the device share sheet. Includes all scored members and tied point positions; excludes DNP and missing scores. User chooses recipients and sends. No private payment details or contact data included. |
+| Shareable round report | Published round results can be reviewed, copied or sent through the device share sheet. Includes committee-recorded awards and all scored members, with equal point totals explicitly labelled as ties; excludes DNP and missing scores. User chooses recipients and sends. No private payment details or contact data included. |
 | Hole-by-hole group scoring | Existing single nominated scorer, viewer mode, local resilience, map links and committee submission retained. |
 | Live competition board | Existing live group scorecard remains distinct from the published season leaderboard. No new whole-field live leaderboard added in this change. |
 | Order of Merit and handicaps | Existing Barford 2027 rules remain authoritative, including best five of seven. ParClub demo’s best-three finishing-position method and penalties are not copied. |
 | GPS/hole views | Existing course map and offline fallback retained. ParClub’s advertised national course coverage does not supply licensed course data to Barford. |
-| Knockouts, tours, eclectic and side games | Advertised separate competition features. Not introduced by this change; require their own rules, data model and validation. |
-| Paper scorecard recognition | Advertised capability; no verified extraction workflow/API provided. Not added. |
+| Knockouts, tours and eclectic | Advertised separate competition features. Not introduced by this change; require their own rules, data model and validation. |
+| Side games | Barford already supports longest-drive and nearest-the-pin holes and committee-recorded winners. These remain; skins and twos are separate additions. |
+| Paper scorecard recognition | Barford already has an admin screenshot reader for course par, yardage and stroke index. This differs from ParClub’s advertised recognition of a player’s completed scorecard. Completed player-score recognition is not added. |
 | Chat and direct messages | Advertised capability; not added. Existing user-controlled committee message drafts remain. |
 | External tee-time booking | Advertised in App Store release notes. Separate from RSVP to a society event; no invented course booking links added. |
 | Public shareable standings and casting | Advertised captain feature. Barford’s member-only results access retained; a share report is an explicit user action, not public database access. |

@@ -34,13 +34,14 @@
     if(rsvp?.status==='playing' && event.status!=='cancelled' && event.price==null && !['paid','refunded','waived'].includes(rsvp.payment_status))total.unpriced++;
     return total;
   },{pence:0,count:0,unpriced:0});
-  const roundReport = (round,players) => {
+  const roundReport = (round,players,achievements=[]) => {
     const results=round.results.filter(r=>!r.dnp&&Number.isFinite(r.points)).sort((a,b)=>b.points-a.points);
-    const lines=results.map((r,i)=>{
+    const lines=results.map(r=>{
       const position=results.findIndex(other=>other.points===r.points)+1;
       return `${position}. ${players.find(p=>p.id===r.playerId)?.name||'Member'} — ${r.points} pts`;
     });
-    return [`Barford Golf Society 2027`,round.name,round.date?date(round.date):'',`${results.length} players · Published Stableford results`,'',...lines].filter(line=>line!==undefined).join('\n');
+    const awards=[['win','Winner'],['runnerUp','Runner-up'],['third','Third place'],['longestDrive','Longest drive'],['nearestPin','Nearest the pin']].flatMap(([type,label])=>achievements.filter(a=>a.roundId===round.id&&a.type===type).map(a=>`${label}: ${players.find(p=>p.id===a.playerId)?.name||'Member'}`));
+    return [`Barford Golf Society 2027`,round.name,round.date?date(round.date):'',`${results.length} players · Published Stableford results`,'',...awards,'','Points order (equal points shown as ties)',...lines].filter(line=>line!==undefined).join('\n');
   };
   const shareText = (title,text) => {
     const d=dialog(title,`<p>Review the text, then copy it or choose where to share it.</p><label>Message<textarea rows="10">${esc(text)}</textarea></label><div class="simple-actions"><button type="button" class="button button-primary" data-copy-text>Copy report</button>${navigator.share?'<button type="button" class="button button-outline" data-share-text>Share…</button>':''}</div><p role="status"></p>`);
