@@ -6,6 +6,7 @@ const state = {
   data: null,
   activeView: "leaderboard",
   selectedRoundId: null,
+  eventResultsUnavailable: false,
   selectedLeaderboardRoundId: null,
   selectedPlayerId: null,
   currentUserId: null,
@@ -28,10 +29,10 @@ async function refresh() {
   }
   state.data=await ScoresData.getSnapshot(state.currentUserId);
   const eventId=new URLSearchParams(location.search).get('event');
-  if(eventId){const result=await window.BarfordMemberFlow.request(window.BarfordSupabase.from('rounds').select('id').eq('event_id',eventId).eq('season',2027).maybeSingle());if(result&&state.data.rounds.some(r=>r.id===result.id))state.selectedRoundId=result.id;}
+  if(eventId){const result=await window.BarfordMemberFlow.request(window.BarfordSupabase.from('rounds').select('id').eq('event_id',eventId).eq('season',2027).maybeSingle());if(result&&state.data.rounds.some(r=>r.id===result.id)){state.selectedRoundId=result.id;state.eventResultsUnavailable=false;}else{state.selectedRoundId=null;state.eventResultsUnavailable=true;}}
   const requestedRound=new URLSearchParams(location.search).get('round');
-  if(requestedRound&&state.data.rounds.some(r=>r.id===requestedRound))state.selectedRoundId=requestedRound;
-  state.selectedRoundId ||= getCompletedRounds().at(-1)?.id || state.data.rounds[0]?.id;
+  if(requestedRound&&state.data.rounds.some(r=>r.id===requestedRound)){state.selectedRoundId=requestedRound;state.eventResultsUnavailable=false;}
+  if(!state.eventResultsUnavailable)state.selectedRoundId ||= getCompletedRounds().at(-1)?.id || state.data.rounds[0]?.id;
   state.selectedPlayerId ||= state.data.players.find(p=>p.id===state.currentUserId)?.id || state.data.players[0]?.id;
 
   const completedRounds = getCompletedRounds();
@@ -344,11 +345,17 @@ function renderRoundTabs() {
 function renderRound() {
   const round = state.data.rounds.find(r => r.id === state.selectedRoundId);
   const list = $("#roundList"); list.innerHTML = "";
-  if (!round) { $("#roundSummary").innerHTML = "<strong>No rounds created</strong>"; return; }
+  if (!round) { $("#roundSummary").innerHTML = state.eventResultsUnavailable?'<strong>Results are not published for this event yet.</strong><p>They will appear after the committee approves the scores. You can choose another round above.</p>':'<strong>No rounds created</strong>'; return; }
   const played = round.results.filter(result => Number.isFinite(result.points));
   const winner = [...played].sort((a,b)=>b.points-a.points)[0];
   const winnerName = state.data.players.find(p => p.id === winner?.playerId)?.name ?? "Not recorded";
   $("#roundSummary").innerHTML = `<strong>${escapeHtml(round.name)}</strong><br>${round.date || "Date not set"} · Winner: ${escapeHtml(winnerName)}`;
+
+  if(played.some(result=>!result.dnp)) {
+    const share=document.createElement('button');share.type='button';share.className='button button-outline';share.textContent='Share round report';
+    share.onclick=()=>window.BarfordMemberFlow.shareText('Share round report',window.BarfordMemberFlow.roundReport(round,state.data.players));
+    $('#roundSummary').append(document.createElement('br'),share);
+  }
 
   [...round.results].sort((a,b)=>(b.points ?? -1)-(a.points ?? -1)).forEach(result => {
     const player = state.data.players.find(p => p.id === result.playerId);

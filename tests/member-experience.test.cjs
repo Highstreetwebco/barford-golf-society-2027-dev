@@ -117,7 +117,7 @@ test('signed-out guests can browse public events and see guest pricing without m
  const client={auth:{getSession:async()=>({data:{session:null}})},from(table){queries.push(table);const q={select(){return q;},in(){return q;},order:async()=>({data:[event]})};return q;}};
  const context={window:{BarfordSupabase:client},document,location:{href:'https://example.com/golf/events.html'},URL,URLSearchParams,Date,Promise,setTimeout,clearTimeout};
  vm.createContext(context);vm.runInContext(source('member-workflow.js'),context);vm.runInContext(source('events-live.js'),context);await settle();
- assert.deepEqual(queries,['events']);assert.match(document.getElementById('eventList').innerHTML,/Guest golf day/);assert.match(document.getElementById('eventList').innerHTML,/£55.00/);assert.match(document.getElementById('eventList').innerHTML,/event.html\?event=guest-event/);assert.doesNotMatch(document.getElementById('eventList').innerHTML,/Sign in to view/);
+ assert.deepEqual(queries,['events']);assert.match(document.getElementById('filteredEvents').innerHTML,/Guest golf day/);assert.match(document.getElementById('filteredEvents').innerHTML,/£55.00/);assert.match(document.getElementById('filteredEvents').innerHTML,/event.html\?event=guest-event/);assert.doesNotMatch(document.getElementById('eventList').innerHTML,/Sign in to view/);
 });
 test('a connection failure during session refresh recovers only the remembered started round without server writes',async()=>{
  const h=scoringHarness({authFailure:'network'});try{await settle();assert.equal(h.document.getElementById('scoreReady').classList.contains('hidden'),false);assert.equal(h.document.getElementById('scoreKeypad').classList.contains('hidden'),false);await h.document.querySelectorAll('[data-score]').find(b=>b.dataset.score==='5').click();await h.document.getElementById('scoreSyncButton').click();await settle();assert.ok(Object.keys(h.cache().dirty).length>0);assert.equal(h.calls.some(c=>c.rpc),false);}finally{h.cleanup();}
@@ -152,4 +152,14 @@ test('dashboard scorecard handles preparation and connection failure without exp
  }
  m.card={id:'own-card',status:'locked',scorer_id:'member-1'};m.event.status='completed';context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/Open my group’s scorecard/);
  context.window.BarfordEventView.render(host,m,{compact:false});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"/);
+});
+
+test('payment overview excludes reserves, cancellations and settled amounts and counts unpriced bookings',()=>{
+ const events=[{id:'a',price:10.10},{id:'b',price:20.20},{id:'c',price:99},{id:'d',price:99,status:'cancelled'},{id:'e',price:99},{id:'f',price:null}];
+ const rsvps=events.map(e=>({event_id:e.id,status:'playing'}));rsvps[2].status='reserve';rsvps[4].payment_status='paid';
+ assert.deepEqual(clone(F.paymentSummary(events,rsvps)),{pence:3030,count:2,unpriced:1});
+});
+test('round report excludes DNP and unscored rows and preserves tied standings',()=>{
+ const report=F.roundReport({name:'Test round',date:'2027-04-01',results:[{playerId:'a',points:30},{playerId:'b',points:35},{playerId:'c',points:35},{playerId:'d',points:50,dnp:true},{playerId:'e',points:null}]},[{id:'a',name:'Alex'},{id:'b',name:'Ben'},{id:'c',name:'Chris'}]);
+ assert.match(report,/3 players/);assert.match(report,/1\. Ben — 35 pts/);assert.match(report,/1\. Chris — 35 pts/);assert.match(report,/3\. Alex — 30 pts/);assert.doesNotMatch(report,/50 pts|null/);
 });

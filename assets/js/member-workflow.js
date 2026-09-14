@@ -27,6 +27,26 @@
     if (event.price == null) return {label:"Price to be confirmed",due:false};
     return {label:`${money(event.price)} outstanding`,due:true};
   };
+  // Work in pence and use the same eligibility rules as each payment receipt.
+  const paymentSummary = (events,rsvps) => events.reduce((total,event)=>{
+    const rsvp=rsvps.find(row=>row.event_id===event.id);
+    if(payment(event,rsvp).due && Number.isFinite(Number(event.price)) && Number(event.price)>0){total.pence+=Math.round(Number(event.price)*100);total.count++;}
+    if(rsvp?.status==='playing' && event.status!=='cancelled' && event.price==null && !['paid','refunded','waived'].includes(rsvp.payment_status))total.unpriced++;
+    return total;
+  },{pence:0,count:0,unpriced:0});
+  const roundReport = (round,players) => {
+    const results=round.results.filter(r=>!r.dnp&&Number.isFinite(r.points)).sort((a,b)=>b.points-a.points);
+    const lines=results.map((r,i)=>{
+      const position=results.findIndex(other=>other.points===r.points)+1;
+      return `${position}. ${players.find(p=>p.id===r.playerId)?.name||'Member'} — ${r.points} pts`;
+    });
+    return [`Barford Golf Society 2027`,round.name,round.date?date(round.date):'',`${results.length} players · Published Stableford results`,'',...lines].filter(line=>line!==undefined).join('\n');
+  };
+  const shareText = (title,text) => {
+    const d=dialog(title,`<p>Review the text, then copy it or choose where to share it.</p><label>Message<textarea rows="10">${esc(text)}</textarea></label><div class="simple-actions"><button type="button" class="button button-primary" data-copy-text>Copy report</button>${navigator.share?'<button type="button" class="button button-outline" data-share-text>Share…</button>':''}</div><p role="status"></p>`);
+    d.querySelector('[data-copy-text]').onclick=async()=>{try{await navigator.clipboard.writeText(d.querySelector('textarea').value);d.querySelector('[role="status"]').textContent='Copied. Paste it into WhatsApp or your preferred app.';}catch{d.querySelector('textarea').select();d.querySelector('[role="status"]').textContent='Select and copy the text to share it.';}};
+    d.querySelector('[data-share-text]')?.addEventListener('click',async()=>{try{await navigator.share({title,text:d.querySelector('textarea').value});}catch(error){if(error.name!=='AbortError')d.querySelector('[role="status"]').textContent='Sharing is unavailable. Use Copy report instead.';}});
+  };
   const bookingLabel = model => model.event.status === "cancelled" ? "Event cancelled" : model.bookingError ? "Booking could not be checked" : ({playing:"You’re playing",reserve:"You’re on the reserve list",not_playing:"You’re not playing",cancelled:"You’re not playing"}[model.rsvp?.status] || "Please tell us if you’re playing");
   const nextAction = model => {
     const {event,rsvp,card,session,locked,group=[],bookingError}=model;
@@ -145,5 +165,5 @@
     if(action.kind==="book")openBooking(model);else if(action.kind==="contact")contact(model.event);else if(action.kind==="scorer")chooseScorer(model);else if(action.kind==="retry")window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id}}));else location.href=action.href;
   };
   const promotions = async () => {if(!client)return;try{const auth=await request(client.auth.getSession());if(!auth?.session)return;const rows=await request(client.rpc("get_my_unseen_rsvp_promotions"));const p=rows?.[0];if(!p || activeDialog)return;const d=dialog("A place has opened for you",`<p>You’ve moved from reserve to the playing list for <strong>${esc(p.event_name)}</strong>.</p><button class="button button-primary full-button" id="promotionSeen" type="button">View my booking</button><p class="form-status" role="status"></p>`);d.querySelector("#promotionSeen").onclick=async()=>{try{await request(client.rpc("mark_my_rsvp_promotion_seen",{p_id:p.id}));location.href=eventUrl(p.event_id);}catch{d.querySelector(".form-status").textContent="Please try again.";}};}catch{}};
-  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,payment,bookingLabel,nextAction,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
+  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,payment,paymentSummary,roundReport,shareText,bookingLabel,nextAction,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
 })();
