@@ -153,3 +153,6 @@ html[data-design=matchbook] body.clubhouse .mobile-quick-nav a.active{color:#173
  html[data-design=matchbook] body.clubhouse .matchbook-shortcuts>.button{font-size:.77rem;padding:13px 6px}
 }
 @media(prefers-reduced-motion:reduce){html[data-design=matchbook] *{scroll-behavior:auto!important}}
+html[data-design=matchbook] body.clubhouse #filteredEvents{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+html[data-design=matchbook] body.clubhouse #filteredEvents>.simple-calendar-card{border-top-color:#173c2d}
+@media(max-width:700px){html[data-design=matchbook] body.clubhouse #filteredEvents{grid-template-columns:1fr;gap:18px}}
