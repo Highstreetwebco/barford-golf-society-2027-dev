@@ -232,7 +232,7 @@
     "scoring-preview.html": [
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/scoring-bundle.9115e3547938.css",
-      "assets/dist/member-ui.77f582b794db.css",
+      "assets/dist/member-ui.dfab771b1d17.css",
       "assets/dist/scoring-preview.53333f442835.js",
       "assets/dist/score-layout.286fb2c8802e.js",
       "assets/dist/design-preview.d95251faced6.js"
@@ -240,7 +240,7 @@
     "scoring.html": [
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/scoring-bundle.9115e3547938.css",
-      "assets/dist/member-ui.77f582b794db.css",
+      "assets/dist/member-ui.dfab771b1d17.css",
       "assets/dist/offline-register.47b92b606ceb.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
@@ -316,8 +316,8 @@
     "index.html": "f6335fee072a",
     "payments.html": "b2911aec707c",
     "scores.html": "9aa5b6eeea1e",
-    "scoring-preview.html": "1f5300509edb",
-    "scoring.html": "6e1b684cd7c5",
+    "scoring-preview.html": "575d5e62ad1a",
+    "scoring.html": "72c9185226ee",
     "shop.html": "a204552a1d1b",
     "signup.html": "fd46f95965ca",
     "tee-sheet.html": "533f57f6a34b",
@@ -325,5 +325,5 @@
     "worldevents.html": "dfe577af32f3"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "6f14e5932246"
+  "build": "44ef556db648"
 }
