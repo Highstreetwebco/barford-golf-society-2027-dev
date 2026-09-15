@@ -2,6 +2,9 @@
   "release": 80,
   "assets": {
     "assets/css/styles.css": "assets/dist/styles.25b6981ca7d7.css",
+    "assets/css/design-links.css": "assets/dist/design-links.2c9376402dbf.css",
+    "assets/css/design-tour.css": "assets/dist/design-tour.8e16b9523fab.css",
+    "assets/js/design-preview.js": "assets/dist/design-preview.f330d1a27c9b.js",
     "assets/js/site-navigation.js": "assets/dist/site-navigation.5899fefb28bf.js",
     "assets/css/deep-teal-theme.css": "assets/dist/deep-teal-theme.a6bf11a5de26.css",
     "assets/css/product-premium.css": "assets/dist/product-premium.4ab8434cb6a4.css",
@@ -36,6 +39,8 @@
     "assets/js/admin-scorecard-photo-import.js": "assets/dist/admin-scorecard-photo-import.5e5b1d1bdc6e.js",
     "assets/js/admin-osm-hole-import.js": "assets/dist/admin-osm-hole-import.31bb7e681f8d.js",
     "assets/js/admin-member-manager-v2.js": "assets/dist/admin-member-manager-v2.64e45bf500e4.js",
+    "assets/css/design-studio.css": "assets/dist/design-studio.41542cae8a71.css",
+    "assets/js/design-studio.js": "assets/dist/design-studio.379017f82b89.js",
     "assets/js/member-event-view.js": "assets/dist/member-event-view.223dea123f9e.js",
     "assets/js/guest-events.js": "assets/dist/guest-events.53d3b907553b.js",
     "assets/js/event-hub.js": "assets/dist/event-hub.6ddd145ba589.js",
@@ -57,7 +62,8 @@
   "pages": {
     "404.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.ce9f50d3ed0f.css"
+      "assets/dist/member-ui.ce9f50d3ed0f.css",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "about.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -67,7 +73,8 @@
       "assets/dist/accessible-mobile.dea27d303f10.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
-      "assets/dist/supabase-client.bd4aa0131b3e.js"
+      "assets/dist/supabase-client.bd4aa0131b3e.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "account.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -81,7 +88,8 @@
       "assets/dist/passkeys.62ea9831687c.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/member-auth.d9a7155bf5e5.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "admin.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -100,7 +108,12 @@
       "assets/dist/admin-scorecard-photo-import.5e5b1d1bdc6e.js",
       "assets/dist/admin-osm-hole-import.31bb7e681f8d.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/admin-member-manager-v2.64e45bf500e4.js"
+      "assets/dist/admin-member-manager-v2.64e45bf500e4.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
+    ],
+    "designs.html": [
+      "assets/dist/design-studio.41542cae8a71.css",
+      "assets/dist/design-studio.379017f82b89.js"
     ],
     "event.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -114,7 +127,8 @@
       "assets/dist/member-event-view.223dea123f9e.js",
       "assets/dist/guest-events.53d3b907553b.js",
       "assets/dist/event-hub.6ddd145ba589.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "events.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -126,7 +140,8 @@
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/events-live.89031bdc4040.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "gallery.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -138,10 +153,12 @@
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/gallery-live.be6c800f9a38.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "halfway-preview.html": [
-      "assets/dist/fairway.6247a9edb681.css"
+      "assets/dist/fairway.6247a9edb681.css",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "hole-view.html": [
       "assets/dist/deep-teal-theme-bundle.adfc76104919.css",
@@ -153,7 +170,8 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/course-view.efb2ab119ccc.js"
+      "assets/dist/course-view.efb2ab119ccc.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "index.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -168,7 +186,8 @@
       "assets/dist/member-event-view.223dea123f9e.js",
       "assets/dist/member-dashboard.44b7fe9ab63a.js",
       "assets/dist/member-season.8732c42a394f.js",
-      "assets/dist/member-guest-gateway.784feb950d4e.js"
+      "assets/dist/member-guest-gateway.784feb950d4e.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "payments.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -180,7 +199,8 @@
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/payments-hub.d33103ed9f07.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "scores.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -192,7 +212,8 @@
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/scores.d039487ef9c9.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "scoring.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -205,7 +226,8 @@
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/score-model.d5a4f3094f8b.js",
       "assets/dist/scoring-resilience.762a870a61b7.js",
-      "assets/dist/scoring.bfbf6517355e.js"
+      "assets/dist/scoring.bfbf6517355e.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "shop.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -215,7 +237,8 @@
       "assets/dist/accessible-mobile.dea27d303f10.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
-      "assets/dist/supabase-client.bd4aa0131b3e.js"
+      "assets/dist/supabase-client.bd4aa0131b3e.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "signup.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -228,10 +251,12 @@
       "assets/dist/passkeys.62ea9831687c.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/member-auth.d9a7155bf5e5.js",
-      "assets/dist/accessible-mobile.dea27d303f10.js"
+      "assets/dist/accessible-mobile.dea27d303f10.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "update.html": [
-      "assets/dist/fairway.6247a9edb681.css"
+      "assets/dist/fairway.6247a9edb681.css",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ],
     "worldevents.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -241,28 +266,30 @@
       "assets/dist/accessible-mobile.dea27d303f10.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
-      "assets/dist/supabase-client.bd4aa0131b3e.js"
+      "assets/dist/supabase-client.bd4aa0131b3e.js",
+      "assets/dist/design-preview.f330d1a27c9b.js"
     ]
   },
   "pageHashes": {
-    "404.html": "dbd0f7fc652d",
-    "about.html": "1cee08349998",
-    "account.html": "f4c89394d004",
-    "admin.html": "93a096d65f75",
-    "event.html": "34a58802b205",
-    "events.html": "7ccf3a5d075e",
-    "gallery.html": "fdf0a4bc2331",
-    "halfway-preview.html": "0ba141a67b86",
-    "hole-view.html": "2ee4df9e3206",
-    "index.html": "fe5acb373711",
-    "payments.html": "aa17447628fe",
-    "scores.html": "c6db03867814",
-    "scoring.html": "28917dd85db9",
-    "shop.html": "9ae208b4f6b6",
-    "signup.html": "8460e8736345",
-    "update.html": "47fe50898599",
-    "worldevents.html": "d753ae48ccdf"
+    "404.html": "2fe393b26a55",
+    "about.html": "3922084376d3",
+    "account.html": "68111d717d9f",
+    "admin.html": "d46802557545",
+    "designs.html": "54047c8cf295",
+    "event.html": "588a109ba429",
+    "events.html": "ab23c6ccab2d",
+    "gallery.html": "9471b1967003",
+    "halfway-preview.html": "c62083e923ae",
+    "hole-view.html": "8ca9aeac6470",
+    "index.html": "bf1772497fad",
+    "payments.html": "187f677b6abb",
+    "scores.html": "259232692b54",
+    "scoring.html": "61c9c3e75c78",
+    "shop.html": "9a7b19f49393",
+    "signup.html": "970198de6381",
+    "update.html": "5121bc49f3f3",
+    "worldevents.html": "67567dce1d1c"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "06ec3ea8d470"
+  "build": "f9ffab7d0dfc"
 }

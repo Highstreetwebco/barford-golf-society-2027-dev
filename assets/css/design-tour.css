@@ -1,0 +1,50 @@
+/* Tour: a dark, app-oriented golf direction, explicitly opt-in for comparison. */
+html[data-design=tour] body.clubhouse{--club-brand:#bcec73;--club-brand-ink:#132216;--club-green:#21482b;--club-accent:#bcec73;--club-forest:#101b18;--club-canvas:#101b18;background:#101b18!important;color:#edf5ed}
+html[data-design=tour] body.clubhouse :is(.site-header,.site-footer){background:#101b18!important;border-color:#34443a!important}
+html[data-design=tour] body.clubhouse .brand img,html[data-design=tour] body.clubhouse .footer-brand img{background:#101b18!important}
+html[data-design=tour] body.clubhouse .brand img{width:120px!important;height:108px!important}
+html[data-design=tour] body.clubhouse .desktop-primary a[aria-current]{color:#bcec73;border-color:#bcec73}
+html[data-design=tour] body.clubhouse :is(.button,input,select,textarea){border-radius:14px!important}
+html[data-design=tour] body.clubhouse .button{font-weight:750;min-height:54px}
+html[data-design=tour] body.clubhouse .visitor-gateway{background:#101b18;grid-template-columns:1.1fr 1fr;max-width:1280px;margin:0 auto;padding:36px 24px;gap:32px;min-height:640px}
+html[data-design=tour] body.clubhouse .fairway-cover{border-radius:30px;min-height:560px;padding:40px;background:#203b2b;justify-content:space-between}
+html[data-design=tour] body.clubhouse .fairway-cover::before{background:linear-gradient(0deg,#12291b88,#12291b22),url('../images/fairway-course.svg') center/cover;opacity:.55}
+html[data-design=tour] body.clubhouse .fairway-cover h1{font-size:clamp(3.7rem,5.8vw,5.7rem);letter-spacing:-.07em;line-height:.98}
+html[data-design=tour] body.clubhouse .fairway-cover h1 span{color:#bcec73}
+html[data-design=tour] body.clubhouse .fairway-season{gap:16px;flex-wrap:wrap;letter-spacing:.04em;color:#e0efcf}
+html[data-design=tour] body.clubhouse .visitor-gateway-card{background:#1c2b23;color:#edf5ed;border:1px solid #3a4d3d;border-radius:30px;padding:36px;margin:auto;width:100%}
+html[data-design=tour] body.clubhouse .visitor-gateway-card h2{color:#fff;font-size:2.9rem;letter-spacing:-.06em}
+html[data-design=tour] body.clubhouse .visitor-gateway-card>p{color:#c2cebe}
+html[data-design=tour] body.clubhouse .visitor-gateway-card .eyebrow{color:#bcec73}
+html[data-design=tour] body.clubhouse .visitor-gateway-login{color:#d1edb9}
+html[data-design=tour] body.clubhouse .visitor-gateway-note{color:#b6c6b2!important;border-color:#40533f}
+html[data-design=tour] body.clubhouse #visitorGateway .visitor-gateway-actions .button-primary{background:#bcec73!important;color:#10261c!important;border-color:#bcec73!important}
+html[data-design=tour] body.clubhouse #visitorGateway .visitor-gateway-actions .button-outline{background:#293b2b!important;color:#edf5ed!important;border-color:#62765a!important}
+html[data-design=tour] body.clubhouse :is(.page-hero,.account-hero){background:#1c2b23!important;color:#eff7ea!important;border-color:#40533f!important;padding:38px 0!important}
+html[data-design=tour] body.clubhouse .page-hero .eyebrow{color:#bcec73!important}
+html[data-design=tour] body.clubhouse :is(.simple-member-home,.section-soft){background:#101b18}
+html[data-design=tour] body.clubhouse .simple-welcome{border-color:#40533f}
+html[data-design=tour] body.clubhouse .simple-welcome :is(h1,.eyebrow){color:#edf5ed}
+html[data-design=tour] body.clubhouse .toolbar :is(h2,p),html[data-design=tour] body.clubhouse .section-heading :is(h2,p){color:#edf5ed}
+html[data-design=tour] body.clubhouse .button-outline{background:#fff!important;color:#163e2b!important}
+html[data-design=tour] body.clubhouse :is(.simple-card,.account-panel,.form-card,.upload-card,.feature-card,.empty-state){border-radius:20px;border:0;background:#f5f8f0;color:#182c22}
+html[data-design=tour] body.clubhouse .simple-calendar-card{border-radius:20px;border:0;box-shadow:none;padding:26px;background:#f5f8f0;margin-bottom:14px}
+html[data-design=tour] body.clubhouse .simple-calendar-card .clubhouse-date-ticket{border-radius:13px;background:#d9ecbd;color:#173a22}
+html[data-design=tour] body.clubhouse .simple-calendar-card .clubhouse-date-ticket small{color:#3d5731}
+html[data-design=tour] body.clubhouse .clubhouse-event-heading{background:#d9ecbd;color:#182c22;border:0}
+html[data-design=tour] body.clubhouse .simple-next-action{border:0;border-radius:14px;background:#e3edd8}
+html[data-design=tour] body.clubhouse :is(.round-hub-grid>a,.round-hub-grid>button){border-radius:15px;background:#e7efdf;border:0}
+html[data-design=tour] body.clubhouse #dashboardScorecard{background:#bcec73;color:#142b19;border-radius:20px;border:0}
+html[data-design=tour] body.clubhouse #dashboardScorecard :is(h2,h3,p,.eyebrow){color:#142b19}
+html[data-design=tour] body.clubhouse #dashboardScorecard .button{background:#142b19!important;color:#fff!important;border-color:#142b19!important}
+html[data-design=tour] body.clubhouse .royal-board-heading{background:#233d29!important;color:#fff!important;border-color:#bcec73!important}
+html[data-design=tour] body.clubhouse .royal-championship-board{border-radius:20px!important}
+html[data-design=tour] body.clubhouse .score-app-header{background:#101b18!important;border-color:#bcec73}
+html[data-design=tour] body.clubhouse :is(#scoreReady .hole-heading,.score-player-row,.score-review){background:#f5f8f0;color:#182c22;border-radius:18px}
+html[data-design=tour] body.clubhouse #scoreReady .keypad-grid button{border-radius:15px;background:#edf5e5;color:#142b19}
+html[data-design=tour] body.clubhouse #scoreReady .keypad-grid .key-pickup{background:#d9ecbd}
+html[data-design=tour] body.clubhouse .mobile-quick-nav{background:#1c2b23!important;border-color:#40533f!important}
+html[data-design=tour] body.clubhouse .mobile-quick-nav a{border-radius:14px}
+html[data-design=tour] body.clubhouse .mobile-quick-nav a.active{background:#bcec73!important;color:#142b19!important}
+html[data-design=tour] body.clubhouse .simple-dialog{border-radius:22px;border:0;background:#f5f8f0;color:#182c22}
+@media(max-width:850px){html[data-design=tour] body.clubhouse .visitor-gateway{grid-template-columns:1fr;padding:18px;gap:18px}html[data-design=tour] body.clubhouse .fairway-cover{min-height:330px;padding:26px;border-radius:22px}html[data-design=tour] body.clubhouse .fairway-cover h1{font-size:3.1rem}html[data-design=tour] body.clubhouse .visitor-gateway-card{border-radius:22px;padding:25px}html[data-design=tour] body.clubhouse .visitor-gateway-card h2{font-size:2.2rem}html[data-design=tour] body.clubhouse .simple-calendar-card{padding:20px 16px}}
