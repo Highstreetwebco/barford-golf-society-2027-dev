@@ -134,3 +134,5 @@ html[data-design=drive] body.clubhouse .simple-dialog{border:0;border-top:6px so
  html[data-design=drive] body.clubhouse .drive-dashboard-links>.button{font-size:.77rem;padding:13px 6px}
 }
 @media(max-width:600px){html[data-design=drive] body.clubhouse #filteredEvents{grid-template-columns:1fr}html[data-design=drive] body.clubhouse .drive-poster::before{background-size:auto 75%;background-position:calc(100% + 90px) calc(100% + 80px)}html[data-design=drive] body.clubhouse .drive-headline{padding-bottom:185px}html[data-design=drive] body.clubhouse .drive-tagline{max-width:240px}}
+html[data-design=drive] body.clubhouse #visitorGateway{place-items:stretch}
+html[data-design=drive] body.clubhouse #visitorGateway>*{width:100%;max-width:none;justify-self:stretch}
