@@ -343,6 +343,8 @@
         event_date: field("adminEventDate"),
         first_tee_time: field("adminEventFirstTee") || null,
         price: field("adminEventPrice") || null,
+        guest_price: field("adminEventGuestPrice") || null,
+        course_member_price: field("adminEventCourseMemberPrice") || null,
         capacity: field("adminEventCapacity") || null,
         course_video_url: field("adminEventVideo").trim() || null,
         notes: field("adminEventNotes").trim() || null,

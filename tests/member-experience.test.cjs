@@ -187,3 +187,15 @@ test('choosing a scorer requires explicit confirmation; going back makes no writ
  await dialogs.at(-1).querySelector('#cancelScorerSelection').click();assert.equal(calls.length,0);
  await dialogs.at(-1).querySelectorAll('[data-scorer-id]')[0].click();await dialogs.at(-1).querySelector('#confirmScorerSelection').click();assert.equal(calls.length,1);assert.equal(calls[0].args.target_scorer_id,'member-2');
 });
+
+test('course membership selects the booked rate and keeps zero, unknown and settled amounts distinct',()=>{
+ const event={id:'a',price:45,guest_price:55,course_member_price:12.50},rsvp={event_id:'a',status:'playing',is_course_member:true};
+ assert.equal(F.eventPrice(event,{}),45);
+ assert.equal(F.eventPrice(event,rsvp),12.50);
+ assert.equal(F.payment(event,rsvp).label,'£12.50 outstanding');
+ assert.deepEqual(clone(F.paymentSummary([event],[rsvp])),{pence:1250,count:1,unpriced:0});
+ assert.equal(F.payment({...event,course_member_price:0},rsvp).due,false);
+ assert.equal(F.payment({...event,course_member_price:null},rsvp).label,'Price to be confirmed');
+ for(const payment_status of ['paid','waived','refunded'])assert.equal(F.payment(event,{...rsvp,payment_status}).due,false);
+ assert.equal(F.payment(event,{...rsvp,status:'reserve'}).due,false);
+});

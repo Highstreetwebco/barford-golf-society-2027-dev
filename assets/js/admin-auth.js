@@ -111,6 +111,8 @@
       document.querySelector("#adminEventDate").value = event.event_date || "";
       document.querySelector("#adminEventFirstTee").value = timeValue(event.first_tee_time);
       document.querySelector("#adminEventPrice").value = event.price ?? "";
+      document.querySelector("#adminEventGuestPrice").value = event.guest_price ?? "";
+      document.querySelector("#adminEventCourseMemberPrice").value = event.course_member_price ?? "";
       document.querySelector("#adminEventCapacity").value = event.capacity ?? "";
       document.querySelector("#adminEventVideo").value = event.course_video_url || "";
       document.querySelector("#adminEventNotes").value = notesWithoutCancellation(event.notes) || "";
@@ -231,6 +233,8 @@
       event_date: document.querySelector("#adminEventDate").value,
       first_tee_time: document.querySelector("#adminEventFirstTee").value || null,
       price: document.querySelector("#adminEventPrice").value || null,
+      guest_price: document.querySelector("#adminEventGuestPrice").value || null,
+      course_member_price: document.querySelector("#adminEventCourseMemberPrice").value || null,
       capacity: document.querySelector("#adminEventCapacity").value || null,
       course_video_url: document.querySelector("#adminEventVideo").value.trim() || null,
       notes: document.querySelector("#adminEventNotes").value.trim() || null,
@@ -267,13 +271,13 @@
     }
     const [{ data, error }, { data: teeTimesPublished }] = await Promise.all([
       client.from("rsvps")
-        .select("id,member_id,status,payment_status,buggy_requested,preferred_tee_time,guest_name,profiles(full_name,phone)")
+        .select("id,member_id,status,payment_status,is_course_member,buggy_requested,preferred_tee_time,guest_name,profiles(full_name,phone)")
         .eq("event_id", eventId).order("created_at"),
       client.rpc("get_event_rsvp_lock_status", { target_event_id: eventId })
     ]);
     if (error) { setStatus("#adminRsvpStatus", error.message); return; }
     const preferenceLabel = value => ({ dont_mind: "Don’t mind", first: "Early", middle: "Middle", end: "Last" })[value] || "Don’t mind";
-    const row = item => { const paid=item.payment_status==="paid"; return `<article><div><strong>${escapeHtml(item.profiles?.full_name || item.guest_name || "Guest")}</strong><small>${escapeHtml(item.profiles?.phone || "No phone")} · ${item.buggy_requested ? "Buggy requested" : "Walking"} · prefers ${preferenceLabel(item.preferred_tee_time)}</small><span class="payment-status ${paid?"paid":"due"}">${paid?"Paid":"Payment due"}</span></div><div class="admin-row-actions"><button type="button" data-payment-rsvp="${item.id}" data-payment-next="${paid?"payment_due":"paid"}">${paid?"Mark payment due":"Mark as paid"}</button><button type="button" data-edit-rsvp="${item.id}">Change</button>${teeTimesPublished ? "" : `<button class="danger-link" type="button" data-remove-rsvp="${item.id}">Remove</button>`}</div></article>`; };
+    const row = item => { const paid=item.payment_status==="paid"; return `<article><div><strong>${escapeHtml(item.profiles?.full_name || item.guest_name || "Guest")}</strong><small>${escapeHtml(item.profiles?.phone || "No phone")} · ${item.member_id?(item.is_course_member?"Course member price":"Barford member price"):"Guest price"} · ${item.buggy_requested ? "Buggy requested" : "Walking"} · prefers ${preferenceLabel(item.preferred_tee_time)}</small><span class="payment-status ${paid?"paid":"due"}">${paid?"Paid":"Payment due"}</span></div><div class="admin-row-actions"><button type="button" data-payment-rsvp="${item.id}" data-payment-next="${paid?"payment_due":"paid"}">${paid?"Mark payment due":"Mark as paid"}</button><button type="button" data-edit-rsvp="${item.id}">Change</button>${teeTimesPublished ? "" : `<button class="danger-link" type="button" data-remove-rsvp="${item.id}">Remove</button>`}</div></article>`; };
     const active = (data || []).filter(item => item.status === "playing");
     const reserves = (data || []).filter(item => item.status === "reserve");
     playing.innerHTML = active.length ? active.map(row).join("") : "<p>No confirmed players.</p>";

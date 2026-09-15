@@ -14,7 +14,7 @@
       const fetchedEvents=await F.request(client.from('events').select('*').in('status',['scheduled','completed']).gte('event_date',day).order('event_date').order('first_tee_time'));
       const events=fetchedEvents.filter(event=>event.status==='scheduled'||event.event_date===day);
       if(!events.length){host.innerHTML='<article class="simple-card"><h2>No upcoming events yet</h2><p>The committee will add the next event here.</p><a class="button button-primary" href="events.html">View event calendar</a></article>';return;}
-      const rsvps=await F.request(client.from('rsvps').select('id,event_id,status,payment_status,buggy_requested,preferred_tee_time').eq('member_id',auth.session.user.id).in('event_id',events.map(e=>e.id)));
+      const rsvps=await F.request(client.from('rsvps').select('id,event_id,status,payment_status,is_course_member,buggy_requested,preferred_tee_time').eq('member_id',auth.session.user.id).in('event_id',events.map(e=>e.id)));
       const next=events.find(e=>e.event_date===F.today()&&rsvps.some(r=>r.event_id===e.id&&r.status==='playing'))||events.find(e=>!rsvps.some(r=>r.event_id===e.id&&['not_playing','cancelled'].includes(r.status)))||events[0];
       const model=await F.loadEvent(next.id,{session:auth.session,event:next,rsvp:rsvps.find(r=>r.event_id===next.id)||null});window.BarfordEventView.render(host,model,{compact:true});
     }catch(error){

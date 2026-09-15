@@ -18,20 +18,23 @@
     Promise.resolve(operation).then(resolve,reject).finally(() => clearTimeout(timer));
   });
   const request = async operation => { const result = await bounded(operation); if(result?.error) throw result.error; return result?.data; };
+  const eventPrice = (event,rsvp) => rsvp?.is_course_member ? event.course_member_price : event.price;
+  const priceLabel = rsvp => rsvp?.is_course_member ? 'Course member price' : 'Barford member price';
   const payment = (event,rsvp) => {
+    const price=eventPrice(event,rsvp);
     if (event.status === "cancelled") return {label:rsvp?.payment_status === "refunded" ? "Payment refunded" : "Event cancelled",due:false};
     if (rsvp?.payment_status === "refunded") return {label:"Payment refunded",due:false};
     if (rsvp?.payment_status === "paid") return {label:"Paid",due:false};
-    if (rsvp?.payment_status === "waived" || (event.price != null && Number(event.price) === 0)) return {label:"No payment needed",due:false};
+    if (rsvp?.payment_status === "waived" || (price != null && Number(price) === 0)) return {label:"No payment needed",due:false};
     if (rsvp?.status !== "playing") return {label:rsvp?.status === "reserve" ? "No payment requested while on reserve" : "Book before paying",due:false};
-    if (event.price == null) return {label:"Price to be confirmed",due:false};
-    return {label:`${money(event.price)} outstanding`,due:true};
+    if (price == null) return {label:"Price to be confirmed",due:false};
+    return {label:`${money(price)} outstanding`,due:true};
   };
   // Work in pence and use the same eligibility rules as each payment receipt.
   const paymentSummary = (events,rsvps) => events.reduce((total,event)=>{
-    const rsvp=rsvps.find(row=>row.event_id===event.id);
-    if(payment(event,rsvp).due && Number.isFinite(Number(event.price)) && Number(event.price)>0){total.pence+=Math.round(Number(event.price)*100);total.count++;}
-    if(rsvp?.status==='playing' && event.status!=='cancelled' && event.price==null && !['paid','refunded','waived'].includes(rsvp.payment_status))total.unpriced++;
+    const rsvp=rsvps.find(row=>row.event_id===event.id),price=eventPrice(event,rsvp);
+    if(payment(event,rsvp).due && Number.isFinite(Number(price)) && Number(price)>0){total.pence+=Math.round(Number(price)*100);total.count++;}
+    if(rsvp?.status==='playing' && event.status!=='cancelled' && price==null && !['paid','refunded','waived'].includes(rsvp.payment_status))total.unpriced++;
     return total;
   },{pence:0,count:0,unpriced:0});
   const roundReport = (round,players,achievements=[]) => {
@@ -85,7 +88,7 @@
     const model={event,session:auth.session,rsvp:null,locked:false,group:[],card:null,availability:null};
     if (!auth.session) return model;
     const reads = await Promise.allSettled([
-      Object.prototype.hasOwnProperty.call(initial,"rsvp") ? Promise.resolve(initial.rsvp) : request(client.from("rsvps").select("id,event_id,status,payment_status,buggy_requested,preferred_tee_time").eq("event_id",id).eq("member_id",auth.session.user.id).maybeSingle()),
+      Object.prototype.hasOwnProperty.call(initial,"rsvp") ? Promise.resolve(initial.rsvp) : request(client.from("rsvps").select("id,event_id,status,payment_status,is_course_member,buggy_requested,preferred_tee_time").eq("event_id",id).eq("member_id",auth.session.user.id).maybeSingle()),
       request(client.rpc("get_event_rsvp_lock_status",{target_event_id:id})),
       request(client.rpc("get_event_availability",{p_event_id:id})),
       event.tee_times_status === "published" ? request(client.rpc("get_my_event_tee_group",{target_event_id:id})) : Promise.resolve([]),
@@ -117,22 +120,22 @@
     d.querySelector("#copyCommitteeMessage").onclick=async()=>{try{await navigator.clipboard.writeText(d.querySelector("textarea").value);d.querySelector("#committeeMessageStatus").textContent="Copied. Paste it into a message to the committee.";}catch{d.querySelector("textarea").select();d.querySelector("#committeeMessageStatus").textContent="Select and copy the message, then send it to the committee.";}};
     d.querySelector("#shareCommitteeMessage")?.addEventListener("click",async()=>{try{await navigator.share({text:d.querySelector("textarea").value});}catch{}});
   };
-  const saveBooking = async (model,wantsToPlay,buggy,windowChoice) => {
+  const saveBooking = async (model,wantsToPlay,buggy,windowChoice,isCourseMember=model.rsvp?.is_course_member||false) => {
     if (!model.session) {location.href=loginUrl(eventUrl(model.event.id));return null;}
     const locked=await request(client.rpc("get_event_rsvp_lock_status",{target_event_id:model.event.id}));
     if (locked) throw new Error("Bookings have now closed. Please ask the committee to make this change.");
-    await request(client.rpc("set_my_event_rsvp",{p_event_id:model.event.id,p_status:wantsToPlay ? "playing" : "not_playing",p_buggy_requested:Boolean(buggy),p_preferred_tee_time:windowChoice || "dont_mind"}));
+    await request(client.rpc("set_my_priced_event_rsvp",{p_event_id:model.event.id,p_status:wantsToPlay ? "playing" : "not_playing",p_buggy_requested:Boolean(buggy),p_preferred_tee_time:windowChoice || "dont_mind",p_is_course_member:isCourseMember}));
     return loadEvent(model.event.id);
   };
   const openBooking = model => {
     if (!model.session) {location.href=loginUrl(eventUrl(model.event.id));return;}
     if(model.locked) {contact(model.event);return;}
-    const own=model.rsvp,full=model.availability?.available != null && Number(model.availability.available)===0 && own?.status!=="playing";
-    const d=dialog(own?.status === "playing" || own?.status === "reserve" ? "Change booking" : full ? "Join the reserve list" : "Book my place",`<p><strong>${esc(model.event.name)}</strong><br>${esc(date(model.event.event_date))} · ${esc(money(model.event.price))}</p><form id="simpleBookingForm"><fieldset><legend>Walking or buggy?</legend><div class="simple-choices"><label><input type="radio" name="travel" value="walking" ${!own?.buggy_requested ? "checked" : ""}><span>Walking</span></label><label><input type="radio" name="travel" value="buggy" ${own?.buggy_requested ? "checked" : ""}><span>Buggy requested</span></label></div></fieldset><details class="simple-details"><summary>Tee-time preference (optional)</summary><label>Preferred time<select name="teeWindow">${["dont_mind","first","middle","end"].map(v=>`<option value="${v}" ${v===(own?.preferred_tee_time||"dont_mind") ? "selected" : ""}>${preference(v)}</option>`).join("")}</select></label><p>Leave this as No preference for the quickest booking.</p></details>${full ? '<p>If a place opens, you’ll automatically move into the playing list.</p>' : ""}<button class="button button-primary full-button" type="submit">${full ? "Confirm reserve place" : "Confirm booking"}</button><p class="form-status" role="status"></p></form>`);
+    const own=model.rsvp,rateLocked=['paid','waived','refunded'].includes(own?.payment_status),full=model.availability?.available != null && Number(model.availability.available)===0 && own?.status!=="playing";
+    const d=dialog(own?.status === "playing" || own?.status === "reserve" ? "Change booking" : full ? "Join the reserve list" : "Book my place",`<p><strong>${esc(model.event.name)}</strong><br>${esc(date(model.event.event_date))}${model.event.course_member_price==null?' · '+esc(money(eventPrice(model.event,own))):''}</p><form id="simpleBookingForm">${model.event.course_member_price!=null?`<fieldset ${rateLocked?'disabled':''}><legend>Your event price</legend><label><input type="radio" name="memberRate" value="barford" ${!own?.is_course_member?'checked':''}> Barford member · ${esc(money(model.event.price))}</label><label><input type="radio" name="memberRate" value="course_member" ${own?.is_course_member?'checked':''}> Course member · ${esc(money(model.event.course_member_price))}</label><p>Only select Course member if you also belong to ${esc(model.event.venue||'the host golf club')}.</p>${rateLocked?'<p>Your payment is settled. Contact the committee to change your price category.</p>':''}</fieldset>`:''}<fieldset><legend>Walking or buggy?</legend><div class="simple-choices"><label><input type="radio" name="travel" value="walking" ${!own?.buggy_requested ? "checked" : ""}><span>Walking</span></label><label><input type="radio" name="travel" value="buggy" ${own?.buggy_requested ? "checked" : ""}><span>Buggy requested</span></label></div></fieldset><details class="simple-details"><summary>Tee-time preference (optional)</summary><label>Preferred time<select name="teeWindow">${["dont_mind","first","middle","end"].map(v=>`<option value="${v}" ${v===(own?.preferred_tee_time||"dont_mind") ? "selected" : ""}>${preference(v)}</option>`).join("")}</select></label><p>Leave this as No preference for the quickest booking.</p></details>${full ? '<p>If a place opens, you’ll automatically move into the playing list.</p>' : ""}<button class="button button-primary full-button" type="submit">${full ? "Confirm reserve place" : "Confirm booking"}</button><p class="form-status" role="status"></p></form>`);
     d.querySelector("form").onsubmit=async e=>{
       e.preventDefault();const button=d.querySelector('[type="submit"]'),status=d.querySelector(".form-status"),data=new FormData(e.currentTarget);button.disabled=true;button.textContent="Saving booking…";
       try{
-        const fresh=await saveBooking(model,true,data.get("travel")==="buggy",data.get("teeWindow"));
+        const fresh=await saveBooking(model,true,data.get("travel")==="buggy",data.get("teeWindow"),model.event.course_member_price!=null&&!rateLocked?data.get("memberRate")==="course_member":Boolean(own?.is_course_member));
         if(!fresh || fresh.bookingError || fresh.session?.user.id !== model.session.user.id || !["playing","reserve"].includes(fresh.rsvp?.status)) throw new Error("Your request was sent, but we could not check the confirmation. Close this message and refresh before trying again.");
         d.close();window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id,model:fresh}}));
         dialog(fresh.rsvp?.status === "reserve" ? "You’re on the reserve list" : "Your place is booked",`<p>${esc(model.event.name)} · ${esc(date(model.event.event_date))}</p><p>${fresh.rsvp?.buggy_requested ? "Buggy requested" : "Walking"} · ${esc(preference(fresh.rsvp?.preferred_tee_time))} tee-time preference</p><p>${esc(payment(fresh.event,fresh.rsvp).label)}</p><a class="button button-primary full-button" href="${eventUrl(model.event.id)}">View my booking</a>`);
@@ -181,5 +184,5 @@
     if(action.kind==="book")openBooking(model);else if(action.kind==="contact")contact(model.event);else if(action.kind==="scorer")chooseScorer(model);else if(action.kind==="retry")window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id}}));else location.href=action.href;
   };
   const promotions = async () => {if(!client)return;try{const auth=await request(client.auth.getSession());if(!auth?.session)return;const rows=await request(client.rpc("get_my_unseen_rsvp_promotions"));const p=rows?.[0];if(!p || activeDialog)return;const d=dialog("A place has opened for you",`<p>You’ve moved from reserve to the playing list for <strong>${esc(p.event_name)}</strong>.</p><button class="button button-primary full-button" id="promotionSeen" type="button">View my booking</button><p class="form-status" role="status"></p>`);d.querySelector("#promotionSeen").onclick=async()=>{try{await request(client.rpc("mark_my_rsvp_promotion_seen",{p_id:p.id}));location.href=eventUrl(p.event_id);}catch{d.querySelector(".form-status").textContent="Please try again.";}};}catch{}};
-  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,payment,paymentSummary,roundReport,shareText,bookingLabel,nextAction,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
+  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,eventPrice,priceLabel,payment,paymentSummary,roundReport,shareText,bookingLabel,nextAction,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
 })();
