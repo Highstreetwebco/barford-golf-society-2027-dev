@@ -64,7 +64,7 @@
     if (rsvp?.status === "reserve") return {...details,label:"View reserve booking",message:"You’re on reserve. We’ll move you into the playing list if a place opens."};
     if (rsvp?.status === "playing" && event.event_date === today() && card) return {kind:card.scorer_id ? "link" : "scorer",href:scoreUrl(model),label:!card.scorer_id ? "Choose our scorer" : card.scorer_id === session.user.id ? card.status === "in_progress" ? "Continue round" : "Open scorecard" : "View group scorecard",message:card.scorer_id === session.user.id ? "You’re scoring for your group today." : card.scorer_id ? "Your group’s scorer is ready." : "Choose one person to enter your group’s scores."};
     const pay = payment(event,rsvp);
-    if (rsvp?.status === "playing" && pay.due) return {kind:"link",label:"Payment details",href:`payments.html?event=${encodeURIComponent(event.id)}`,message:`You’re playing. ${pay.label}.`};
+    if (rsvp?.status === "playing" && pay.due) return {kind:"link",label:"Pay now",href:`payments.html?event=${encodeURIComponent(event.id)}`,message:`You’re playing. ${pay.label}.`};
     if (rsvp?.status === "playing") return {...details,label:group.length ? "View my group" : "View booking",href:eventUrl(event.id)+(group.length ? "#my-group" : ""),message:group.length ? `Your tee time is ${time(group.find(p=>p.is_you)?.tee_time || group[0].tee_time)}.` : "You’re all set. Your tee time will appear here when it is ready."};
     if (locked === null) return {kind:"retry",label:"Try again",message:"We couldn’t check whether bookings are open."};
     if (locked) return {kind:"contact",label:"Request a change",message:"Bookings are closed while the committee arranges the groups."};

@@ -2,6 +2,8 @@ window.BARFORD_2027_CONFIG = Object.freeze({
   supabaseUrl: "https://xspzmthygrajzktydvvj.supabase.co",
   supabasePublishableKey: "sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c",
   season: 2027,
+  stripeCheckoutEnabled: false,
+  stripeCheckoutFunction: "create-event-checkout",
   galleryBucket: "gallery-images",
   profileBucket: "profile-images"
 });

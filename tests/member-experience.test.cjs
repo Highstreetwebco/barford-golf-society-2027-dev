@@ -295,3 +295,18 @@ test('dashboard result summary respects restricted rounds and shows personal poi
  c.window.BarfordDashboardResults.render(host,e,snapshot,'round-1','member-1');assert.match(host.innerHTML,/You scored 35/);assert.match(host.innerHTML,/event=event-1/);
  round.restricted=true;c.window.BarfordDashboardResults.render(host,e,snapshot,'round-1','member-1');assert.doesNotMatch(host.innerHTML,/You scored 35/);assert.match(host.innerHTML,/presentation evening/);
 });
+
+test('Pay now preparation never calls checkout while Stripe is disabled and skips settled bookings',async()=>{
+ const messages=[],calls=[],button={disabled:false,textContent:'Pay now'},event={id:'event-1',name:'Golf day',price:50,course_member_price:15,status:'scheduled'};
+ const c={window:{BarfordMemberFlow:{...F,dialog:(title,html)=>{messages.push({title,html});return{querySelector:()=>({}),close(){}};}},BARFORD_2027_CONFIG:{stripeCheckoutEnabled:false},BarfordSupabase:{functions:{invoke:async(...args)=>calls.push(args)}}},URL,navigator:{onLine:true}};
+ vm.createContext(c);vm.runInContext(source('payment-checkout.js'),c);
+ await c.window.BarfordPayments.pay(event,{status:'playing',payment_status:'payment_due',is_course_member:true},button);assert.equal(calls.length,0);assert.match(messages[0].html,/15/);assert.match(messages[0].html,/remains unpaid/);
+ for(const rsvp of [{status:'reserve'},{status:'playing',payment_status:'paid'},{status:'playing',payment_status:'waived'},{status:'playing',payment_status:'refunded'}])await c.window.BarfordPayments.pay(event,rsvp,button);
+ assert.equal(messages.length,1);assert.equal(calls.length,0);
+});
+test('prepared checkout sends only event ID and accepts only a Stripe-hosted HTTPS redirect',async()=>{
+ const calls=[],messages=[],destinations=[],button={disabled:false,textContent:'Pay now'},event={id:'event-1',name:'Golf day',price:50,status:'scheduled'};let url='https://checkout.stripe.com/c/pay/test-session';
+ const c={window:{BarfordMemberFlow:{...F,bounded:async p=>p,dialog:(...args)=>messages.push(args)},BARFORD_2027_CONFIG:{stripeCheckoutEnabled:true,stripeCheckoutFunction:'create-event-checkout'},BarfordSupabase:{functions:{invoke:async(name,args)=>{calls.push({name,args});return{data:{url}};}}}},URL,navigator:{onLine:true},location:{assign:u=>destinations.push(u)}};
+ vm.createContext(c);vm.runInContext(source('payment-checkout.js'),c);await c.window.BarfordPayments.pay(event,{status:'playing'},button);assert.deepEqual(clone(calls[0].args),{body:{event_id:'event-1'}});assert.equal(destinations.length,1);
+ url='https://example.com/fake-checkout';await c.window.BarfordPayments.pay(event,{status:'playing'},button);assert.equal(destinations.length,1);assert.equal(button.disabled,false);assert.equal(messages.length,1);
+});

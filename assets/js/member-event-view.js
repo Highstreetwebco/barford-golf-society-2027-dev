@@ -12,7 +12,7 @@
     const dashboardCard=Boolean(compact&&session&&rsvp?.status==='playing'&&event.status!=='cancelled'&&event.event_date>=F.today()&&event.tee_times_status==='published'&&own&&tee);
     const action=F.nextAction(compact&&!dashboardCard?{...model,card:null,group:[]}:model);
     const scoreAction=dashboardCard&&card&&(action.kind==='scorer'||action.href===F.scoreUrl(model));
-    const showPrimary=!scoreAction&&(compact||action.kind!=='link'||action.href!==F.eventUrl(event.id));
+    const showPrimary=!(pay.due&&action.href===`payments.html?event=${encodeURIComponent(event.id)}`)&&!scoreAction&&(compact||action.kind!=='link'||action.href!==F.eventUrl(event.id));
     const displayedTee=tee||(!compact?group[0]?.tee_time:null);
     const notes=String(event.notes||'').split('[BARFORD_CANCEL_REASON]')[0].trim();
     const date=new Date(`${event.event_date}T12:00:00`);
@@ -35,6 +35,7 @@
         <h${compact?'2':'1'}>${esc(event.name)}</h${compact?'2':'1'}>
         <p>${esc(event.venue||'Venue to be confirmed')}</p></div>${dateTicket}</header>
         <div class="clubhouse-event-body"><p class="simple-event-date">${esc(F.date(event.event_date))}</p>
+        ${pay.due?`<a class="button button-primary full-button" href="payments.html?event=${encodeURIComponent(event.id)}">Pay now · ${esc(F.money(F.eventPrice(event,rsvp)))}</a>`:''}
         <div class="simple-next-action"><strong>${esc(F.bookingLabel(model))}</strong><p>${esc(action.message||'')}</p>${showPrimary?button('primary',action.label,true):''}</div>
         ${compact&&matchDay&&!dashboardCard?`<p role="status">${event.tee_times_status==='published'?'Your published tee group is not available here yet. Refresh to check again.':'Your tee time, group and scorer selection will appear above this event once the committee publishes the tee groups.'}</p>${event.tee_times_status==='published'?button('refresh-card','Check my tee group'):''}`:''}
         ${reason&&event.status==='cancelled'?`<p>${esc(reason)}</p>`:''}
