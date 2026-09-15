@@ -321,3 +321,24 @@ test('dashboard Pay now opens checkout in place with the current event and price
  await pay.click();assert.equal(calls.length,1);assert.equal(calls[0][0],m.event);assert.equal(calls[0][1],m.rsvp);assert.equal(calls[0][2],pay);
  m.rsvp.payment_status='paid';context.window.BarfordEventView.render(host,m,{compact:true});assert.equal(host.querySelector('[data-member-action="pay"]'),null);
 });
+
+test('published group photos load without blocking the group and enable enlargement only after success',async()=>{
+ for(const compact of [true,false]){
+  const document=documentStub(),host=new Element({},document),images=[];let resolvePhotos,requests=0;
+  const create=document.createElement.bind(document);document.createElement=tag=>{const el=create(tag);if(tag==='img')images.push(el);return el;};
+  const client={storage:{from:bucket=>{assert.equal(bucket,'profile-images');return {createSignedUrls:paths=>{requests++;assert.deepEqual(Array.from(paths),['one.jpg','two.jpg']);return new Promise(resolve=>resolvePhotos=resolve);}};}}};
+  const context={window:{BarfordMemberFlow:{...F,request:async p=>(await p).data},BarfordSupabase:client,dispatchEvent(){}},document,Date,CustomEvent:class{},Set,Map};
+  vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+  const m=base();m.event.event_date=F.today();m.event.tee_times_status='published';m.rsvp={status:'playing'};
+  m.group=[{member_id:'member-1',full_name:'First Player',is_you:true,tee_time:'09:00',photo_url:'one.jpg'},{member_id:'member-2',full_name:'Second Player',tee_time:'09:00',photo_url:'two.jpg'},{member_id:'member-3',full_name:'No Photo',tee_time:'09:00'}];
+  context.window.BarfordEventView.render(host,m,{compact});
+  assert.match(host.innerHTML,/First Player/);assert.match(host.innerHTML,/No profile photo for No Photo/);assert.equal(requests,1);
+  const first=host.querySelector('[data-group-photo="0"]'),second=host.querySelector('[data-group-photo="1"]');
+  assert.equal(first.disabled,true);assert.equal(first.dataset.profilePhoto,undefined);
+  first.replaceChildren=img=>first.children=[img];
+  resolvePhotos({data:[{path:'one.jpg',signedUrl:'https://signed.example/one'},{path:'two.jpg',signedUrl:'https://signed.example/two'}]});await settle();
+  images[0].onload();images[1].onerror();
+  assert.equal(first.dataset.profilePhoto,'https://signed.example/one');assert.equal(first.disabled,false);assert.equal(first.children[0].alt,'First Player');
+  assert.equal(second.disabled,true);assert.equal(second.dataset.profilePhoto,undefined);assert.match(second.attrs['aria-label'],/Photo unavailable/);
+ }
+});
