@@ -112,13 +112,13 @@ def local_tests(pw):
         gateway(page)
         record('Normal reload stays on the latest homepage after recovery')
         current = root / 'golf/index.html'
-        current.write_text(current.read_text().replace('Welcome to Barford', 'Welcome to Barford NEXT RELEASE'))
+        current.write_text(current.read_text().replace('See you on<br>the first tee.', 'Barford NEXT RELEASE'))
         page.reload()
-        expect(page.get_by_role('heading', name='Welcome to Barford NEXT RELEASE')).to_be_visible()
+        expect(page.get_by_role('heading', name='Barford NEXT RELEASE')).to_be_visible()
         record('A later HTML edit is served on reload even when the worker version is unchanged')
         context.set_offline(True)
         page.reload()
-        expect(page.get_by_role('heading', name='Welcome to Barford NEXT RELEASE')).to_be_visible()
+        expect(page.get_by_role('heading', name='Barford NEXT RELEASE')).to_be_visible()
         saved_scores(page)
         response = page.goto(base + 'scoring.html?event=cache-test&card=offline-test')
         assert response.status == 200

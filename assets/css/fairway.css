@@ -44,7 +44,7 @@ html body.clubhouse .visitor-gateway-card h2{font-size:clamp(2rem,3.5vw,3rem);ma
 html body.clubhouse .visitor-gateway-card>p{margin:0 0 24px;max-width:none;color:#53634f}
 html body.clubhouse .visitor-gateway-actions{gap:12px}
 html body.clubhouse #visitorGateway .visitor-gateway-actions .button{justify-content:space-between;padding:17px 20px;text-align:left}
-html body.clubhouse #visitorGateway .visitor-gateway-actions .button::after{content:'↗';font-size:1.2rem;margin-left:16px}
+html body.clubhouse #visitorGateway .visitor-gateway-actions .button>span[aria-hidden]{font-size:1.2rem;margin-left:16px}
 html body.clubhouse #visitorGateway .visitor-gateway-actions .button-primary{background:#163e2b!important;border-color:#163e2b!important}
 html body.clubhouse #visitorGateway .visitor-gateway-actions .button-outline{background:transparent!important;border-color:#8d9f83!important}
 html body.clubhouse .visitor-gateway-login{font-size:.88rem;text-underline-offset:5px;margin:23px 0}

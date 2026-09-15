@@ -41,7 +41,7 @@
     "assets/js/event-hub.js": "assets/dist/event-hub.6ddd145ba589.js",
     "assets/js/events-live.js": "assets/dist/events-live.89031bdc4040.js",
     "assets/js/gallery-live.js": "assets/dist/gallery-live.be6c800f9a38.js",
-    "assets/css/fairway.css": "assets/dist/fairway.8da898fa14bd.css",
+    "assets/css/fairway.css": "assets/dist/fairway.6247a9edb681.css",
     "assets/css/clubhouse-course.css": "assets/dist/clubhouse-course.153cb4a54a66.css",
     "assets/js/offline-course-view.js": "assets/dist/offline-course-view.9aa941c66033.js",
     "assets/js/course-view.js": "assets/dist/course-view.efb2ab119ccc.js",
@@ -57,11 +57,11 @@
   "pages": {
     "404.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.80dfc63b1a31.css"
+      "assets/dist/member-ui.ce9f50d3ed0f.css"
     ],
     "about.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.1f8e347a3df9.css",
+      "assets/dist/member-ui.ea3ba2b5ac7f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
@@ -71,7 +71,7 @@
     ],
     "account.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.c59f2d38efa9.css",
+      "assets/dist/member-ui.365c9ff12541.css",
       "assets/dist/account-session.fc381c6f666a.js",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
@@ -87,7 +87,7 @@
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/admin-bundle.a61322989f7e.css",
       "assets/dist/accessible-mobile.94f5c043e76a.css",
-      "assets/dist/member-ui.eccee8579dfe.css",
+      "assets/dist/member-ui.fb0b2745e78c.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -104,7 +104,7 @@
     ],
     "event.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.7ca1a83f649e.css",
+      "assets/dist/member-ui.45f864c42f5f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -118,7 +118,7 @@
     ],
     "events.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.7ca1a83f649e.css",
+      "assets/dist/member-ui.45f864c42f5f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -130,7 +130,7 @@
     ],
     "gallery.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.5b4ccb1c2053.css",
+      "assets/dist/member-ui.6172741fe829.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -141,13 +141,13 @@
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
     "halfway-preview.html": [
-      "assets/dist/fairway.8da898fa14bd.css"
+      "assets/dist/fairway.6247a9edb681.css"
     ],
     "hole-view.html": [
       "assets/dist/deep-teal-theme-bundle.adfc76104919.css",
       "assets/dist/personal-theme.a32de06727cf.css",
       "assets/dist/clubhouse-course.153cb4a54a66.css",
-      "assets/dist/fairway.8da898fa14bd.css",
+      "assets/dist/fairway.6247a9edb681.css",
       "assets/dist/offline-course-view.9aa941c66033.js",
       "assets/dist/offline-register.47b92b606ceb.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -157,7 +157,7 @@
     ],
     "index.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.af3321e3da96.css",
+      "assets/dist/member-ui.f2d4831b07d5.css",
       "assets/dist/offline-register.47b92b606ceb.js",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
@@ -172,7 +172,7 @@
     ],
     "payments.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.1f8e347a3df9.css",
+      "assets/dist/member-ui.ea3ba2b5ac7f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -184,7 +184,7 @@
     ],
     "scores.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.d4e1e9914383.css",
+      "assets/dist/member-ui.8ea0e40d335f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -197,7 +197,7 @@
     "scoring.html": [
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/scoring-bundle.9115e3547938.css",
-      "assets/dist/member-ui.8f051652d838.css",
+      "assets/dist/member-ui.24eec56ff2d1.css",
       "assets/dist/offline-register.47b92b606ceb.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
@@ -209,7 +209,7 @@
     ],
     "shop.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.1f8e347a3df9.css",
+      "assets/dist/member-ui.ea3ba2b5ac7f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
@@ -219,7 +219,7 @@
     ],
     "signup.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.c59f2d38efa9.css",
+      "assets/dist/member-ui.365c9ff12541.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
@@ -231,11 +231,11 @@
       "assets/dist/accessible-mobile.dea27d303f10.js"
     ],
     "update.html": [
-      "assets/dist/fairway.8da898fa14bd.css"
+      "assets/dist/fairway.6247a9edb681.css"
     ],
     "worldevents.html": [
       "assets/dist/styles.25b6981ca7d7.css",
-      "assets/dist/member-ui.1f8e347a3df9.css",
+      "assets/dist/member-ui.ea3ba2b5ac7f.css",
       "assets/dist/site-navigation.5899fefb28bf.js",
       "assets/dist/app.ab8f411b9569.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
@@ -245,24 +245,24 @@
     ]
   },
   "pageHashes": {
-    "404.html": "bee93c5e0641",
-    "about.html": "c24a058aa8d7",
-    "account.html": "27e6afcf416e",
-    "admin.html": "dde240041587",
-    "event.html": "6c7b1dd01027",
-    "events.html": "c5a75b5e2783",
-    "gallery.html": "6fadca77414c",
-    "halfway-preview.html": "56f2bde1e7fb",
-    "hole-view.html": "0ed975fd61ea",
-    "index.html": "abb6a0abe375",
-    "payments.html": "3fd0a5a0ca8b",
-    "scores.html": "d1461f94834a",
-    "scoring.html": "3703002242ea",
-    "shop.html": "8e99f4253a12",
-    "signup.html": "2ff38ad5d5b8",
-    "update.html": "648a8f870f09",
-    "worldevents.html": "24485683aac5"
+    "404.html": "dbd0f7fc652d",
+    "about.html": "1cee08349998",
+    "account.html": "f4c89394d004",
+    "admin.html": "93a096d65f75",
+    "event.html": "34a58802b205",
+    "events.html": "7ccf3a5d075e",
+    "gallery.html": "fdf0a4bc2331",
+    "halfway-preview.html": "0ba141a67b86",
+    "hole-view.html": "2ee4df9e3206",
+    "index.html": "fe5acb373711",
+    "payments.html": "aa17447628fe",
+    "scores.html": "c6db03867814",
+    "scoring.html": "28917dd85db9",
+    "shop.html": "9ae208b4f6b6",
+    "signup.html": "8460e8736345",
+    "update.html": "47fe50898599",
+    "worldevents.html": "d753ae48ccdf"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "a4a77cf1d82b"
+  "build": "06ec3ea8d470"
 }
