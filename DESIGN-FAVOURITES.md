@@ -27,3 +27,7 @@ Jack selected Drive as his new favourite before testing the Round flow.
 ## Tee sheet — independent interface experiment
 
 `tee-sheet.html` is a separate live fixture-board interface with its own HTML, CSS and controller. It reuses existing protected booking and scorer operations. Drive remains the saved favourite and default. Secondary links open existing feature pages. Preview on a phone with `designs.html?design=teesheet`.
+
+## Drive II — favourite variation
+
+Preview `index.html?design=drive-two` or `designs.html?design=drive-two`. Reuses Drive identity and live page controls, with compact entry, prominent member/guest actions and secondary dashboard shortcuts after the round. Original Drive remains the default and saved favourite.
