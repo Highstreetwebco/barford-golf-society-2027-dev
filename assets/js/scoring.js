@@ -6,7 +6,7 @@
   let session,model,selected,hole=1,view='card',loading=false,flushing=null,refreshing=null,busy=false,syncTimer,storageOK=true,lastSyncError="",verifiedCard=null,offlineMemberId=null,identityBlocked=false,saveVersion=0;
   const show=id=>$(id)?.classList.remove('hidden'),hide=id=>$(id)?.classList.add('hidden');
   const activeUserId=()=>session?.user?.id||offlineMemberId;
-  const canEdit=()=>!identityBlocked&&model?.card.status==='in_progress'&&model.card.scorer_id===activeUserId()&&!model.submitQueued&&!busy;
+  const canEdit=()=>!identityBlocked&&(!verifiedCard||(verifiedCard.status==='in_progress'&&verifiedCard.scorer_id===activeUserId()))&&model?.card.status==='in_progress'&&model.card.scorer_id===activeUserId()&&!model.submitQueued&&!busy;
   const hasPending=()=>Object.keys(model?.dirty||{}).length>0;
   const connectionError=error=>/connection|network|failed to fetch|fetch failed|timeout|timed out|taking too long|load failed/i.test(error?.message||'');
   const ownScorer=()=>model?.card.scorer_id===activeUserId();
@@ -39,33 +39,45 @@
     try{const maps=await F.request(client.from('course_hole_maps').select('*').eq('course_scorecard_id',model.event.course_scorecard_id));const record={eventId:model.card.event_id,courseId:model.event.course_scorecard_id,eventData:model.event,holes:model.holes,views:maps,savedAt:Date.now()};for(const suffix of [`${record.courseId}:${record.eventId}`,record.courseId])localStorage.setItem('barford-course-'+suffix,JSON.stringify(record));}catch{}
   }
   function unavailable(message){hide('scoreLoading');hide('scoreReady');hide('halfwayReview');hide('roundReview');show('scoreUnavailable');$('scoreUnavailableMessage').textContent=message;}
+  function restore(cached){
+    model=cached;model.scores=Object.fromEntries(Object.entries(model.scores||{}).map(([k,v])=>[k,M.normalise(v)]));
+    model.dirty=model.dirty||Object.fromEntries(Object.entries(model.scores).map(([k,v])=>[k,v.changed_at]));model.cleared=model.cleared||[];
+    hole=Math.min(18,Math.max(1,Number(params.get('hole')||model.hole)||1));selected=model.selected||model.players[0]?.id;view=model.view||'card';
+  }
+  const completeCopy=c=>c?.card?.id&&c.players?.length&&c.holes?.length===18&&(!requestedCard||c.card.id===requestedCard)&&(!requestedEvent||c.card.event_id===requestedEvent);
+  const resumable=(c,id)=>id&&completeCopy(c)&&c.userId===id&&c.card.status==='in_progress'&&c.card.scorer_id===id;
+  function showSaved(){lastSyncError=navigator.onLine?'Saved on this phone — checking connection…':'Offline — scores saved on this phone';hide('scoreLoading');hide('scoreUnavailable');render();}
   async function load(){
     if(loading)return;loading=true;
     try{
-      const auth=await F.request(client.auth.getSession());session=auth.session;
-      if(session)try{localStorage.setItem('barford-score-active-member',session.user.id);}catch{}
-      if(!session){$('scoreSignIn').href=F.loginUrl(location.href);show('scoreSignIn');throw Error('Sign in to open your group’s scorecard.');}
-      const cached=await F.bounded(S.read(session.user.id,requestedCard,requestedEvent),4000).catch(()=>null);
-      if(cached){model=cached;model.dirty=model.dirty||Object.fromEntries(Object.entries(model.scores||{}).map(([k,v])=>[k,v.changed_at||'1970-01-01T00:00:00.000Z']));model.cleared=model.cleared||[];hole=Math.min(18,Math.max(1,Number(params.get('hole')||model.hole)||1));selected=model.selected;view=model.view||'card';}
+      let id;try{id=localStorage.getItem('barford-score-active-member');}catch{}
+      // Paint a previously started round before auth, IndexedDB or network work.
+      if(!model&&!identityBlocked){const fast=S.peek(id,requestedCard,requestedEvent);if(resumable(fast,id)){offlineMemberId=id;restore(fast);showSaved();}}
+      if(model&&offlineMemberId&&!navigator.onLine)return;
+      let auth;
+      try{auth=await F.request(client.auth.getSession());}catch(error){if(!connectionError(error)){identityBlocked=true;offlineMemberId=null;}throw error;}
+      if(!auth.session||(offlineMemberId&&auth.session.user.id!==offlineMemberId)){
+        identityBlocked=true;offlineMemberId=null;$('scoreSignIn').href=F.loginUrl(location.href);show('scoreSignIn');throw Error('Sign in with the member account used for this round.');
+      }
+      session=auth.session;offlineMemberId=null;identityBlocked=false;
+      try{localStorage.setItem('barford-score-active-member',session.user.id);}catch{}
+      // Never replace edits made while the background checks were pending.
+      if(!model){const cached=S.peek(session.user.id,requestedCard,requestedEvent)||await F.bounded(S.read(session.user.id,requestedCard,requestedEvent),4000).catch(()=>null);if(completeCopy(cached)&&cached.userId===session.user.id){restore(cached);showSaved();}}
       if(navigator.onLine)await refresh();
       else if(!model)throw Error('Open this scorecard once while connected so it is available on this phone.');
-      if(!model.players?.length||model.holes?.length!==18)throw Error('The committee is still preparing this scorecard. Please return to your event.');
+      if(!completeCopy(model))throw Error('The committee is still preparing this scorecard. Please return to your event.');
       if(!selected||!model.players.some(p=>p.id===selected))selected=model.players.find(p=>!M.valid(model.scores[M.key(p.id,hole)]))?.id||model.players[0].id;
-      hide('scoreLoading');hide('scoreUnavailable');render();
+      lastSyncError='';hide('scoreLoading');hide('scoreUnavailable');render();
       if(navigator.onLine&&(hasPending()||model.submitQueued))flush();
       cacheCourse();
     }catch(error){
-      if(!session&&connectionError(error)){
+      if(!identityBlocked&&!session&&!model&&connectionError(error)){
         let id;try{id=localStorage.getItem('barford-score-active-member');}catch{}
-        if(id){const cached=await S.read(id,requestedCard,requestedEvent).catch(()=>null);
-          if(cached?.userId===id&&cached.card?.status==='in_progress'&&cached.card.scorer_id===id&&cached.players?.length&&cached.holes?.length===18){
-            offlineMemberId=id;model=cached;model.scores=Object.fromEntries(Object.entries(model.scores||{}).map(([k,v])=>[k,M.normalise(v)]));model.dirty=model.dirty||Object.fromEntries(Object.entries(model.scores).map(([k,v])=>[k,v.changed_at]));model.cleared=model.cleared||[];hole=Math.min(18,Math.max(1,Number(params.get('hole')||model.hole)||1));selected=model.selected||model.players[0].id;view=model.view||'card';
-            lastSyncError='Using your saved round. Reconnect to send scores.';hide('scoreLoading');hide('scoreUnavailable');render();return;
-          }
-        }
+        if(id){const cached=await F.bounded(S.read(id,requestedCard,requestedEvent),4000).catch(()=>null);if(resumable(cached,id)){offlineMemberId=id;restore(cached);}}
       }
-      if(model?.card?.id&&model.players?.length&&model.holes?.length===18&&(!navigator.onLine||connectionError(error))&&(!verifiedCard||(verifiedCard.status==='in_progress'&&verifiedCard.scorer_id===session?.user.id))){lastSyncError='Using the scorecard saved on this phone. Connection unavailable; tap to retry.';render();}else unavailable(error.message||'Your scorecard could not be opened. Please try again.');}
-    finally{loading=false;}
+      if(!identityBlocked&&completeCopy(model)&&connectionError(error)&&(!verifiedCard||(verifiedCard.status==='in_progress'&&verifiedCard.scorer_id===activeUserId()))){lastSyncError='Using the scorecard saved on this phone. Connection unavailable; tap to retry.';hide('scoreLoading');hide('scoreUnavailable');render();}
+      else unavailable(error.message||'Your scorecard could not be opened. Please try again.');
+    }finally{loading=false;}
   }
   async function confirmSession(){
     if(identityBlocked)throw Error('Sign in again to send this saved scorecard.');

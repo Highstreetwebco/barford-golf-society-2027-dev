@@ -1,4 +1,5 @@
-/* HTML and mutable assets must reach the network first. Offline scoring data is
+/* Most HTML and mutable assets reach the network first. Scoring opens the saved
+   shell immediately; each release installs its matching hashed assets. Offline scoring data is
    stored by the scoring app, not here: never clear localStorage or IndexedDB. */
 const CACHE='barford-golf-2027-offline-v__RELEASE__';
 const PREFIX='barford-golf-2027-offline-';
@@ -57,6 +58,7 @@ self.addEventListener('fetch',event=>{
     const key=page?pageKey(url):url.href;
     // Only content-addressed bundles are cache-first. Never fall back to a
     // versionless URL for a versioned script or stylesheet.
+    if(path==='scoring.html'){const hit=await (await caches.open(CACHE)).match(key);if(hit)return hit;}
     if(immutable(path)){const hit=await cached(key);if(hit)return hit;}
     try{
       const response=await fetch(request,{cache:immutable(path)?'default':'no-store'});

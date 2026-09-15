@@ -65,8 +65,9 @@ function documentStub(){
  d.body=new Element({},d);d.parse(fs.readFileSync(path.join(root,'scoring.html'),'utf8'));return d;
 }
 const settle=async()=>{for(let i=0;i<15;i++)await new Promise(resolve=>setImmediate(resolve));};
-function scoringHarness({offline=false,cardStatus='in_progress',view='card',hole=7,networkFailure=false,submitFailure=false,syncFailure=false,authFailure=null,rememberedMember=true,scorerId='member-1'}={}){
+function scoringHarness({offline=false,cardStatus='in_progress',view='card',hole=7,networkFailure=false,submitFailure=false,syncFailure=false,authFailure=null,networkPending=false,backupPending=false,rememberedMember=true,scorerId='member-1'}={}){
  const document=documentStub(),timers=new Set(),calls=[],storage=new Map();
+ let releaseNetwork;const networkGate=new Promise(resolve=>releaseNetwork=resolve);
  const players=[{id:'player-1',member_id:'member-1',display_name:'First Member',position:1,playing_category:'women',handicap_used:18},{id:'player-2',member_id:'member-2',display_name:'Second Member',position:2,playing_category:'men',handicap_used:18}];
  const holes=Array.from({length:18},(_,i)=>({hole_number:i+1,par:4,red_par:4,yards:350,red_yards:310,stroke_index:i+1,red_stroke_index:i+1}));
  const card={id:'card-1',event_id:'event-1',scorer_id:scorerId,status:cardStatus};
@@ -74,14 +75,14 @@ function scoringHarness({offline=false,cardStatus='in_progress',view='card',hole
  const scores=Object.fromEntries(players.flatMap(p=>holes.map(h=>[M.key(p.id,h.hole_number),{scorecard_player_id:p.id,hole_number:h.hole_number,strokes:4,picked_up:false,changed_at:'2026-09-10T09:00:00Z'}])));
  let cache={userId:'member-1',card:clone(card),players,holes,event,scores,dirty:{},cleared:[],submitQueued:false,hole,selected:'player-1',view,savedAt:1};
  if(rememberedMember)storage.set('barford-score-active-member','member-1');
- const auth={getSession:async()=>authFailure?{data:{session:null},...(authFailure==='signed-out'?{}:{error:{message:authFailure==='network'?'Failed to fetch':'Invalid refresh token'}})}:{data:{session:{user:{id:'member-1'}}}}};
- const client={auth,from(table){const q={filters:{},select(){return this;},eq(k,v){this.filters[k]=v;return this;},in(){return this;},order(){return this;},limit(){return this;},single(){return this;},maybeSingle(){return this;},then(resolve,reject){calls.push({table,filters:this.filters});let data;if(networkFailure&&table==='event_scorecards')return Promise.resolve({error:{message:'Failed to fetch'}}).then(resolve,reject);if(table==='event_scorecards')data=clone(card);else if(table==='event_scorecard_players')data=clone(players);else if(table==='event_holes')data=clone(holes);else if(table==='events')data=clone(event);else if(table==='event_hole_scores')data=Object.values(scores).map(v=>({...v,client_changed_at:v.changed_at}));else data=[];return Promise.resolve({data}).then(resolve,reject);}};return q;},async rpc(name,args){calls.push({rpc:name,args:clone(args)});if(name==='claim_scorecard')card.status='in_progress';if(name==='sync_scorecard'&&syncFailure)return{error:{message:'Failed to fetch'}};if(name==='submit_scorecard'){if(submitFailure)return{error:{message:'Submission refused by server'}};card.status='submitted';}if(name==='handoff_scorecard')card.scorer_id=args.target_new_scorer_id;return{data:card.id};}};
+ const auth={getSession:async()=>authFailure==='pending'?new Promise(()=>{}):authFailure?{data:{session:null},...(authFailure==='signed-out'?{}:{error:{message:authFailure==='network'?'Failed to fetch':'Invalid refresh token'}})}:{data:{session:{user:{id:'member-1'}}}}};
+ const client={auth,from(table){const q={filters:{},select(){return this;},eq(k,v){this.filters[k]=v;return this;},in(){return this;},order(){return this;},limit(){return this;},single(){return this;},maybeSingle(){return this;},then(resolve,reject){calls.push({table,filters:this.filters});let data;if(networkFailure&&table==='event_scorecards')return Promise.resolve({error:{message:'Failed to fetch'}}).then(resolve,reject);if(table==='event_scorecards')data=clone(card);else if(table==='event_scorecard_players')data=clone(players);else if(table==='event_holes')data=clone(holes);else if(table==='events')data=clone(event);else if(table==='event_hole_scores')data=Object.values(scores).map(v=>({...v,client_changed_at:v.changed_at}));else data=[];return (networkPending?networkGate.then(()=>({data})):Promise.resolve({data})).then(resolve,reject);}};return q;},async rpc(name,args){calls.push({rpc:name,args:clone(args)});if(name==='claim_scorecard')card.status='in_progress';if(name==='sync_scorecard'&&syncFailure)return{error:{message:'Failed to fetch'}};if(name==='submit_scorecard'){if(submitFailure)return{error:{message:'Submission refused by server'}};card.status='submitted';}if(name==='handoff_scorecard')card.scorer_id=args.target_new_scorer_id;return{data:card.id};}};
  const context={window:{BarfordSupabase:client,addEventListener(){}},document,navigator:{onLine:!offline},location:{href:'https://example.com/golf/scoring.html?event=event-1&card=card-1',search:'?event=event-1&card=card-1'},localStorage:{setItem:(k,v)=>storage.set(k,v),getItem:k=>storage.get(k)||null},URL,URLSearchParams,Date,Promise,CustomEvent:class{},setInterval(){},setTimeout(fn,ms){const timer=setTimeout(fn,ms);timers.add(timer);return timer;},clearTimeout(timer){clearTimeout(timer);timers.delete(timer);}};
  vm.createContext(context);vm.runInContext(source('member-workflow.js'),context);vm.runInContext(source('score-model.js'),context);
- context.window.BarfordScoreSafety={read:async()=>clone(cache),save:async model=>{cache=clone(model);return{local:true,backup:true};},legacyPending:async()=>null,removeLegacy:async()=>{}};
+ context.window.BarfordScoreSafety={peek:(id)=>id===cache.userId?clone(cache):null,read:async()=>backupPending?new Promise(()=>{}):clone(cache),save:async model=>{cache=clone(model);return{local:true,backup:true};},legacyPending:async()=>null,removeLegacy:async()=>{}};
  context.window.BarfordMemberFlow.dialog=(title,html)=>{const el=new Element({},document);el.innerHTML=html;context.dialog=el;return el;};
  vm.runInContext(source('scoring.js'),context);
- return{document,context,calls,card,cache:()=>cache,cleanup:()=>timers.forEach(clearTimeout)};
+ return{document,context,calls,card,releaseNetwork,cache:()=>cache,cleanup:()=>timers.forEach(clearTimeout)};
 }
 test('a ready scorer must claim the round before entering scores',async()=>{
  const h=scoringHarness({cardStatus:'ready'});try{await settle();assert.equal(h.document.getElementById('scoreKeypad').classList.contains('hidden'),true);await h.document.getElementById('startRound').click();await settle();assert.ok(h.calls.some(c=>c.rpc==='claim_scorecard'));assert.equal(h.document.getElementById('scoreKeypad').classList.contains('hidden'),false);}finally{h.cleanup();}
@@ -251,3 +252,15 @@ test('next step after booking respects payment, reserve and scorer states',()=>{
   assert.ok(host.innerHTML.indexOf('id="dashboardScorecard"')<host.innerHTML.indexOf('simple-next-event'));
   for(const group of [[],[{full_name:'Other group',tee_time:'10:30'}],[{is_you:true,tee_time:null}]]){context.window.BarfordEventView.render(host,{...m,group},{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"|href="scoring/);}
  });
+
+test('saved scoring opens and accepts edits without waiting for auth, server or phone backup',async()=>{
+ for(const options of [{authFailure:'pending'},{networkPending:true},{backupPending:true},{offline:true,authFailure:'pending'}]){
+  const h=scoringHarness(options);try{await settle();assert.equal(h.document.getElementById('scoreLoading').classList.contains('hidden'),true);assert.equal(h.document.getElementById('holeTitle').textContent,'Hole 7');
+   await h.document.querySelectorAll('[data-score]').find(b=>b.dataset.score==='5').click();assert.equal(h.cache().scores['player-1:7'].strokes,5);assert.ok(h.cache().dirty['player-1:7']);
+  }finally{h.cleanup();}
+ }
+});
+
+test('background refresh preserves scores entered while the server was pending',async()=>{
+ const h=scoringHarness({networkPending:true});try{await settle();await h.document.querySelectorAll('[data-score]').find(b=>b.dataset.score==='5').click();h.releaseNetwork();await settle();assert.equal(h.cache().scores['player-1:7'].strokes,5);assert.ok(h.calls.some(c=>c.rpc==='sync_scorecard'&&c.args.score_changes.some(v=>v.hole===7&&v.strokes===5)));}finally{h.cleanup();}
+});

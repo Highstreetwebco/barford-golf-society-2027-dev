@@ -67,8 +67,8 @@
     "assets/js/scoring-preview.js": "assets/dist/scoring-preview.53333f442835.js",
     "assets/js/score-layout.js": "assets/dist/score-layout.5dffc215400f.js",
     "assets/js/score-model.js": "assets/dist/score-model.d5a4f3094f8b.js",
-    "assets/js/scoring-resilience.js": "assets/dist/scoring-resilience.762a870a61b7.js",
-    "assets/js/scoring.js": "assets/dist/scoring.f37b351e48e2.js",
+    "assets/js/scoring-resilience.js": "assets/dist/scoring-resilience.e08f9a3375c1.js",
+    "assets/js/scoring.js": "assets/dist/scoring.a0de25b6f048.js",
     "assets/css/tee-sheet.css": "assets/dist/tee-sheet.ce113e200f02.css",
     "assets/js/tee-sheet.js": "assets/dist/tee-sheet.d5e6e196dcb3.js"
   },
@@ -247,8 +247,8 @@
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/score-model.d5a4f3094f8b.js",
-      "assets/dist/scoring-resilience.762a870a61b7.js",
-      "assets/dist/scoring.f37b351e48e2.js",
+      "assets/dist/scoring-resilience.e08f9a3375c1.js",
+      "assets/dist/scoring.a0de25b6f048.js",
       "assets/dist/design-preview.d95251faced6.js",
       "assets/dist/score-layout.5dffc215400f.js"
     ],
@@ -317,7 +317,7 @@
     "payments.html": "b2911aec707c",
     "scores.html": "9aa5b6eeea1e",
     "scoring-preview.html": "420343ae70bc",
-    "scoring.html": "744efd2b4b42",
+    "scoring.html": "be8e79cca138",
     "shop.html": "a204552a1d1b",
     "signup.html": "fd46f95965ca",
     "tee-sheet.html": "533f57f6a34b",
@@ -325,5 +325,5 @@
     "worldevents.html": "dfe577af32f3"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "9b1ee7d27787"
+  "build": "556dbbb4ef5c"
 }

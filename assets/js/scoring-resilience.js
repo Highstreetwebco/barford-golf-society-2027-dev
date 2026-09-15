@@ -20,15 +20,18 @@
     if(local){backup.catch(()=>{});return Promise.resolve({local:true,backup:false});}
     return window.BarfordMemberFlow.bounded(backup,2500).then(()=>({local:false,backup:true}),()=>({local:false,backup:false}));
   }
+  function peek(userId,cardId,eventId){
+    return [localRead(CACHE),cardId?localRead(PREFIX+cardId):null].filter(m=>m?.userId===userId&&m.card?.id&&(!cardId||m.card.id===cardId)&&(!eventId||m.card.event_id===eventId)).sort((a,b)=>Number(b.savedAt)-Number(a.savedAt))[0]||null;
+  }
   async function read(userId,cardId,eventId){
     const matches=m=>m?.userId===userId&&m.card?.id&&(!cardId||m.card.id===cardId)&&(!eventId||m.card.event_id===eventId);
     const candidates=[localRead(CACHE),cardId?localRead(PREFIX+cardId):null];
     try{const records=await window.BarfordMemberFlow.bounded(transaction('snapshots','readonly',s=>s.getAll()),2500);candidates.push(...records.map(r=>parse(r.value)));}catch{}
     return candidates.filter(matches).sort((a,b)=>Number(b.savedAt)-Number(a.savedAt))[0]||null;
   }
-  async function legacyPending(cardId){try{return await transaction('pending','readonly',s=>s.get(cardId));}catch{return null;}}
-  async function removeLegacy(cardId){try{await transaction('pending','readwrite',s=>s.delete(cardId));}catch{}}
-  window.BarfordScoreSafety={save,read,legacyPending,removeLegacy};
+  async function legacyPending(cardId){try{return await window.BarfordMemberFlow.bounded(transaction('pending','readonly',s=>s.get(cardId)),2500);}catch{return null;}}
+  async function removeLegacy(cardId){try{await window.BarfordMemberFlow.bounded(transaction('pending','readwrite',s=>s.delete(cardId)),2500);}catch{}}
+  window.BarfordScoreSafety={save,peek,read,legacyPending,removeLegacy};
   if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
   let wakeEnabled=false,wakeLock;
   const wake=async()=>{if(!wakeEnabled||document.visibilityState!=='visible')return;try{wakeLock=await navigator.wakeLock.request('screen');}catch{}};

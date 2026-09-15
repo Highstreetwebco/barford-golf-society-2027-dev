@@ -13,9 +13,9 @@ function worker({fail=false,quota=false}={}){
 test('critical offline installation completes atomically at a maximum of three downloads',async()=>{
  const w=worker();await w.dispatch('install');assert.equal(w.skipped(),true);assert.ok(w.maxActive()<=3);const broken=worker({fail:true});await assert.rejects(broken.dispatch('install'));assert.equal(broken.skipped(),false);assert.equal(broken.stores.has(cacheName),false);
 });
-test('offline scoring navigation tries the network then preserves query-driven rounds from cache',async()=>{
- const w=worker();await w.dispatch('install');const before=w.calls.length;w.offline();const result=await w.get('https://example.com/golf/scoring.html?event=one&card=two&hole=7');assert.match(await result.text(),/scoring.html$/);assert.equal(w.calls.length,before+1);
- const m=JSON.parse(source('assets/asset-manifest.json'));await w.get('https://example.com/golf/'+m.sdk);assert.equal(w.calls.length,before+1);
+test('saved scoring navigation opens without a network request and preserves query-driven rounds',async()=>{
+ const w=worker();await w.dispatch('install');const before=w.calls.length;w.offline();const result=await w.get('https://example.com/golf/scoring.html?event=one&card=two&hole=7');assert.match(await result.text(),/scoring.html$/);assert.equal(w.calls.length,before);
+ const m=JSON.parse(source('assets/asset-manifest.json'));await w.get('https://example.com/golf/'+m.sdk);assert.equal(w.calls.length,before);
 });
 test('service worker excludes member APIs and neighbouring sites',()=>{
  const w=worker();for(const url of ['https://db.supabase.co/rest/v1/profiles','https://example.com/other-site/index.html','https://example.com/golf/private-api'])assert.equal(w.get(url),undefined);
