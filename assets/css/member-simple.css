@@ -125,3 +125,10 @@ body:has(.simple-shell),body:has(#eventList),body:has(#accountContent),body:has(
 body:has(.simple-shell) main>h1,body:has(#eventList) .events-toolbar h2{color:#183c2f!important;text-shadow:none!important}
 body:has(#eventList) .events-toolbar .muted{color:#405d50!important}
 body .simple-shell>.simple-back{color:#174d36!important}
+
+/* A reachable camera action beside today's group, without adding another card. */
+body.clubhouse .group-camera-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+body.clubhouse .group-camera-heading>div{min-width:0}
+body.clubhouse .group-camera-button{display:grid;place-items:center;width:48px;min-width:48px;height:48px;min-height:48px;padding:10px;flex:0 0 48px}
+body.clubhouse .group-camera-button svg{display:block;width:24px;height:24px}
+#eventPhotoStatus:empty{display:none}

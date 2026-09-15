@@ -264,3 +264,22 @@ test('saved scoring opens and accepts edits without waiting for auth, server or 
 test('background refresh preserves scores entered while the server was pending',async()=>{
  const h=scoringHarness({networkPending:true});try{await settle();await h.document.querySelectorAll('[data-score]').find(b=>b.dataset.score==='5').click();h.releaseNetwork();await settle();assert.equal(h.cache().scores['player-1:7'].strokes,5);assert.ok(h.calls.some(c=>c.rpc==='sync_scorecard'&&c.args.score_changes.some(v=>v.hole===7&&v.strokes===5)));}finally{h.cleanup();}
 });
+
+test('camera is inside today’s published group and absent for other days or unpublished groups',()=>{
+ const document=documentStub(),host=new Element({},document),context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
+ vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+ const m=base();m.event.event_date=F.today();m.event.tee_times_status='published';m.rsvp={status:'playing'};m.group=[{is_you:true,tee_time:'10:30'}];
+ context.window.BarfordEventView.render(host,m,{compact:true});assert.ok(host.innerHTML.indexOf('id="dashboardEventCamera"')<host.innerHTML.indexOf('simple-next-event'));assert.match(host.innerHTML,/capture="environment"/);assert.equal((host.innerHTML.match(/id="dashboardEventCamera"/g)||[]).length,1);
+ for(const change of [{event:{...m.event,event_date:'2099-01-01'}},{event:{...m.event,tee_times_status:'draft'}},{event:{...m.event,status:'cancelled'}},{session:null},{rsvp:{status:'reserve'}}]){context.window.BarfordEventView.render(host,{...m,...change},{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardEventCamera"/);}
+});
+
+test('camera auto-publishes to the correct event and retries the gallery record without uploading twice',async()=>{
+ const document=documentStub();for(const id of ['dashboardEventCamera','dashboardEventCameraInput','eventPhotoStatus','eventPhotoRetry','eventPhotoGallery'])new Element({id},document);
+ let uploads=0,inserts=0;const records=[],model={event:{id:'event-1',name:'Golf day',event_date:F.today(),status:'scheduled'},session:{user:{id:'member-1'}}};
+ const client={auth:{getSession:async()=>({data:{session:model.session}})},storage:{from:()=>({upload:async()=>{uploads++;return{};}})},from:()=>({insert:async row=>{records.push(row);inserts++;return inserts===1?{error:{message:'Network unavailable'}}:{};}})};
+ const c={window:{BarfordSupabase:client,BARFORD_2027_CONFIG:{galleryBucket:'gallery-images'},BarfordMemberFlow:{...F,bounded:async p=>p,request:async p=>(await p).data},BarfordDashboardModel:model,addEventListener(){}},document,navigator:{onLine:true},crypto:{randomUUID:()=> 'photo-id'}};
+ vm.createContext(c);vm.runInContext(source('event-day-camera.js'),c);
+ const input=document.getElementById('dashboardEventCameraInput');input.files=[{name:'photo.jpg',type:'image/jpeg'}];await input.listeners.change();assert.equal(uploads,1);assert.match(document.getElementById('eventPhotoStatus').textContent,/Network/);
+ await document.getElementById('eventPhotoRetry').click();assert.equal(uploads,1);assert.equal(inserts,2);assert.equal(records[0].id,records[1].id);assert.equal(records[1].event_id,'event-1');assert.equal(records[1].uploaded_by,'member-1');assert.equal(records[1].approved,true);assert.match(document.getElementById('eventPhotoStatus').textContent,/Photo added/);
+ c.navigator.onLine=false;await input.listeners.change();assert.equal(uploads,1);assert.match(document.getElementById('eventPhotoStatus').textContent,/No signal/);
+});

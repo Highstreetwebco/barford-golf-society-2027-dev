@@ -1,28 +1,43 @@
 (() => {
-  "use strict";
-  const client=window.BarfordSupabase,config=window.BARFORD_2027_CONFIG;
-  if(!client||!config)return;
+  'use strict';
+  const client=window.BarfordSupabase,config=window.BARFORD_2027_CONFIG,F=window.BarfordMemberFlow;
+  if(!client||!config||!F)return;
   const initialise=model=>{
-  const button=document.getElementById("dashboardEventCamera"),input=document.getElementById("dashboardEventCameraInput");
-  if(!button||!input||button.dataset.ready)return;button.dataset.ready='true';
-  button.innerHTML='<strong>Take event photo</strong>';
-  const activeEvent=model.event,session=model.session;
-  button.addEventListener("click",()=>{if(activeEvent)input.click()});
-  input.addEventListener("change",async()=>{
-    const file=input.files?.[0];if(!file||!session||!activeEvent)return;
-    button.classList.add("is-uploading");button.querySelector("strong").textContent="Uploading…";button.disabled=true;
-    const extension=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${session.user.id}/${crypto.randomUUID()}.${extension}`;
-    const {error:uploadError}=await client.storage.from(config.galleryBucket).upload(path,file,{contentType:file.type||"image/jpeg",upsert:false});
-    if(!uploadError){
-      const shownDate=activeEvent.test_mode_active&&activeEvent.test_original_event_date?activeEvent.test_original_event_date:activeEvent.event_date;
-      const dateText=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric"}).format(new Date(`${shownDate}T12:00:00`));
-      const caption=`${activeEvent.test_mode_active?"TEST · ":""}${activeEvent.name} · ${dateText}`;
-      const {error:recordError}=await client.from("gallery_photos").insert({event_id:activeEvent.id,storage_path:path,uploaded_by:session.user.id,approved:true,caption});
-      if(!recordError){button.classList.remove("is-uploading");button.classList.add("is-done");button.querySelector("strong").textContent="Photo added to the gallery";setTimeout(()=>{button.classList.remove("is-done");button.querySelector("strong").textContent="Take an event photo";button.disabled=false;input.value=""},1800);return}
+    const button=document.getElementById('dashboardEventCamera'),input=document.getElementById('dashboardEventCameraInput'),status=document.getElementById('eventPhotoStatus'),retry=document.getElementById('eventPhotoRetry'),gallery=document.getElementById('eventPhotoGallery');
+    if(!button||!input||button.dataset.ready)return;
+    const event=model.event,memberId=model.session?.user.id;
+    if(!memberId||event.event_date!==F.today()||event.status==='cancelled')return;
+    button.dataset.ready='true';let pending=null,busy=false;
+    async function upload(){
+      if(!pending||busy)return;
+      busy=true;button.disabled=true;retry.classList.add('hidden');status.textContent='Adding photo to the gallery…';
+      try{
+        if(!navigator.onLine)throw Error('No signal. Keep this page open and tap retry when connected.');
+        const auth=await F.request(client.auth.getSession());
+        if(auth.session?.user.id!==memberId)throw Error('Sign in with the same member account to upload this photo.');
+        const bucket=client.storage.from(config.galleryBucket);
+        if(!pending.uploaded){
+          const result=await F.bounded(bucket.upload(pending.path,pending.file,{contentType:pending.file.type||'image/jpeg',upsert:false}),30000);
+          // The same unique path is reused if a successful upload lost its response.
+          if(result.error&&!/already exists|duplicate/i.test(result.error.message||''))throw result.error;
+          pending.uploaded=true;
+        }
+        const result=await F.bounded(client.from('gallery_photos').insert({id:pending.id,event_id:event.id,storage_path:pending.path,uploaded_by:memberId,approved:true,caption:event.name+' · '+F.date(event.event_date)}),15000);
+        // A repeated insert after a lost response must not create a second photo.
+        if(result.error&&result.error.code!=='23505')throw result.error;
+        pending=null;input.value='';status.textContent='Photo added to the gallery.';gallery.classList.remove('hidden');
+      }catch(error){status.textContent=error.message||'Photo not added. Keep this page open and tap retry.';retry.classList.remove('hidden');}
+      finally{busy=false;button.disabled=Boolean(pending);}
     }
-    button.classList.remove("is-uploading");button.querySelector("strong").textContent="Try again";button.disabled=false;input.value="";
-  });
+    button.addEventListener('click',()=>input.click());
+    retry.addEventListener('click',upload);
+    input.addEventListener('change',()=>{
+      const file=input.files?.[0];if(!file||busy)return;
+      if(!file.type.startsWith('image/')||file.type==='image/svg+xml'){status.textContent='Please choose a photograph.';input.value='';return;}
+      const id=crypto.randomUUID(),extension=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+      pending={file,id,path:`${memberId}/${id}.${extension}`,uploaded:false};gallery.classList.add('hidden');return upload();
+    });
   };
-  window.addEventListener("barford-dashboard-ready",e=>initialise(e.detail));
+  window.addEventListener('barford-dashboard-ready',e=>initialise(e.detail));
   if(window.BarfordDashboardModel)initialise(window.BarfordDashboardModel);
 })();
