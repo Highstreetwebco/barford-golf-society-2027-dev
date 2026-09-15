@@ -160,3 +160,17 @@ html[data-design=drive] body.admin-page.clubhouse .admin-card{border-radius:10px
 html[data-design=drive] body.admin-page.clubhouse .admin-heading{align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
 html[data-design=drive] body.admin-page.clubhouse .admin-card :is(input,select,textarea){min-width:0;max-width:100%}
 @media(max-width:850px){html[data-design=drive] body.admin-page.clubhouse>.site-header .brand img{width:106px!important;height:100px!important}html[data-design=drive] body.admin-page.clubhouse .admin-card{padding:16px}html[data-design=drive] body.admin-page.clubhouse .admin-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}html[data-design=drive] body.admin-page.clubhouse .admin-toolbar{flex-wrap:wrap}html[data-design=drive] body.admin-page.clubhouse .admin-hero{padding-top:24px}}
+
+/* Account choices belong on the opening poster beside the season details. */
+html[data-design=drive] body.clubhouse .drive-poster-bottom{align-items:center;flex-wrap:wrap;gap:20px 28px}
+html[data-design=drive] body.clubhouse .drive-season-summary{flex-shrink:0}
+html[data-design=drive] body.clubhouse .drive-start-actions{display:flex;flex-wrap:wrap;gap:12px;letter-spacing:normal}
+html[data-design=drive] body.clubhouse .drive-start-actions a{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:66px;padding:12px 20px;border:2px solid transparent;border-radius:8px;text-decoration:none;font:800 15px/1.25 Arial,Helvetica,sans-serif;box-shadow:0 5px 0 #101d5566;transition:transform .15s,box-shadow .15s}
+html[data-design=drive] body.clubhouse .drive-start-actions small{display:block;font-size:11px;font-weight:600;margin-top:4px}
+html[data-design=drive] body.clubhouse .drive-start-actions [aria-hidden]{font-size:22px}
+html[data-design=drive] body.clubhouse .drive-start-create{background:#ffab85;color:#101d55}
+html[data-design=drive] body.clubhouse .drive-start-guest{background:#fff;color:#101d55}
+html[data-design=drive] body.clubhouse .drive-start-login{background:#101d55;color:#fff;border-color:#fff!important}
+@media(hover:hover){html[data-design=drive] body.clubhouse .drive-start-actions a:hover{transform:translateY(-3px);box-shadow:0 8px 0 #101d5566}}
+@media(max-width:850px){html[data-design=drive] body.clubhouse .drive-headline{padding-bottom:24px}html[data-design=drive] body.clubhouse .drive-poster-bottom{align-items:stretch;gap:16px}html[data-design=drive] body.clubhouse .drive-start-actions{width:100%;display:grid;grid-template-columns:1fr}html[data-design=drive] body.clubhouse .drive-start-actions a{min-height:54px;padding:10px 16px}html[data-design=drive] body.clubhouse .drive-poster::before{opacity:.35}html[data-design=drive] body.clubhouse .drive-season-summary{font-size:11px}}
+@media(prefers-reduced-motion:reduce){html[data-design=drive] body.clubhouse .drive-start-actions a{transition:none}}
