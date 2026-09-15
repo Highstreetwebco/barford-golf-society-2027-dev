@@ -145,3 +145,4 @@ html[data-design=drive] body.clubhouse .site-nav .nav-group-label{font-size:.62r
 html[data-design=drive] body.clubhouse .site-nav .nav-page-group+.nav-page-group{border-top:1px solid #d7dced;margin-top:10px;padding-top:3px}
 html[data-design=drive] body.clubhouse .event-return-links{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:14px}
 html[data-design=drive] body.clubhouse .event-return-links .simple-back{margin:0}
+@media(max-width:850px){html[data-design=drive] body.clubhouse .site-header .site-nav{position:absolute!important;top:100%!important;right:0!important;left:auto!important;max-height:calc(100dvh - 180px);overflow-y:auto}}

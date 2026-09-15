@@ -5,14 +5,14 @@
     "assets/css/design-links.css": "assets/dist/design-links.2c9376402dbf.css",
     "assets/css/design-tour.css": "assets/dist/design-tour.8e16b9523fab.css",
     "assets/css/design-matchbook.css": "assets/dist/design-matchbook.50583303038a.css",
-    "assets/css/design-drive.css": "assets/dist/design-drive.e86c38e2ed3f.css",
+    "assets/css/design-drive.css": "assets/dist/design-drive.2d0d65eae36f.css",
     "assets/css/design-round.css": "assets/dist/design-round.88da820bffa5.css",
     "assets/js/design-round.js": "assets/dist/design-round.d88cf490c58b.js",
     "assets/js/design-drive.js": "assets/dist/design-drive.1bf00145f11b.js",
     "assets/css/design-drive-two.css": "assets/dist/design-drive-two.1f3eea188894.css",
     "assets/js/design-drive-two.js": "assets/dist/design-drive-two.e4294a27a9ae.js",
     "assets/js/design-matchbook.js": "assets/dist/design-matchbook.f931eb5cf3f3.js",
-    "assets/js/design-preview.js": "assets/dist/design-preview.7ab1bfdd7464.js",
+    "assets/js/design-preview.js": "assets/dist/design-preview.2917cebd16b1.js",
     "assets/js/site-navigation.js": "assets/dist/site-navigation.cab36c48d3e2.js",
     "assets/css/deep-teal-theme.css": "assets/dist/deep-teal-theme.a6bf11a5de26.css",
     "assets/css/product-premium.css": "assets/dist/product-premium.4ab8434cb6a4.css",
@@ -73,7 +73,7 @@
     "404.html": [
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/member-ui.be526a9350ac.css",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "about.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -84,7 +84,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "account.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -99,7 +99,7 @@
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/member-auth.d9a7155bf5e5.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "admin.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -119,7 +119,7 @@
       "assets/dist/admin-osm-hole-import.31bb7e681f8d.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
       "assets/dist/admin-member-manager-v2.64e45bf500e4.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "designs.html": [
       "assets/dist/design-studio.a2be25e743ba.css",
@@ -138,7 +138,7 @@
       "assets/dist/guest-events.c0296b9edb8e.js",
       "assets/dist/event-hub.6ddd145ba589.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "events.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -151,7 +151,7 @@
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/events-live.89031bdc4040.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "gallery.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -164,11 +164,11 @@
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/gallery-live.be6c800f9a38.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "halfway-preview.html": [
       "assets/dist/fairway.6247a9edb681.css",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "hole-view.html": [
       "assets/dist/deep-teal-theme-bundle.adfc76104919.css",
@@ -181,7 +181,7 @@
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/course-view.efb2ab119ccc.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "index.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -197,7 +197,7 @@
       "assets/dist/member-dashboard.f8cee7bdc243.js",
       "assets/dist/member-season.8732c42a394f.js",
       "assets/dist/member-guest-gateway.784feb950d4e.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "payments.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -210,7 +210,7 @@
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/payments-hub.ec6b9365564c.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "scores.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -223,7 +223,7 @@
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/scores.d039487ef9c9.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "scoring.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -237,7 +237,7 @@
       "assets/dist/score-model.d5a4f3094f8b.js",
       "assets/dist/scoring-resilience.762a870a61b7.js",
       "assets/dist/scoring.bfbf6517355e.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "shop.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -248,7 +248,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "signup.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -262,7 +262,7 @@
       "assets/dist/member-workflow.5811dbc0b6a4.js",
       "assets/dist/member-auth.d9a7155bf5e5.js",
       "assets/dist/accessible-mobile.dea27d303f10.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "tee-sheet.html": [
       "assets/dist/tee-sheet.ce113e200f02.css",
@@ -275,7 +275,7 @@
     ],
     "update.html": [
       "assets/dist/fairway.6247a9edb681.css",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ],
     "worldevents.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -286,30 +286,30 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/design-preview.7ab1bfdd7464.js"
+      "assets/dist/design-preview.2917cebd16b1.js"
     ]
   },
   "pageHashes": {
-    "404.html": "d54e0b792beb",
-    "about.html": "0fd788f95dfa",
-    "account.html": "ada30bbecbe9",
-    "admin.html": "8be2bd05d0da",
+    "404.html": "aaa52cf6d0e1",
+    "about.html": "5e35dcc827e1",
+    "account.html": "59e7d9ef7ab4",
+    "admin.html": "29e8a701741c",
     "designs.html": "05bdd1bd17b1",
-    "event.html": "fc9fe913e911",
-    "events.html": "66a1fb1863e9",
-    "gallery.html": "beb9742f5189",
-    "halfway-preview.html": "52fc98f4439d",
-    "hole-view.html": "5c1558117e3c",
-    "index.html": "382ee40704bc",
-    "payments.html": "4cced88a7e8b",
-    "scores.html": "6b2fcd7ab7cf",
-    "scoring.html": "9edec43542dc",
-    "shop.html": "1422ddfada62",
-    "signup.html": "990588358358",
+    "event.html": "ace9274cdad3",
+    "events.html": "56e647522e54",
+    "gallery.html": "3ba65454228d",
+    "halfway-preview.html": "156e7af71a22",
+    "hole-view.html": "b484269c6a15",
+    "index.html": "c631fc1681f6",
+    "payments.html": "ce9119dde083",
+    "scores.html": "df42e5037a8c",
+    "scoring.html": "0038c5a880de",
+    "shop.html": "017437e1dcd0",
+    "signup.html": "14e92dd48f59",
     "tee-sheet.html": "533f57f6a34b",
-    "update.html": "9cc3b16c86b0",
-    "worldevents.html": "ef03b508f9f6"
+    "update.html": "11b1871e70d2",
+    "worldevents.html": "64573a566b2e"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "4234dd0553b8"
+  "build": "43635c0d11a3"
 }
