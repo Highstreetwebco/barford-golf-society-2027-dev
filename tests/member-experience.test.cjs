@@ -134,7 +134,7 @@ test('event-day dashboard gives every group member direct scorecard access above
  const context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
  vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
  for(const status of ['ready','in_progress','submitted','locked'])for(const scorer_id of [null,'member-1','member-2']){
-  const m=base();m.event.event_date=F.today();m.event.name='Today’s golf';m.rsvp={status:'playing',payment_status:'payment_due'};m.card={id:'group-card',status,scorer_id};
+  const m=base();m.event.event_date=F.today();m.event.name='Today’s golf';m.event.tee_times_status='published';m.group=[{is_you:true,member_id:'member-1',full_name:'First Player',tee_time:'10:30'},{member_id:'member-2',full_name:'Second Player',tee_time:'10:30'}];m.rsvp={status:'playing',payment_status:'payment_due'};m.card={id:'group-card',status,scorer_id};
   context.window.BarfordEventView.render(host,m,{compact:true});
   assert.ok(host.innerHTML.indexOf('id="dashboardScorecard"')<host.innerHTML.indexOf('simple-next-event'));
   assert.match(host.innerHTML,/href="scoring.html\?event=event-1&card=group-card">Open my group’s scorecard/);
@@ -144,10 +144,10 @@ test('dashboard scorecard handles preparation and connection failure without exp
  const document=documentStub(),host=new Element({},document);
  const context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
  vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
- const m=base();m.event.event_date=F.today();m.rsvp={status:'playing'};
- context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/committee has prepared your group/);assert.doesNotMatch(host.innerHTML,/href="scoring/);
+ const m=base();m.event.event_date=F.today();m.rsvp={status:'playing'};m.event.tee_times_status='published';m.group=[{is_you:true,tee_time:'10:30'}];
+ context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/committee prepares your scorecard/);assert.doesNotMatch(host.innerHTML,/href="scoring/);
  m.cardError=true;context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/couldn’t load your scorecard/);
- for(const change of [{rsvp:{status:'reserve'}},{session:null},{event:{...m.event,event_date:'2099-01-01'}},{event:{...m.event,status:'cancelled'}}]){
+ for(const change of [{rsvp:{status:'reserve'}},{session:null},{event:{...m.event,tee_times_status:'draft'}},{event:{...m.event,status:'cancelled'}}]){
   context.window.BarfordEventView.render(host,{...m,...change},{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"/);
  }
  m.card={id:'own-card',status:'locked',scorer_id:'member-1'};m.event.status='completed';context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/Open my group’s scorecard/);
@@ -173,7 +173,7 @@ test('a viewer can open the group overview but cannot submit or change scores',a
 test('announced groups expose scorer selection on the dashboard before event day',()=>{
  const document=documentStub(),host=new Element({},document),context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
  vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
- const m=base();m.rsvp={status:'playing'};m.event.tee_times_status='published';m.card={id:'card',status:'ready',scorer_id:null};
+ const m=base();m.rsvp={status:'playing'};m.event.tee_times_status='published';m.group=[{is_you:true,tee_time:'10:30'}];m.card={id:'card',status:'ready',scorer_id:null};
  context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/Tee groups announced/);assert.match(host.innerHTML,/Choose our scorer/);assert.match(host.innerHTML,/id="dashboardScorecard"/);
  m.event.tee_times_status='draft';context.window.BarfordEventView.render(host,m,{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"/);
 });
@@ -240,3 +240,14 @@ test('next step after booking respects payment, reserve and scorer states',()=>{
  assert.equal(F.nextAction(m).kind,'scorer');
  m.card.status='submitted';assert.equal(F.nextAction(m).label,'View submitted scores');
 });
+
+ test('today keeps the event first until the member’s tee group is published and loaded',()=>{
+  const document=documentStub(),host=new Element({},document),context={window:{BarfordMemberFlow:F,dispatchEvent(){}},document,Date,CustomEvent:class{}};
+  vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+  const m=base();m.event.event_date=F.today();m.rsvp={status:'playing'};m.card={id:'draft-card',status:'ready',scorer_id:null};
+  m.group=[{is_you:true,full_name:'First Player',tee_time:'10:30'},{full_name:'Second Player',tee_time:'10:30'}];
+  for(const status of ['not_started','draft']){m.event.tee_times_status=status;context.window.BarfordEventView.render(host,m,{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"|href="scoring|Choose our scorer/);assert.match(host.innerHTML,/Today’s event/);}
+  m.event.tee_times_status='published';context.window.BarfordEventView.render(host,m,{compact:true});assert.match(host.innerHTML,/Tee off 10:30/);assert.match(host.innerHTML,/First Player/);assert.match(host.innerHTML,/Second Player/);assert.match(host.innerHTML,/Choose our scorer/);
+  assert.ok(host.innerHTML.indexOf('id="dashboardScorecard"')<host.innerHTML.indexOf('simple-next-event'));
+  for(const group of [[],[{full_name:'Other group',tee_time:'10:30'}],[{is_you:true,tee_time:null}]]){context.window.BarfordEventView.render(host,{...m,group},{compact:true});assert.doesNotMatch(host.innerHTML,/id="dashboardScorecard"|href="scoring/);}
+ });
