@@ -136,3 +136,12 @@ html[data-design=drive] body.clubhouse .simple-dialog{border:0;border-top:6px so
 @media(max-width:600px){html[data-design=drive] body.clubhouse #filteredEvents{grid-template-columns:1fr}html[data-design=drive] body.clubhouse .drive-poster::before{background-size:auto 75%;background-position:calc(100% + 90px) calc(100% + 140px)}html[data-design=drive] body.clubhouse .drive-headline{padding-bottom:185px}html[data-design=drive] body.clubhouse .drive-tagline{max-width:240px}}
 html[data-design=drive] body.clubhouse #visitorGateway{place-items:stretch}
 html[data-design=drive] body.clubhouse #visitorGateway>*{width:100%;max-width:none;justify-self:stretch}
+
+/* Flow refinements keep the saved Drive identity. */
+html[data-design=drive] body.clubhouse .drive-dashboard-links{margin-top:24px}
+html[data-design=drive] body.clubhouse .dashboard-rsvp-reminder{grid-column:1/-1}
+html[data-design=drive] body.clubhouse .dashboard-rsvp-reminder h2{font-size:1.45rem}
+html[data-design=drive] body.clubhouse .site-nav .nav-group-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:#5b688d;margin:12px 12px 5px;font-weight:800}
+html[data-design=drive] body.clubhouse .site-nav .nav-page-group+.nav-page-group{border-top:1px solid #d7dced;margin-top:10px;padding-top:3px}
+html[data-design=drive] body.clubhouse .event-return-links{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:14px}
+html[data-design=drive] body.clubhouse .event-return-links .simple-back{margin:0}

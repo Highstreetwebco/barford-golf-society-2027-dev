@@ -499,3 +499,7 @@ html body.clubhouse.page-scores .search-panel.compact-search{margin:16px 0}
  html body.clubhouse .group-overview-table :is(th,td){padding:10px 5px;font-size:.8rem}
  html body.clubhouse .round-hub-grid>a,html body.clubhouse .round-hub-grid>button{padding:13px;min-height:108px}
 }
+/* Grouped navigation must not inherit the legacy first-four-link hiding rule. */
+html body.clubhouse .site-header .site-nav .nav-page-group a{display:flex!important}
+html body.clubhouse .site-nav .nav-group-label{font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:12px 16px 4px;color:var(--club-ink)}
+html body.clubhouse .site-nav .nav-page-group+.nav-page-group{border-top:1px solid var(--club-line);padding-top:4px;margin-top:8px}

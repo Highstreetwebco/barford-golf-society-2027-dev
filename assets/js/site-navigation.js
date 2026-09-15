@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const page = location.pathname.split('/').pop() || 'index.html';
-  const activePage = ({'event.html':'events.html','signup.html':'account.html'})[page] || page;
+  const activePage = ({'event.html':'events.html','signup.html':'account.html','scoring.html':'events.html'})[page] || page;
   const pages = [['index.html','Home'],['events.html','Events'],['scores.html','Leaderboard'],['gallery.html','Gallery'],['account.html','Sign in'],['payments.html','Payments'],['worldevents.html','Society trips'],['shop.html','Shop'],['about.html','About us']];
   const current = href => activePage === href ? ` aria-current="${page === href ? 'page' : 'location'}" class="active"` : '';
   const link = ([href,label]) => `<a href="${href}"${current(href)}>${label}</a>`;
@@ -14,7 +14,7 @@
     }
     let more = header.querySelector('.site-nav');
     if (!more) { more = document.createElement('nav'); more.className='site-nav'; header.append(more); }
-    more.id='primary-navigation'; more.setAttribute('aria-label','More pages'); more.innerHTML=pages.map(link).join('');
+    more.id='primary-navigation'; more.setAttribute('aria-label','More pages'); more.innerHTML='<div class="nav-page-group"><p class="nav-group-label">Your golf</p>'+pages.slice(0,4).map(link).join('')+'</div><div class="nav-page-group"><p class="nav-group-label">Your account</p>'+pages.slice(4,6).map(link).join('')+'</div><div class="nav-page-group"><p class="nav-group-label">The society</p>'+pages.slice(6).map(link).join('')+'</div>';
     let toggle = header.querySelector('.menu-button');
     if (!toggle) { toggle=document.createElement('button'); toggle.className='menu-button'; toggle.type='button'; header.insertBefore(toggle,more); }
     toggle.innerHTML='<span class="menu-button-label">More</span>';
@@ -33,7 +33,8 @@
     document.body.classList.toggle('is-admin',isAdmin);
     document.querySelectorAll('.header-admin-link').forEach(link=>{link.hidden=!isAdmin;});
     const labels={'index.html':signedIn?'Dashboard':'Home','account.html':signedIn?'My account':'Sign in','payments.html':signedIn?'My payments':'Payments'};
-    document.querySelectorAll('.desktop-primary a,.site-nav a').forEach(link=>{const text=labels[link.getAttribute('href')];if(text)link.textContent=text;});
+    document.querySelectorAll('.desktop-primary a,.site-nav a').forEach(link=>{const text=labels[link.getAttribute('href').split('?')[0]];if(text)link.textContent=text;});
+    document.querySelectorAll('.event-return-links a[href="index.html"]').forEach(link=>{link.textContent=signedIn?'← Dashboard':'← Home';});
     document.querySelectorAll('.mobile-quick-nav a[href="index.html"] > span:last-child').forEach(label=>{label.textContent=labels['index.html'];});
   }
   window.BarfordNavigation={activePage,setContext};

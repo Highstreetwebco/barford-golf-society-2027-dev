@@ -71,6 +71,13 @@
     const full = model.availability?.available != null && Number(model.availability.available) === 0;
     return {kind:"book",label:full ? "Join reserve list" : rsvp?.status ? "Change to playing" : "Book my place",message:full ? "This event is full. You can join the reserve list." : rsvp?.status ? "You’re marked as not playing. You can still change your choice." : "Would you like to play at this event?"};
   };
+  const dashboardEvent = (events,rsvps) => {
+    const playing = event => rsvps.some(r=>r.event_id===event.id&&r.status==='playing');
+    return events.find(e=>e.event_date===today()&&playing(e))
+      || events.find(playing)
+      || events.find(e=>!rsvps.some(r=>r.event_id===e.id&&['not_playing','cancelled'].includes(r.status)))
+      || events[0];
+  };
   const getCard = async (eventId,userId) => {
     const memberships = await request(client.from("event_scorecard_players")
       .select("event_scorecards!inner(id,event_id,status,scorer_id)")
@@ -138,7 +145,9 @@
         const fresh=await saveBooking(model,true,data.get("travel")==="buggy",data.get("teeWindow"),model.event.course_member_price!=null&&!rateLocked?data.get("memberRate")==="course_member":Boolean(own?.is_course_member));
         if(!fresh || fresh.bookingError || fresh.session?.user.id !== model.session.user.id || !["playing","reserve"].includes(fresh.rsvp?.status)) throw new Error("Your request was sent, but we could not check the confirmation. Close this message and refresh before trying again.");
         d.close();window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id,model:fresh}}));
-        dialog(fresh.rsvp?.status === "reserve" ? "You’re on the reserve list" : "Your place is booked",`<p>${esc(model.event.name)} · ${esc(date(model.event.event_date))}</p><p>${fresh.rsvp?.buggy_requested ? "Buggy requested" : "Walking"} · ${esc(preference(fresh.rsvp?.preferred_tee_time))} tee-time preference</p><p>${esc(payment(fresh.event,fresh.rsvp).label)}</p><a class="button button-primary full-button" href="${eventUrl(model.event.id)}">View my booking</a>`);
+        const next=nextAction(fresh);
+        const confirmation=dialog(fresh.rsvp?.status === "reserve" ? "You’re on the reserve list" : "Your place is booked",`<p>${esc(model.event.name)} · ${esc(date(model.event.event_date))}</p><p>${fresh.rsvp?.buggy_requested ? "Buggy requested" : "Walking"} · ${esc(preference(fresh.rsvp?.preferred_tee_time))} tee-time preference</p><p>${esc(payment(fresh.event,fresh.rsvp).label)}</p><p>${esc(next.message||'Your booking is saved.')}</p><button class="button button-primary full-button" type="button" id="bookingNextStep">${esc(next.label)}</button><a class="simple-back" href="index.html">Back to dashboard</a>`);
+        confirmation.querySelector('#bookingNextStep').onclick=()=>{confirmation.close();activate(next,fresh);};
       }catch(error){status.textContent=error.message||"Your booking could not be saved. Please try again.";button.disabled=false;button.textContent="Try again";}
     };
   };
@@ -184,5 +193,5 @@
     if(action.kind==="book")openBooking(model);else if(action.kind==="contact")contact(model.event);else if(action.kind==="scorer")chooseScorer(model);else if(action.kind==="retry")window.dispatchEvent(new CustomEvent("barford-booking-changed",{detail:{eventId:model.event.id}}));else location.href=action.href;
   };
   const promotions = async () => {if(!client)return;try{const auth=await request(client.auth.getSession());if(!auth?.session)return;const rows=await request(client.rpc("get_my_unseen_rsvp_promotions"));const p=rows?.[0];if(!p || activeDialog)return;const d=dialog("A place has opened for you",`<p>You’ve moved from reserve to the playing list for <strong>${esc(p.event_name)}</strong>.</p><button class="button button-primary full-button" id="promotionSeen" type="button">View my booking</button><p class="form-status" role="status"></p>`);d.querySelector("#promotionSeen").onclick=async()=>{try{await request(client.rpc("mark_my_rsvp_promotion_seen",{p_id:p.id}));location.href=eventUrl(p.event_id);}catch{d.querySelector(".form-status").textContent="Please try again.";}};}catch{}};
-  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,eventPrice,priceLabel,payment,paymentSummary,roundReport,shareText,bookingLabel,nextAction,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
+  window.BarfordMemberFlow={esc,today,money,date,time,preference,eventUrl,scoreUrl,safeReturn,loginUrl,bounded,request,eventPrice,priceLabel,payment,paymentSummary,roundReport,shareText,bookingLabel,nextAction,dashboardEvent,getCard,loadEvent,dialog,contact,openBooking,withdraw,showRoster,chooseScorer,directions,activate,promotions};
 })();

@@ -218,3 +218,25 @@ test('Round overview presents refunds and cancelled events without claiming a pl
  const R=roundDesign(),m=base();m.event.status='cancelled';m.rsvp={status:'playing',payment_status:'refunded'};m.group=[{is_you:true,tee_time:'09:30'}];
  const rows=R.statuses(m);assert.equal(rows[0].value,'Event cancelled');assert.equal(rows[1].value,'Payment refunded');assert.equal(rows[2].value,'Event cancelled');assert.equal(rows[2].tone,'neutral');
 });
+
+test('dashboard keeps a booked round ahead of unanswered invitations, with today first',()=>{
+ const events=[{id:'invite',event_date:'2098-01-01'},{id:'booked',event_date:'2099-01-01'},{id:'today',event_date:F.today()}];
+ const rsvps=[{event_id:'booked',status:'playing'}];
+ assert.equal(F.dashboardEvent(events,rsvps).id,'booked');
+ rsvps.push({event_id:'today',status:'playing'});
+ assert.equal(F.dashboardEvent(events,rsvps).id,'today');
+ assert.equal(F.dashboardEvent(events,[]).id,'invite');
+ assert.equal(F.dashboardEvent(events,[{event_id:'invite',status:'not_playing'}]).id,'booked');
+ assert.equal(F.dashboardEvent([],[]),undefined);
+});
+
+test('next step after booking respects payment, reserve and scorer states',()=>{
+ const m=base();m.rsvp={status:'playing',payment_status:'unpaid'};
+ assert.equal(F.nextAction(m).href,'payments.html?event=event-1');
+ m.rsvp.payment_status='paid';m.group=[{is_you:true,tee_time:'10:30'}];
+ assert.equal(F.nextAction(m).href,'event.html?event=event-1#my-group');
+ m.rsvp.status='reserve';assert.equal(F.nextAction(m).label,'View reserve booking');
+ m.rsvp.status='playing';m.event.event_date=F.today();m.card={id:'card-1',status:'ready',scorer_id:null};
+ assert.equal(F.nextAction(m).kind,'scorer');
+ m.card.status='submitted';assert.equal(F.nextAction(m).label,'View submitted scores');
+});
