@@ -80,6 +80,6 @@ const declaredCore=new Set(corePages.flatMap(page=>manifest.pages[page]));
 const core=coreAssets.filter(file=>declaredCore.has(file)||!adminSources.some(name=>file.startsWith(out+'/'+name+'.'))&&!unusedStyles.some(name=>file.startsWith(out+'/'+name+'.')&&file.endsWith('.css')));
 const template=await read('scripts/service-worker.template.js');
 manifest.build=hash(JSON.stringify(manifest)+template);
-await writeFile('sw.js',template.replace('__RELEASE__',release+'-'+manifest.build).replace('__PAGES__',JSON.stringify(Object.keys(manifest.pages))).replace('__CORE__',JSON.stringify([...corePages,...core,'manifest.webmanifest','assets/images/barford-golf-society-logo-320.webp'])));
+await writeFile('sw.js',template.replace('__RELEASE__',release+'-'+manifest.build).replace('__PAGES__',JSON.stringify(Object.keys(manifest.pages))).replace('__CORE__',JSON.stringify([...corePages,...core,'manifest.webmanifest','assets/images/barford-golf-society-logo-320.webp','assets/images/barford-golf-society-logo.png'])));
 await writeFile('assets/asset-manifest.json',JSON.stringify(manifest,null,2)+'\n');
 console.log(`Built ${Object.keys(manifest.pages).length} pages; ${core.length} core assets. Release ${release}.`);

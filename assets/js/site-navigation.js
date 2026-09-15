@@ -10,7 +10,7 @@
     if (brand) {
       brand.setAttribute('aria-label','Barford Golf Society home');
       // Consistent branding also removes old duplicate text in the admin header.
-      brand.innerHTML = '<img src="assets/images/barford-golf-society-logo-320.webp" width="64" height="64" alt=""><span class="brand-wordmark" aria-hidden="true"><strong>Barford</strong><small>Golf Society</small></span>';
+      brand.innerHTML = '<img src="assets/images/barford-golf-society-logo.png" width="64" height="64" alt=""><span class="brand-wordmark" aria-hidden="true"><strong>Barford</strong><small>Golf Society</small></span>';
     }
     let more = header.querySelector('.site-nav');
     if (!more) { more = document.createElement('nav'); more.className='site-nav'; header.append(more); }

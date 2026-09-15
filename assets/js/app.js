@@ -1,6 +1,6 @@
 const body=document.body;
 const currentPage=location.pathname.split("/").pop()||"index.html";
-document.querySelectorAll(".site-header .brand img,.global-site-header .global-brand img").forEach(image=>{image.src="assets/images/barford-golf-society-logo-320.webp";image.width=320;image.height=320;image.alt="Barford Golf Society";});
+document.querySelectorAll(".site-header .brand img,.global-site-header .global-brand img").forEach(image=>{image.src="assets/images/barford-golf-society-logo.png";image.width=320;image.height=320;image.alt="Barford Golf Society";});
 const addCss=(href,key)=>{if(document.querySelector("link[data-ui-ready]"))return;const attr=`data-${key.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`;if(document.querySelector(`link[${attr}]`))return;const link=document.createElement("link");link.rel="stylesheet";link.href=href;link.dataset[key]="1";document.head.appendChild(link);};
 addCss("assets/css/deep-teal-theme.css?v=global-header1","deepTealTheme");
 // Keep the established feature layout, then apply one shared redesign layer.
