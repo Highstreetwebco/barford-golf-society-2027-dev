@@ -133,10 +133,10 @@
     $('startRound').classList.toggle('hidden',!(ownScorer()&&model.card.status==='ready'));
     $('startRound').disabled=busy||!navigator.onLine;
     $('handoffScorecard').classList.toggle('hidden',!editable||model.players.filter(p=>p.member_id).length<2);
-    $('scoreCurrentPlayers').innerHTML=model.players.map(p=>{const v=model.scores[M.key(p.id,hole)];return `<button class="score-player-row ${selected===p.id?'is-selected':''}" type="button" data-player="${p.id}" aria-pressed="${selected===p.id}"><span><strong>${F.esc(p.display_name)}</strong><small>${F.esc(tee(p,h).name)} tees · ${total(p)} points so far</small></span><b>${F.esc(scoreText(v))}<small>${M.valid(v)?points(p,h,v)+' pts this hole':'Not entered'}</small></b></button>`;}).join('');
+    $('scoreCurrentPlayers').innerHTML=model.players.map(p=>{const v=model.scores[M.key(p.id,hole)];return `<button class="score-player-row ${selected===p.id?'is-selected':''}" type="button" data-player="${p.id}" aria-pressed="${selected===p.id}" aria-label="${F.esc(p.display_name)}, ${F.esc(scoreText(v))}"><span><strong>${F.esc(p.display_name)}</strong><small>${F.esc(tee(p,h).name)} tees · ${total(p)} points so far</small></span><b>${F.esc(M.valid(v)?v.picked_up?'X':String(v.strokes):'—')}<small>${M.valid(v)?points(p,h,v)+' pts this hole':'Not entered'}</small></b></button>`;}).join('');
     $('scoreCurrentPlayers').querySelectorAll('[data-player]').forEach(b=>b.onclick=()=>{selected=b.dataset.player;render();persist();});
     const p=model.players.find(p=>p.id===selected)||model.players[0];
-    $('selectedPlayerPrompt').innerHTML=`<strong>${F.esc(p.display_name)}</strong><small>${editable?'Enter strokes, or choose Pick up':'Scores entered by your group’s scorer'}</small>`;
+    $('selectedPlayerPrompt').innerHTML=`<strong>${F.esc(p.display_name)}</strong><small>${editable?'Strokes / X = pick up':'Viewing only'}</small>`;
     $('scoreKeypad').classList.toggle('hidden',!editable);
     $('previousHole').disabled=hole===1;$('previousHoleBottom').disabled=hole===1;
     $('nextHole').disabled=editable&&!completeHole();$('nextHoleTop').disabled=editable&&!completeHole();

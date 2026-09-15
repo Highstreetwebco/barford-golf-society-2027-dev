@@ -1,0 +1,62 @@
+/* One viewport for active-hole scoring. Review and tool panels scroll independently. */
+html:has(body.scoring-page){height:100%;overflow:hidden}
+html body.scoring-page.clubhouse{height:100dvh;min-height:0!important;overflow:hidden!important;display:flex;flex-direction:column;background:#edf1fb!important;color:#15204b;font-family:Arial,sans-serif;padding:0!important;line-height:1.3;--score-green:#254ee8;--score-line:#ccd5ec}
+html body.scoring-page.clubhouse .score-app-header{position:static;flex:0 0 48px;min-height:48px;max-height:48px;display:grid;grid-template-columns:70px minmax(0,1fr) 112px;gap:8px;padding:5px 10px;border:0;background:#101d55!important;color:white}
+html body.scoring-page.clubhouse .score-app-header>*{min-width:0}
+html body.scoring-page.clubhouse .score-app-header a{color:white;font-size:12px;text-decoration:none}
+html body.scoring-page.clubhouse .score-app-header strong{font-size:15px}
+html body.scoring-page.clubhouse #competitionSummary{font-size:10px!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body.scoring-page.clubhouse #scoreSyncButton{font-size:10px;line-height:1.2;padding:4px;border:1px solid #6d7bb7;border-radius:6px;background:transparent;color:white;min-height:36px}
+html body.scoring-page.clubhouse .score-safety-bar{flex:0 0 auto;min-height:22px;max-height:44px;padding:4px 10px;font-size:10px;text-align:center;background:#e2e9fc;color:#253c77;overflow:auto}
+html body.scoring-page.clubhouse #scoreApp{flex:1;min-height:0;height:auto;width:min(620px,100%);max-width:620px;margin:0 auto;overflow:hidden;padding:0;background:#edf1fb}
+html body.scoring-page.clubhouse #scoreReady:not(.hidden){display:flex;flex-direction:column;height:100%;min-height:0;padding:6px 10px max(6px,env(safe-area-inset-bottom));gap:6px;overflow:hidden}
+html body.scoring-page.clubhouse #scoreReady .score-round-notices{flex:0 0 auto;min-height:0}
+html body.scoring-page.clubhouse #scoreSessionNotice{margin:0;font-size:10px;line-height:1.2;padding:0;color:#52618b;max-height:34px;overflow:auto}
+html body.scoring-page.clubhouse #scoreSessionNotice:empty{display:none}
+html body.scoring-page.clubhouse #startRound{min-height:40px;padding:8px;margin:5px 0 0;font-size:14px;width:100%}
+html body.scoring-page.clubhouse #competitionAlert{display:flex;align-items:center;justify-content:center;gap:6px;position:static;padding:4px 8px;margin:4px 0 0;border:0;border-radius:5px;background:#ffdbca;min-height:22px;color:#15204b}
+html body.scoring-page.clubhouse #competitionAlertTitle{font-size:11px;font-weight:800;margin:0}
+html body.scoring-page.clubhouse #competitionAlertText,html body.scoring-page.clubhouse #competitionAlertIcon{display:none}
+html body.scoring-page.clubhouse #scoreReady .hole-heading{flex:0 0 auto;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:6px;min-height:60px;background:#101d55!important;color:white!important;border-radius:10px;padding:5px;text-align:center}
+html body.scoring-page.clubhouse #scoreReady .hole-heading button{color:white;font-size:24px;min-height:44px;width:44px;padding:4px;border-radius:6px;border:1px solid #6d7bb7;background:transparent}
+html body.scoring-page.clubhouse #scoreReady #holeProgress{font-size:9px;color:#c2cdef;letter-spacing:.03em}
+html body.scoring-page.clubhouse #scoreReady #holeTitle{font-size:24px!important;line-height:1;margin:2px 0;color:white!important;letter-spacing:-.04em}
+html body.scoring-page.clubhouse #scoreReady .hole-heading p{display:flex;justify-content:center;gap:7px;font-size:9px;line-height:1.2;margin:3px 0;color:white!important}
+html body.scoring-page.clubhouse #scoreReady .hole-heading b{color:inherit;white-space:nowrap}
+html body.scoring-page.clubhouse #scoreCurrentPlayers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(44px,1fr);gap:6px;flex:1 1 110px;min-height:96px;max-height:180px;padding:0}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0;min-height:44px;width:100%;height:100%;padding:8px;margin:0;border:1px solid #c4cee7;border-radius:9px;background:white;box-shadow:none;color:#15204b;text-align:left}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row.is-selected{background:#dfe7ff!important;border:2px solid #254ee8!important;padding:7px}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row>span{min-width:0;flex:1}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row strong{font-size:12px;line-height:1.15;display:block;overflow-wrap:anywhere}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row small{display:block;font-size:9px;line-height:1.2;margin-top:4px;color:#52618b}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row>b{font-size:24px;line-height:1;text-align:center;min-width:27px}
+html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row>b small{font-size:8px;font-weight:400}
+html body.scoring-page.clubhouse #scoreReady #scoreKeypad{display:flex;flex-direction:column;gap:4px;flex:1.5 1 178px;min-height:154px;max-height:290px;padding:0;overflow:visible}
+html body.scoring-page.clubhouse #scoreReady #selectedPlayerPrompt{flex:0 0 20px;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 2px;font-size:11px;white-space:normal;color:#15204b;min-height:20px}
+html body.scoring-page.clubhouse #scoreReady #selectedPlayerPrompt strong{max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body.scoring-page.clubhouse #scoreReady #selectedPlayerPrompt small{font-size:9px;color:#52618b}
+html body.scoring-page.clubhouse #scoreReady .keypad-grid{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(40px,1fr));gap:5px;height:auto;min-height:0;border:0}
+html body.scoring-page.clubhouse #scoreReady .keypad-grid button{height:100%;width:100%;min-height:40px;padding:0;background:white!important;border:1px solid #bcc8e5!important;border-radius:8px!important;box-shadow:0 2px 0 #cbd4e9!important;font-size:25px!important;color:#15204b!important;font-weight:800;line-height:1.1;touch-action:manipulation}
+html body.scoring-page.clubhouse #scoreReady .keypad-grid .key-secondary{font-size:12px!important}
+html body.scoring-page.clubhouse #scoreReady .keypad-grid .key-pickup{background:#ff7845!important;font-size:18px!important}
+html body.scoring-page.clubhouse #scoreReady .key-pickup small{font-size:9px}
+html body.scoring-page.clubhouse #scoreReady .score-quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0;flex:0 0 42px}
+html body.scoring-page.clubhouse #scoreReady .score-quick-actions .button{min-width:0;min-height:42px;width:100%;height:42px;margin:0!important;padding:6px!important;font-size:12px!important;line-height:1.1;border-radius:8px!important;font-weight:700}
+html body.scoring-page.clubhouse #scoreReady .hole-actions{position:static;transform:none;flex:0 0 44px;display:block;width:100%;padding:0;margin:0;border:0;background:transparent;min-height:44px}
+html body.scoring-page.clubhouse #scoreReady #previousHoleBottom{display:none}
+html body.scoring-page.clubhouse #scoreReady #nextHole{width:100%;height:44px;min-height:44px;font-size:15px;padding:8px;background:#254ee8;color:white;border:0;border-radius:8px}
+html body.scoring-page.clubhouse :is(.score-review,.score-state):not(.hidden){max-height:none;height:100%;overflow:auto;overscroll-behavior:contain;padding:20px 15px}
+html body.scoring-page.clubhouse .score-tools-dialog{width:min(560px,calc(100% - 20px));max-height:88dvh;overflow:auto;border:0;border-radius:14px;padding:20px;color:#15204b;background:#fff}
+html body.scoring-page.clubhouse .score-tools-dialog::backdrop{background:#101d55b3}
+html body.scoring-page.clubhouse .score-tools-dialog h2{font-size:22px;margin:8px 0 20px}
+html body.scoring-page.clubhouse .score-tools-dialog .button{min-height:44px;font-size:14px}
+html body.scoring-page.clubhouse .score-tools-dialog .keypad-grid{grid-template-columns:repeat(5,1fr);gap:6px;border:0;margin:12px 0}
+html body.scoring-page.clubhouse .score-tools-dialog .keypad-grid button{height:44px;background:#e8eeff;border:0;border-radius:6px;font-size:20px;color:#15204b}
+html body.scoring-page.clubhouse .score-tools-dialog details{padding:14px 0;border-top:1px solid #c4cee7}
+html body.scoring-page.clubhouse .score-tools-dialog summary{font-size:14px;cursor:pointer;font-weight:700;min-height:32px}
+html body.scoring-page.clubhouse .score-tools-dialog .live-nine-strip{overflow-x:auto}
+html body.scoring-page.clubhouse .score-tools-dialog .live-card-row,html body.scoring-page.clubhouse .score-tools-dialog .live-card-header{min-width:450px}
+html body.scoring-page.clubhouse .score-tools-close{float:right}
+html body.scoring-page.clubhouse .score-preview-banner{background:#ff7845;color:#15204b;font-size:10px;line-height:1.2;padding:4px 8px;text-align:center;flex:0 0 auto}
+@media(max-height:700px){html body.scoring-page.clubhouse #scoreReady{gap:4px;padding-top:4px}html body.scoring-page.clubhouse #scoreCurrentPlayers{flex-basis:96px;max-height:125px}html body.scoring-page.clubhouse #scoreReady .hole-heading{min-height:54px}html body.scoring-page.clubhouse #scoreReady #holeProgress{display:none}html body.scoring-page.clubhouse #scoreCurrentPlayers .score-player-row small{margin-top:2px}html body.scoring-page.clubhouse #scoreReady #scoreKeypad{flex-basis:154px}}
+@media(max-height:480px) and (min-width:600px){html body.scoring-page.clubhouse #scoreReady:not(.hidden){display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr 42px 44px;gap:5px}html body.scoring-page.clubhouse #scoreReady .score-round-notices{grid-column:1/-1}html body.scoring-page.clubhouse #scoreReady .hole-heading{grid-column:1;grid-row:2;align-self:start}html body.scoring-page.clubhouse #scoreCurrentPlayers{grid-column:1;grid-row:2;align-self:end;height:100px;min-height:90px}html body.scoring-page.clubhouse #scoreReady #scoreKeypad{grid-column:2;grid-row:2/4;height:100%;max-height:none}html body.scoring-page.clubhouse #scoreReady .score-quick-actions{grid-column:1;grid-row:3}html body.scoring-page.clubhouse #scoreReady .hole-actions{grid-column:1/-1;grid-row:4}}

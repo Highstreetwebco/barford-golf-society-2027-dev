@@ -1,3 +1,4 @@
+await import('./build-scoring-preview.mjs');
 // Generated files are committed because GitHub Pages serves this repository directly.
 // Run npm ci && npm run build after editing source CSS/JS or page markup.
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';

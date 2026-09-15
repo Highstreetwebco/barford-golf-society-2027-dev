@@ -1,0 +1,1 @@
+(()=>{"use strict";const e=document.getElementById("scoreToolsDialog"),o=document.getElementById("scoreToolsButton");!e||!o||(o.onclick=()=>e.showModal(),document.getElementById("closeScoreTools").onclick=()=>e.close(),e.addEventListener("click",t=>{t.target.closest("[data-score],[data-edit-player],#handoffScorecard")&&e.close()}),e.addEventListener("close",()=>o.focus()))})();

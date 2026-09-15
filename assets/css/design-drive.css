@@ -146,3 +146,17 @@ html[data-design=drive] body.clubhouse .site-nav .nav-page-group+.nav-page-group
 html[data-design=drive] body.clubhouse .event-return-links{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:14px}
 html[data-design=drive] body.clubhouse .event-return-links .simple-back{margin:0}
 @media(max-width:850px){html[data-design=drive] body.clubhouse .site-header .site-nav{position:absolute!important;top:100%!important;right:0!important;left:auto!important;max-height:calc(100dvh - 180px);overflow-y:auto}}
+
+/* Admin uses the same unaltered crest as the member site. */
+html[data-design=drive] body.admin-page.clubhouse>.site-header .brand::after{content:none!important;display:none!important}
+html[data-design=drive] body.admin-page.clubhouse>.site-header .brand{display:flex!important;grid-column:2;justify-content:center;gap:0!important}
+html[data-design=drive] body.admin-page.clubhouse>.site-header .brand img{width:124px!important;height:116px!important;max-width:none!important;max-height:none!important;padding:0!important;background:#101d55!important;object-fit:contain!important}
+html[data-design=drive] body.admin-page.clubhouse .admin-hero{padding:30px 0 54px;background:#254ee8;color:white}
+html[data-design=drive] body.admin-page.clubhouse .admin-hero h1{font-size:clamp(2rem,4vw,3.2rem)}
+html[data-design=drive] body.admin-page.clubhouse .admin-dashboard{margin-top:-24px;gap:20px}
+html[data-design=drive] body.admin-page.clubhouse .admin-section-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;background:#fff;border:1px solid #ccd5ec;border-radius:10px}
+html[data-design=drive] body.admin-page.clubhouse .admin-section-nav button{min-height:44px;padding:10px 16px;font-size:.85rem;border-radius:6px}
+html[data-design=drive] body.admin-page.clubhouse .admin-card{border-radius:10px;border-color:#ccd5ec;box-shadow:none;padding:22px}
+html[data-design=drive] body.admin-page.clubhouse .admin-heading{align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+html[data-design=drive] body.admin-page.clubhouse .admin-card :is(input,select,textarea){min-width:0;max-width:100%}
+@media(max-width:850px){html[data-design=drive] body.admin-page.clubhouse>.site-header .brand img{width:106px!important;height:100px!important}html[data-design=drive] body.admin-page.clubhouse .admin-card{padding:16px}html[data-design=drive] body.admin-page.clubhouse .admin-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px}html[data-design=drive] body.admin-page.clubhouse .admin-toolbar{flex-wrap:wrap}html[data-design=drive] body.admin-page.clubhouse .admin-hero{padding-top:24px}}

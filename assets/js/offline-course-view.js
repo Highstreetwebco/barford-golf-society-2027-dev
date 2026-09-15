@@ -64,12 +64,12 @@
     if (visual) visual.innerHTML = routeSvg(mapped);
   };
   const start = () => {
-    if (active || window.__barfordCourseMap || document.querySelector(".offline-fallback")) return;
+    if (active || (window.__barfordCourseMap&&!window.__barfordMapFailed) || document.querySelector(".offline-fallback")) return;
     active = true;
     data = readCourse() || { holes: activeCard?.holes || [], views: [] };
     const fallback = document.createElement("div");
     fallback.className = "offline-fallback";
-    fallback.innerHTML='<div class="offline-connection-modal" role="alert" aria-labelledby="offlineConnectionTitle"><strong id="offlineConnectionTitle">Course map unavailable</strong><p>Your scorecard is still available. Return to scoring to continue your round.</p><button id="offlineBackToScoring" type="button">Back to scorecard</button><button id="showSavedMap" type="button">View saved hole layout</button></div><div class="offline-hole-visual" hidden></div>';
+    fallback.innerHTML='<div class="offline-connection-modal" role="alert" aria-labelledby="offlineConnectionTitle"><strong id="offlineConnectionTitle">Satellite map unavailable</strong><p>Your scorecard is still available. Return to scoring to continue your round.</p><button id="offlineBackToScoring" type="button">Back to scorecard</button><button id="showSavedMap" type="button">View saved hole layout</button><button id="retryCourseMap" type="button">Retry satellite map</button></div><div class="offline-hole-visual" hidden></div>';
     document.body.prepend(fallback);
     $("previousHole").onclick = () => { if (hole > 1) { hole--; paint(); } };
     $("nextHole").onclick = () => { if (hole < 18) { hole++; paint(); } };
@@ -78,10 +78,12 @@
     $("exitGps").onclick = () => location.href = params.get('from')==='scoring'?scoringReturn():eventId?'event.html?event='+encodeURIComponent(eventId):'events.html';
     $("recenterMap").disabled = true;
     $('showSavedMap').onclick=()=>{document.querySelector('.offline-connection-modal').hidden=true;document.querySelector('.offline-hole-visual').hidden=false;};
+    $('retryCourseMap').onclick=()=>location.reload();
     paint();
   };
-  window.addEventListener("barford-map-ready",()=>{document.querySelector('.offline-fallback')?.remove();active=false;});
+  window.addEventListener("barford-course-data-ready",()=>{if(active){data=readCourse()||data;paint();}});
+  window.addEventListener("barford-map-ready",()=>{if(window.__barfordMapFailed)return;document.querySelector('.offline-fallback')?.remove();active=false;});
   window.addEventListener("barford-map-failed",start);
   window.addEventListener("offline", () => setTimeout(start, 250));
-  setTimeout(() => { if (!window.__barfordCourseMap) start(); }, 5000);
+  setTimeout(() => { if (!window.__barfordCourseMap||window.__barfordMapFailed) start(); }, 13000);
 })();
