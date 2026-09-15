@@ -142,7 +142,6 @@
     const email = $("#signupEmail").value.trim().toLowerCase();
     const phone = $("#signupPhone").value.trim();
     const playingCategory = $("#signupPlayingCategory").value;
-    const handicap = Number($("#signupHandicap").value);
     const password = $("#signupPassword").value;
     const confirmation = $("#signupPasswordConfirm").value;
     const themePrimary = $("#signupThemePrimary")?.value || "#315C4A";
@@ -156,10 +155,6 @@
       message("#signupStatus", "Choose Men’s or Women’s playing category.", true);
       return;
     }
-    if (!Number.isFinite(handicap) || handicap < 0 || handicap > 54) {
-      message("#signupStatus", "Enter a starting society handicap between 0 and 54.", true);
-      return;
-    }
     if (password !== confirmation) {
       message("#signupStatus", "Those passwords do not match. Please try again.", true);
       return;
@@ -170,7 +165,7 @@
     message("#signupStatus", "");
 
     try{
-      const {data,error}=await bounded(client.auth.signUp({email,password,options:{data:{full_name:fullName,phone,playing_category:playingCategory,handicap,theme_primary:themePrimary,theme_accent:themeAccent}}}));
+      const {data,error}=await bounded(client.auth.signUp({email,password,options:{data:{full_name:fullName,phone,playing_category:playingCategory,theme_primary:themePrimary,theme_accent:themeAccent}}}));
       if(error)throw error;
       try{localStorage.setItem('barford-login-email',email);}catch{}
       if(data.session){window.location.href=returnTo();return;}
@@ -357,11 +352,11 @@
     $("#accountPhone").value = profile.phone || "";
     $("#accountHomeClub").value = profile.home_club || "";
     $("#accountHandicap").value = profile.handicap ?? "";
-    $("#accountHandicap").readOnly=profile.handicap!=null;
-    $("#accountHandicap").required=profile.handicap==null;
-    $("#accountHandicap").dataset.needsInitial=String(profile.handicap==null);
-    $("#accountHandicap").setAttribute('aria-readonly',String(profile.handicap!=null));
-    if(profile.handicap==null)$("#accountHandicap").parentElement.querySelector('small').textContent='Enter your starting society handicap (0 to 54), then save your details.';
+    $("#accountHandicap").readOnly=true;
+    $("#accountHandicap").required=false;
+    $("#accountHandicap").placeholder='Awaiting admin';
+    $("#accountHandicap").setAttribute('aria-readonly','true');
+    $("#accountHandicap").parentElement.querySelector('small').textContent=profile.handicap==null?'Awaiting admin. The committee will set your society handicap. You can still RSVP for events.':'The committee manages your society handicap. It updates after completed rounds.';
     $("#accountPlayingCategory").value = profile.playing_category || "";
     if ($("#accountThemePrimary")) $("#accountThemePrimary").value = profile.theme_primary || "#315C4A";
     if ($("#accountThemeAccent")) $("#accountThemeAccent").value = profile.theme_accent || "#C7A96B";
@@ -468,12 +463,6 @@
       theme_accent: $("#accountThemeAccent")?.value || "#C7A96B",
       updated_at: new Date().toISOString()
     };
-    if($("#accountHandicap").dataset.needsInitial==='true'){
-      const initial=Number($("#accountHandicap").value);
-      if($("#accountHandicap").value===''||!Number.isFinite(initial)||initial<0||initial>54)throw Error('Enter a starting handicap between 0 and 54.');
-      await window.BarfordMemberFlow.request(client.rpc('set_initial_handicap',{initial_handicap:initial}));
-      $("#accountHandicap").dataset.needsInitial='false';$("#accountHandicap").readOnly=true;$("#accountHandicap").setAttribute('aria-readonly','true');
-    }
     const saved=await window.BarfordMemberFlow.request(client.from("profiles").update(changes).eq("id",user.id).select("id").single());
     if(!saved?.id)throw Error("Your details could not be confirmed. Please try again.");
     $("#accountHeroName").textContent = changes.full_name;

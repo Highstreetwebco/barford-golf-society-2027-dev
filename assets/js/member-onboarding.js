@@ -13,19 +13,18 @@
   const openOnboarding = async (user, profile) => {
     if (!profile) return;
     const needsCategory = !profile.playing_category;
-    const needsHandicap = profile.handicap == null;
     const photoSkipped = localStorage.getItem("barford-onboarding-photo-skipped") === "1";
     const suggestPhoto = !profile.photo_url && !photoSkipped;
-    if (!needsCategory && !needsHandicap && !suggestPhoto) return;
+    if (!needsCategory && !suggestPhoto) return;
 
     const dialog = document.createElement("dialog");
     dialog.className = "member-onboarding-dialog";
     dialog.innerHTML = `<form class="member-onboarding-card" method="dialog">
       <p class="eyebrow">One-time setup</p><h2>Finish your golf details</h2><p>These details make tee groups and live scoring work properly. You only need to do this once.</p>
-      <div class="member-onboarding-progress"><span class="done"></span><span class="${needsCategory ? "" : "done"}"></span><span class="${needsHandicap ? "" : "done"}"></span></div>
+      <div class="member-onboarding-progress"><span class="done"></span><span class="${needsCategory ? "" : "done"}"></span><span class="done"></span></div>
       <div class="member-onboarding-fields">
         <label>Playing category<select id="onboardingCategory" ${needsCategory ? "required" : ""}><option value="">Select…</option><option value="men">Men’s — yellow tees</option><option value="women">Women’s — red tees</option></select><small>Chooses the correct tee card automatically.</small></label>
-        <label>Starting society handicap<input id="onboardingHandicap" type="number" min="0" max="54" step=".1" ${needsHandicap ? "required" : "readonly"} value="${profile.handicap ?? ""}"><small>${needsHandicap ? "This is only editable before your first society result." : "Your handicap is already set and will update from results."}</small></label>
+        <p>Society handicap: ${profile.handicap == null ? "Awaiting admin. The committee will set this for you." : esc(profile.handicap)}</p>
         ${suggestPhoto ? `<div class="onboarding-photo-choice"><strong>Profile photo</strong><p>A photo makes four-ball groups easier to recognise. It is useful, but not compulsory.</p><label><input id="onboardingSkipPhoto" type="checkbox"> I’ll add a photo later</label></div>` : ""}
       </div>
       <div class="member-onboarding-actions"><button id="onboardingSave" class="button button-primary" type="button">Save and continue</button>${suggestPhoto ? '<button id="onboardingAddPhoto" class="button button-outline" type="button">Add photo now</button>' : ""}</div>
@@ -49,9 +48,7 @@
       const button = event.currentTarget;
       const status = dialog.querySelector("#onboardingStatus");
       const selectedCategory = category.value;
-      const handicapValue = dialog.querySelector("#onboardingHandicap")?.value;
       if (!selectedCategory) { status.textContent = "Choose Men’s or Women’s playing category."; return; }
-      if (needsHandicap && (handicapValue === "" || Number(handicapValue) < 0 || Number(handicapValue) > 54)) { status.textContent = "Enter a starting handicap between 0 and 54."; return; }
       button.disabled = true; button.textContent = "Saving…"; status.textContent = "";
       const changes = {};
       if (selectedCategory !== profile.playing_category) changes.playing_category = selectedCategory;
@@ -60,17 +57,9 @@
         const { error } = await client.from("profiles").update(changes).eq("id", user.id);
         if (error) { status.textContent = error.message; button.disabled = false; button.textContent = "Save and continue"; return; }
       }
-      if (needsHandicap) {
-        const { error } = await client.rpc("set_initial_handicap", { initial_handicap: Number(handicapValue) });
-        if (error) { status.textContent = error.message; button.disabled = false; button.textContent = "Save and continue"; return; }
-      }
       if (dialog.querySelector("#onboardingSkipPhoto")?.checked) localStorage.setItem("barford-onboarding-photo-skipped", "1");
       status.textContent = "✓ Account ready.";
       document.getElementById("accountPlayingCategory").value = selectedCategory;
-      if (needsHandicap) {
-        document.getElementById("accountHandicap").value = handicapValue;
-        document.getElementById("accountCurrentHandicap").textContent = handicapValue;
-      }
       await wait(450); dialog.close(); dialog.remove();
     });
   };

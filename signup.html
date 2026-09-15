@@ -39,7 +39,7 @@
   <label>Your name<select id="signupName" required><option value="">Select your name…</option><option value="__new__">My name isn’t listed / I’m a new member</option></select></label>
   <label id="signupNewNameWrap" class="hidden">Your full name<input id="signupNewName" type="text" autocomplete="name" placeholder="Type your full name"></label>
   <label>Playing category<select id="signupPlayingCategory" required><option value="">Select men’s or women’s…</option><option value="men">Men’s — yellow tees</option><option value="women">Women’s — red tees</option></select><small>Used to load the correct tee distances, par and stroke indexes on event scorecards.</small></label>
-  <label>Starting society handicap<input id="signupHandicap" type="number" min="0" max="54" step=".1" required inputmode="decimal" placeholder="e.g. 18"><small>Your starting handicap is set once here, then updates automatically after each society round.</small></label>
+  <p class="signup-handicap-note">The committee will set your society handicap after you sign up. You can still browse events and RSVP while it is awaiting admin.</p>
   <label>Email address<input id="signupEmail" type="email" required autocomplete="email" placeholder="name@example.com"></label>
   <label>Create password<input id="signupPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></label>
   <label>Confirm password<input id="signupPasswordConfirm" type="password" required minlength="8" autocomplete="new-password" placeholder="Type it again"></label>
@@ -75,7 +75,7 @@
 <script src="assets/dist/supabase-client.bd4aa0131b3e.js" defer></script>
 <script src="assets/dist/passkeys.62ea9831687c.js" defer></script>
 <script src="assets/dist/member-workflow.243f6db5c9a5.js" defer></script>
-<script src="assets/dist/member-auth.d9a7155bf5e5.js" defer></script>
+<script src="assets/dist/member-auth.b36c71f2179f.js" defer></script>
 
 <script src="assets/dist/accessible-mobile.dea27d303f10.js" defer></script>
 
