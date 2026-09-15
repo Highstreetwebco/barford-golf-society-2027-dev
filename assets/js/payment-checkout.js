@@ -4,6 +4,7 @@
   async function pay(event,rsvp,button){
     if(!event||!F.payment(event,rsvp).due||button.disabled)return;
     if(!config.stripeCheckoutEnabled){
+      if(window.BarfordPaymentDemo){window.BarfordPaymentDemo.open(event,rsvp);return;}
       const d=F.dialog('Online payments coming soon',`<p><strong>${F.esc(event.name)}</strong></p><p>${F.esc(F.priceLabel(rsvp))} · ${F.esc(F.money(F.eventPrice(event,rsvp)))}</p><p>Online payments aren’t available yet. Your booking is saved and remains unpaid. Contact the committee for payment instructions.</p><button class="button button-primary" type="button" data-payment-instructions>Get payment instructions</button>`);
       d.querySelector('[data-payment-instructions]').onclick=()=>{d.close();F.contact(event,'get the payment details');};return;
     }

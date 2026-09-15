@@ -1,7 +1,7 @@
 /* HTML prefers the network, but a saved page limits waiting to 150ms. Scoring opens the saved
    shell immediately; each release installs its matching hashed assets. Offline scoring data is
    stored by the scoring app, not here: never clear localStorage or IndexedDB. */
-const CACHE='barford-golf-2027-offline-v80-80a0275e7a17';
+const CACHE='barford-golf-2027-offline-v80-78bd6b215dfb';
 const PREFIX='barford-golf-2027-offline-';
 const POLICY='network-first-v1';
 const SCOPE=new URL('./',self.location.href);
