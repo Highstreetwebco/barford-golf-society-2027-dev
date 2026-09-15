@@ -57,7 +57,7 @@
     "assets/css/fairway.css": "assets/dist/fairway.6247a9edb681.css",
     "assets/css/clubhouse-course.css": "assets/dist/clubhouse-course.153cb4a54a66.css",
     "assets/js/offline-course-view.js": "assets/dist/offline-course-view.55f0ae14eddb.js",
-    "assets/js/maps-loader.js": "assets/dist/maps-loader.be6bbcaf3e9d.js",
+    "assets/js/maps-loader.js": "assets/dist/maps-loader.0cfb130c3915.js",
     "assets/js/course-view.js": "assets/dist/course-view.bc943b2fbea1.js",
     "assets/js/member-dashboard.js": "assets/dist/member-dashboard.f8cee7bdc243.js",
     "assets/js/member-season.js": "assets/dist/member-season.8732c42a394f.js",
@@ -65,7 +65,7 @@
     "assets/js/payments-hub.js": "assets/dist/payments-hub.ec6b9365564c.js",
     "assets/js/scores.js": "assets/dist/scores.d039487ef9c9.js",
     "assets/js/scoring-preview.js": "assets/dist/scoring-preview.53333f442835.js",
-    "assets/js/score-layout.js": "assets/dist/score-layout.286fb2c8802e.js",
+    "assets/js/score-layout.js": "assets/dist/score-layout.5dffc215400f.js",
     "assets/js/score-model.js": "assets/dist/score-model.d5a4f3094f8b.js",
     "assets/js/scoring-resilience.js": "assets/dist/scoring-resilience.762a870a61b7.js",
     "assets/js/scoring.js": "assets/dist/scoring.f37b351e48e2.js",
@@ -183,7 +183,7 @@
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
-      "assets/dist/maps-loader.be6bbcaf3e9d.js",
+      "assets/dist/maps-loader.0cfb130c3915.js",
       "assets/dist/course-view.bc943b2fbea1.js",
       "assets/dist/design-preview.d95251faced6.js"
     ],
@@ -232,15 +232,15 @@
     "scoring-preview.html": [
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/scoring-bundle.9115e3547938.css",
-      "assets/dist/member-ui.dfab771b1d17.css",
+      "assets/dist/member-ui.c1cd3241cd45.css",
       "assets/dist/scoring-preview.53333f442835.js",
-      "assets/dist/score-layout.286fb2c8802e.js",
+      "assets/dist/score-layout.5dffc215400f.js",
       "assets/dist/design-preview.d95251faced6.js"
     ],
     "scoring.html": [
       "assets/dist/styles.25b6981ca7d7.css",
       "assets/dist/scoring-bundle.9115e3547938.css",
-      "assets/dist/member-ui.dfab771b1d17.css",
+      "assets/dist/member-ui.c1cd3241cd45.css",
       "assets/dist/offline-register.47b92b606ceb.js",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
@@ -250,7 +250,7 @@
       "assets/dist/scoring-resilience.762a870a61b7.js",
       "assets/dist/scoring.f37b351e48e2.js",
       "assets/dist/design-preview.d95251faced6.js",
-      "assets/dist/score-layout.286fb2c8802e.js"
+      "assets/dist/score-layout.5dffc215400f.js"
     ],
     "shop.html": [
       "assets/dist/styles.25b6981ca7d7.css",
@@ -312,12 +312,12 @@
     "events.html": "d0837155e639",
     "gallery.html": "7185f1b2839c",
     "halfway-preview.html": "a2b646d671f2",
-    "hole-view.html": "a0250e5426f0",
+    "hole-view.html": "f9cf8d8a303e",
     "index.html": "f6335fee072a",
     "payments.html": "b2911aec707c",
     "scores.html": "9aa5b6eeea1e",
-    "scoring-preview.html": "575d5e62ad1a",
-    "scoring.html": "72c9185226ee",
+    "scoring-preview.html": "420343ae70bc",
+    "scoring.html": "744efd2b4b42",
     "shop.html": "a204552a1d1b",
     "signup.html": "fd46f95965ca",
     "tee-sheet.html": "533f57f6a34b",
@@ -325,5 +325,5 @@
     "worldevents.html": "dfe577af32f3"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "44ef556db648"
+  "build": "9b1ee7d27787"
 }

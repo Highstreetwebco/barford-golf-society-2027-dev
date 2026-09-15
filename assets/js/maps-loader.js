@@ -6,6 +6,7 @@
  window.BarfordMapsReady.catch(()=>{});
  const fail=reason=>{
   window.__barfordMapFailed=true;window.__barfordCourseMap=null;
+  const surface=window.document?.getElementById('courseMap');if(surface)surface.hidden=true;
   if(!settled){settled=true;reject(new Error(reason));}
   window.dispatchEvent(new CustomEvent('barford-map-failed',{detail:{reason}}));
  };
