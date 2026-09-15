@@ -10,3 +10,7 @@
 Keep this branch as an unchanged reference. To restore the appearance later, bring back the relevant design files and rebuild against the current application. Do not reset the entire application and discard later feature fixes or database work.
 
 `designs.html` compares Fairway, Links and Tour. Fairway remains the default. Alternative designs use a URL parameter, do not write account preferences, and do not change the default for other visitors.
+
+## Current default — Drive
+
+Jack requested Drive be pushed to the normal live site on 15 September 2026. Pages without a design parameter now use Drive. Use `?design=fairway` to preview the saved favourite; navigation preserves this explicit choice. The favourite restore branch remains unchanged.

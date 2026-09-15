@@ -40,11 +40,11 @@ def browser(pw):
 
 def gateway(page):
     expect(page.locator('#visitorGateway')).to_be_visible(timeout=20000)
-    expect(page.get_by_role('link', name='Create a Barford members account', exact=True)).to_be_visible()
-    expect(page.get_by_role('link', name='Continue as a guest', exact=True)).to_be_visible()
-    expect(page.get_by_role('link', name='Already have an account? Sign in', exact=True)).to_be_visible()
-    assert page.locator('#visitorGateway .visitor-gateway-actions a').count() == 2
-    assert not page.get_by_text('Great golf.', exact=True).count()
+    expect(page.get_by_role('heading', name='ALL FOR THE GOLF.', exact=True)).to_be_visible()
+    expect(page.locator('.drive-member')).to_be_visible()
+    expect(page.locator('.drive-guest')).to_be_visible()
+    expect(page.get_by_role('link', name='Create a Barford member account', exact=True)).to_be_visible()
+    assert page.locator('.drive-entry a').count() == 2
     assert page.locator('.mobile-quick-nav:visible,.desktop-primary:visible,.site-nav:visible').count() == 0
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
 
@@ -112,13 +112,13 @@ def local_tests(pw):
         gateway(page)
         record('Normal reload stays on the latest homepage after recovery')
         current = root / 'golf/index.html'
-        current.write_text(current.read_text().replace('See you on<br>the first tee.', 'Barford NEXT RELEASE'))
+        current.write_text(current.read_text().replace('<title>Barford Golf Society | 2027</title>', '<title>Barford NEXT RELEASE</title>'))
         page.reload()
-        expect(page.get_by_role('heading', name='Barford NEXT RELEASE')).to_be_visible()
+        expect(page).to_have_title('Barford NEXT RELEASE')
         record('A later HTML edit is served on reload even when the worker version is unchanged')
         context.set_offline(True)
         page.reload()
-        expect(page.get_by_role('heading', name='Barford NEXT RELEASE')).to_be_visible()
+        expect(page).to_have_title('Barford NEXT RELEASE')
         saved_scores(page)
         response = page.goto(base + 'scoring.html?event=cache-test&card=offline-test')
         assert response.status == 200
