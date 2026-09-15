@@ -64,6 +64,14 @@ for(const page of (await readdir('.')).filter(name=>name.endsWith('.html'))){
   else if(source.startsWith('assets/js/'))built=await buildJs(source);
   if(built){html=html.replace(tag,tag.replace(url,built));pageAssets.push(built);}
  }
+ // Let the browser discover the default design while parsing HTML, before the
+ // late theme switcher requests its stylesheet and layout script.
+ html=html.replace(/<link\b[^>]*data-startup-preload[^>]*>/g,'');
+ if(pageAssets.includes(manifest.assets['assets/js/design-preview.js'])){
+  const hints=[['assets/css/design-drive.css','style'],['assets/js/design-drive.js','script']].map(([source,as])=>`<link rel="preload" href="${manifest.assets[source]}" as="${as}" data-startup-preload>`).join('');
+  html=html.replace('</head>',hints+'</head>');
+ }
+ if(pageAssets.includes(manifest.sdk)&&!html.includes('rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co"'))html=html.replace('</head>','<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin></head>');
  // No third-party handshake is needed to load the vendored account SDK.
  html=html.replace(/\s*<link rel="preconnect" href="https:\/\/cdn.jsdelivr.net" crossorigin>/g,'');
  let supabaseHint=false;html=html.replace(/<link rel="preconnect" href="https:\/\/xspzmthygrajzktydvvj.supabase.co" crossorigin>/g,tag=>{if(supabaseHint)return '';supabaseHint=true;return tag;});

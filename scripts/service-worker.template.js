@@ -1,4 +1,4 @@
-/* Most HTML and mutable assets reach the network first. Scoring opens the saved
+/* HTML prefers the network, but a saved page limits waiting to 150ms. Scoring opens the saved
    shell immediately; each release installs its matching hashed assets. Offline scoring data is
    stored by the scoring app, not here: never clear localStorage or IndexedDB. */
 const CACHE='barford-golf-2027-offline-v__RELEASE__';
@@ -60,7 +60,11 @@ self.addEventListener('fetch',event=>{
     // versionless URL for a versioned script or stylesheet.
     if(path==='scoring.html'){const hit=await (await caches.open(CACHE)).match(key);if(hit)return hit;}
     if(immutable(path)){const hit=await cached(key);if(hit)return hit;}
-    try{
+    // Only static same-origin documents/images use the fast fallback. Member
+    // records, sign-in, payments and score writes never pass through this cache.
+    const saved=(page||path.startsWith('assets/images/'))?await cached(key):null;
+    const network=(async()=>{
+      try{
       const response=await fetch(request,{cache:immutable(path)?'default':'no-store'});
       if(response.status>=500){const fallback=await cached(key);if(fallback)return fallback;}
       await store(key,response);return response;
@@ -69,5 +73,13 @@ self.addEventListener('fetch',event=>{
       // Do not substitute the homepage for a missing scorecard/account document.
       return page?new Response('<!doctype html><meta name="viewport" content="width=device-width"><title>Offline | Barford</title><h1>You are offline</h1><p>This page has not been saved on this device. Reconnect and try again. Your saved scores have not been removed.</p>',{status:503,headers:{'Content-Type':'text/html; charset=utf-8'}}):Response.error();
     }
+    })();
+    if(!saved)return network;
+    // Keep the fetch alive to replace a stale shell for the next navigation.
+    event.waitUntil(network.then(()=>{},()=>{}));
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>resolve(saved),150);
+      network.then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+    });
   })());
 });

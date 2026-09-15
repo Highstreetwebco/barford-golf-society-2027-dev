@@ -41,10 +41,10 @@ def browser(pw):
 def gateway(page):
     expect(page.locator('#visitorGateway')).to_be_visible(timeout=20000)
     expect(page.get_by_role('heading', name='ALL FOR THE GOLF.', exact=True)).to_be_visible()
-    expect(page.locator('.drive-member')).to_be_visible()
-    expect(page.locator('.drive-guest')).to_be_visible()
-    expect(page.get_by_role('link', name='Create a Barford member account', exact=True)).to_be_visible()
-    assert page.locator('.drive-entry a').count() == 2
+    expect(page.locator('.drive-start-create')).to_be_visible()
+    expect(page.locator('.drive-start-guest')).to_be_visible()
+    expect(page.locator('.drive-start-login')).to_be_visible()
+    assert page.locator('.drive-poster .drive-start-actions a').count() == 3
     assert page.locator('.mobile-quick-nav:visible,.desktop-primary:visible,.site-nav:visible').count() == 0
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
 
