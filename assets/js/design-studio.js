@@ -1,8 +1,8 @@
 (() => {
  'use strict';
  const frame=document.querySelector('#designFrame'),page=document.querySelector('#previewPage'),full=document.querySelector('#openDesign');
- let theme='fairway',phone=true;
- const descriptions={fairway:'Fairway — your saved favourite. This is still the default site design.',links:'Links — an editorial golf style with navy, warm sand and your society photography.',tour:'Tour — a modern golf-app style with dark surroundings, bright accents and rounded controls.'};
+ let theme=new URLSearchParams(location.search).get('design')==='matchbook'?'matchbook':'fairway',phone=true;
+ const descriptions={matchbook:'Matchbook — a new layout: side navigation, editorial homepage, event tiles and a task-first dashboard.',fairway:'Fairway — your saved favourite. This is still the default site design.',links:'Links — an editorial golf style with navy, warm sand and your society photography.',tour:'Tour — a modern golf-app style with dark surroundings, bright accents and rounded controls.'};
  function render(navigate=true){
   const url=new URL(page.value,location.href);if(theme!=='fairway')url.searchParams.set('design',theme);
   if(navigate)frame.src=url.href;full.href=url.href;
@@ -15,4 +15,5 @@
  page.addEventListener('change',()=>render());
  document.querySelector('#phoneView').addEventListener('click',()=>{phone=true;render(false);});
  document.querySelector('#desktopView').addEventListener('click',()=>{phone=false;render(false);});
+ render();
 })();
