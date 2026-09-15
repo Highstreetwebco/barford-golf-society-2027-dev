@@ -23,3 +23,7 @@ Jack selected Drive as his new favourite before testing the Round flow.
 - Commit: 3ab644f22c6c5460d37d2535351713afc5659184
 - Drive remains the live default. Round is an explicit preview at `?design=round`.
 - Preserve this restore reference and the earlier Fairway reference. Restore design files against current application code rather than discarding later functional changes.
+
+## Tee sheet — independent interface experiment
+
+`tee-sheet.html` is a separate live fixture-board interface with its own HTML, CSS and controller. It reuses existing protected booking and scorer operations. Drive remains the saved favourite and default. Secondary links open existing feature pages. Preview on a phone with `designs.html?design=teesheet`.

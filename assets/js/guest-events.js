@@ -45,5 +45,5 @@
     };
     input.focus();
   }
-  window.BarfordGuestEvents = {state, render};
+  window.BarfordGuestEvents = {state, render, openBooking:book};
 })();
