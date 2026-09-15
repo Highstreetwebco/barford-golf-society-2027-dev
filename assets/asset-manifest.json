@@ -320,7 +320,7 @@
     "gallery.html": "7bdbbc58b26a",
     "halfway-preview.html": "a2b646d671f2",
     "hole-view.html": "905ff283daef",
-    "index.html": "9e79f622d515",
+    "index.html": "4c5a883155a9",
     "payments.html": "14cfdcd5e31c",
     "scores.html": "b68b6fbc5da2",
     "scoring-preview.html": "480d72260b25",
@@ -332,5 +332,5 @@
     "worldevents.html": "ecb4f8705395"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "332be2c2cb05"
+  "build": "865516f289ac"
 }

@@ -1,7 +1,7 @@
 /* Most HTML and mutable assets reach the network first. Scoring opens the saved
    shell immediately; each release installs its matching hashed assets. Offline scoring data is
    stored by the scoring app, not here: never clear localStorage or IndexedDB. */
-const CACHE='barford-golf-2027-offline-v80-332be2c2cb05';
+const CACHE='barford-golf-2027-offline-v80-865516f289ac';
 const PREFIX='barford-golf-2027-offline-';
 const POLICY='network-first-v1';
 const SCOPE=new URL('./',self.location.href);
