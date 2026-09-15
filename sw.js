@@ -1,6 +1,6 @@
 /* HTML and mutable assets must reach the network first. Offline scoring data is
    stored by the scoring app, not here: never clear localStorage or IndexedDB. */
-const CACHE='barford-golf-2027-offline-v80-3dbe09b2cfcf';
+const CACHE='barford-golf-2027-offline-v80-82e594778e61';
 const PREFIX='barford-golf-2027-offline-';
 const POLICY='network-first-v1';
 const SCOPE=new URL('./',self.location.href);

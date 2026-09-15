@@ -2,6 +2,7 @@
  'use strict';
  const F=window.BarfordMemberFlow,G=window.BarfordGuestEvents,client=window.BarfordSupabase;
  const board=document.querySelector('#round'),fixtures=document.querySelector('#fixtures'),dock=document.querySelector('#actionDock');
+ let authRevision=0;
  let events=[],session=null,selected=null,filter='upcoming',generation=0,authReady=false;
  const E=value=>F.esc(value);
  const position=(n,title,value,detail='')=>`<div class="position"><span class="position-num">${n}</span><div><small>${title}</small><strong>${E(value)}</strong>${detail}</div></div>`;
@@ -49,20 +50,23 @@
   }catch(error){if(turn!==generation)return;board.innerHTML=`<p class="eyebrow">CONNECTION CHECK</p><h2>Let’s try that again.</h2><p>${E(error.message||'This round could not be loaded.')}</p>`;action('Try again','Your booking has not been changed',()=>authReady?select(id):boot());}
  }
  async function boot(){
+  const revision=++authRevision;
   try{
    if(!client||!F||!G)throw new Error('The connection could not start. Please refresh this page.');
    const [auth,data]=await Promise.all([F.request(client.auth.getSession()),F.request(client.from('events').select('*').in('status',['scheduled','cancelled','completed']).order('event_date'))]);
+   if(revision!==authRevision)return;
    session=auth.session;authReady=true;events=data||[];
    const account=document.querySelector('#accountLink');account.textContent=session?'My account':'Member sign in';account.href=session?'account.html':F.loginUrl(location.href);
    document.querySelector('#adminLink').hidden=true;
-   if(session)F.request(client.from('profiles').select('is_admin').eq('id',session.user.id).maybeSingle()).then(p=>{document.querySelector('#adminLink').hidden=p?.is_admin!==true;}).catch(()=>{});
+   if(session)F.request(client.from('profiles').select('is_admin').eq('id',session.user.id).maybeSingle()).then(p=>{if(revision===authRevision)document.querySelector('#adminLink').hidden=p?.is_admin!==true;}).catch(()=>{});
    const requested=new URLSearchParams(location.search).get('event');const found=events.find(e=>e.id===(selected||requested));
    if(found&&(found.event_date<F.today()||found.status==='completed'))filter='past';
    document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===filter)));
    const available=list();select(found?.id||available[0]?.id);
-  }catch(error){fixtures.innerHTML='<p class="loading">The diary could not be loaded.</p>';board.innerHTML=`<h2>Connection paused.</h2><p>${F?E(error.message):'Please refresh to reconnect.'}</p>`;if(F)action('Try again','Reconnect to the diary',boot);}
+  }catch(error){if(revision!==authRevision)return;fixtures.innerHTML='<p class="loading">The diary could not be loaded.</p>';board.innerHTML=`<h2>Connection paused.</h2><p>${F?E(error.message):'Please refresh to reconnect.'}</p>`;if(F)action('Try again','Reconnect to the diary',boot);}
  }
  document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));const available=list();select(available[0]?.id);});
+ client?.auth.onAuthStateChange(event=>{if(event==='INITIAL_SESSION')return;authReady=false;session=null;++generation;++authRevision;dock.hidden=true;document.querySelector('#adminLink').hidden=true;setTimeout(boot,0);});
  window.addEventListener('barford-booking-changed',()=>selected&&select(selected));
  boot();
 })();

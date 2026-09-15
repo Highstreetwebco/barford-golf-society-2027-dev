@@ -64,8 +64,8 @@
     "assets/js/score-model.js": "assets/dist/score-model.d5a4f3094f8b.js",
     "assets/js/scoring-resilience.js": "assets/dist/scoring-resilience.762a870a61b7.js",
     "assets/js/scoring.js": "assets/dist/scoring.bfbf6517355e.js",
-    "assets/css/tee-sheet.css": "assets/dist/tee-sheet.e1109f305abb.css",
-    "assets/js/tee-sheet.js": "assets/dist/tee-sheet.c19413005538.js"
+    "assets/css/tee-sheet.css": "assets/dist/tee-sheet.ce113e200f02.css",
+    "assets/js/tee-sheet.js": "assets/dist/tee-sheet.d5e6e196dcb3.js"
   },
   "pages": {
     "404.html": [
@@ -263,13 +263,13 @@
       "assets/dist/design-preview.8cca2f76047a.js"
     ],
     "tee-sheet.html": [
-      "assets/dist/tee-sheet.e1109f305abb.css",
+      "assets/dist/tee-sheet.ce113e200f02.css",
       "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
       "assets/dist/supabase-config.6f1d58a2a0b2.js",
       "assets/dist/supabase-client.bd4aa0131b3e.js",
       "assets/dist/member-workflow.5d2b6a6ae38f.js",
       "assets/dist/guest-events.c0296b9edb8e.js",
-      "assets/dist/tee-sheet.c19413005538.js"
+      "assets/dist/tee-sheet.d5e6e196dcb3.js"
     ],
     "update.html": [
       "assets/dist/fairway.6247a9edb681.css",
@@ -304,10 +304,10 @@
     "scoring.html": "702ca2d6ab4d",
     "shop.html": "9fd46b4a4e8f",
     "signup.html": "f45d0d62c29b",
-    "tee-sheet.html": "1da1153b9420",
+    "tee-sheet.html": "e61a8f908d9d",
     "update.html": "81cfff09f293",
     "worldevents.html": "3f8e75e169c5"
   },
   "sdk": "assets/dist/supabase-2.116.0.5d9469dec2ac.js",
-  "build": "3dbe09b2cfcf"
+  "build": "82e594778e61"
 }
