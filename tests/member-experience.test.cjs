@@ -199,3 +199,22 @@ test('course membership selects the booked rate and keeps zero, unknown and sett
  for(const payment_status of ['paid','waived','refunded'])assert.equal(F.payment(event,{...rsvp,payment_status}).due,false);
  assert.equal(F.payment(event,{...rsvp,status:'reserve'}).due,false);
 });
+
+function roundDesign(){const c={window:{BarfordMemberFlow:F},document:{documentElement:{dataset:{}}}};vm.createContext(c);vm.runInContext(source('design-round.js'),c);return c.window.BarfordRoundDesign;}
+test('Round overview never turns missing booking data into a confirmed place or payment',()=>{
+ const R=roundDesign(),m=base();m.bookingError=true;m.rsvp={status:'playing',payment_status:'paid'};
+ const rows=R.statuses(m);assert.equal(rows[0].value,'Couldn’t check');assert.equal(rows[1].value,'Couldn’t check');assert.ok(rows.every(r=>r.tone!=='confirmed'));
+ m.session=null;assert.ok(R.statuses(m).every(r=>r.value==='Sign in to check'));
+});
+test('Round overview distinguishes reserve, selected course rate, free places and unconfirmed groups',()=>{
+ const R=roundDesign(),m=base();m.event.course_member_price=12.50;m.rsvp={status:'reserve',is_course_member:true};
+ let rows=R.statuses(m);assert.equal(rows[0].value,'On reserve');assert.equal(rows[1].value,'Nothing due on reserve');assert.equal(rows[2].value,'Waiting for a place');
+ m.rsvp.status='playing';rows=R.statuses(m);assert.equal(rows[0].value,'You’re booked');assert.equal(rows[1].value,'£12.50 outstanding');assert.equal(rows[1].tone,'attention');assert.equal(rows[2].value,'Not announced yet');
+ m.event.tee_times_status='published';assert.equal(R.statuses(m)[2].value,'Awaiting confirmation');
+ m.event.course_member_price=0;assert.equal(R.statuses(m)[1].value,'No payment needed');
+ m.event.course_member_price=null;assert.equal(R.statuses(m)[1].value,'Price to be confirmed');assert.equal(R.statuses(m)[1].tone,'neutral');
+});
+test('Round overview presents refunds and cancelled events without claiming a playable tee group',()=>{
+ const R=roundDesign(),m=base();m.event.status='cancelled';m.rsvp={status:'playing',payment_status:'refunded'};m.group=[{is_you:true,tee_time:'09:30'}];
+ const rows=R.statuses(m);assert.equal(rows[0].value,'Event cancelled');assert.equal(rows[1].value,'Payment refunded');assert.equal(rows[2].value,'Event cancelled');assert.equal(rows[2].tone,'neutral');
+});
