@@ -35,7 +35,7 @@
         <h${compact?'2':'1'}>${esc(event.name)}</h${compact?'2':'1'}>
         <p>${esc(event.venue||'Venue to be confirmed')}</p></div>${dateTicket}</header>
         <div class="clubhouse-event-body"><p class="simple-event-date">${esc(F.date(event.event_date))}</p>
-        ${pay.due?`<a class="button button-primary full-button" href="payments.html?event=${encodeURIComponent(event.id)}">Pay now · ${esc(F.money(F.eventPrice(event,rsvp)))}</a>`:''}
+        ${pay.due?(compact?`<button type="button" class="button button-primary full-button" data-member-action="pay">Pay now · ${esc(F.money(F.eventPrice(event,rsvp)))}</button>`:`<a class="button button-primary full-button" href="payments.html?event=${encodeURIComponent(event.id)}">Pay now · ${esc(F.money(F.eventPrice(event,rsvp)))}</a>`):''}
         <div class="simple-next-action"><strong>${esc(F.bookingLabel(model))}</strong><p>${esc(action.message||'')}</p>${showPrimary?button('primary',action.label,true):''}</div>
         ${compact&&matchDay&&!dashboardCard?`<p role="status">${event.tee_times_status==='published'?'Your published tee group is not available here yet. Refresh to check again.':'Your tee time, group and scorer selection will appear above this event once the committee publishes the tee groups.'}</p>${event.tee_times_status==='published'?button('refresh-card','Check my tee group'):''}`:''}
         ${reason&&event.status==='cancelled'?`<p>${esc(reason)}</p>`:''}
@@ -58,7 +58,8 @@
       </div></details>`;
     host.querySelectorAll('[data-member-action]').forEach(b=>b.onclick=()=>{
       const kind=b.dataset.memberAction;
-      if(kind==='primary')F.activate(action,model);
+      if(kind==='pay')window.BarfordPayments.pay(event,rsvp,b);
+      else if(kind==='primary')F.activate(action,model);
       else if(kind==='book')F.openBooking(model);
       else if(kind==='withdraw')F.withdraw(model);
       else if(kind==='roster')F.showRoster(model);

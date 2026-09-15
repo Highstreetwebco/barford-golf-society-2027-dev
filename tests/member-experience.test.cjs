@@ -310,3 +310,14 @@ test('prepared checkout sends only event ID and accepts only a Stripe-hosted HTT
  vm.createContext(c);vm.runInContext(source('payment-checkout.js'),c);await c.window.BarfordPayments.pay(event,{status:'playing'},button);assert.deepEqual(clone(calls[0].args),{body:{event_id:'event-1'}});assert.equal(destinations.length,1);
  url='https://example.com/fake-checkout';await c.window.BarfordPayments.pay(event,{status:'playing'},button);assert.equal(destinations.length,1);assert.equal(button.disabled,false);assert.equal(messages.length,1);
 });
+
+test('dashboard Pay now opens checkout in place with the current event and price category',async()=>{
+ const document=documentStub(),host=new Element({},document),calls=[];
+ const context={window:{BarfordMemberFlow:F,BarfordPayments:{pay:(...args)=>calls.push(args)},dispatchEvent(){}},document,Date,CustomEvent:class{}};
+ vm.createContext(context);vm.runInContext(source('member-event-view.js'),context);
+ const m=base();m.rsvp={status:'playing',payment_status:'unpaid',is_course_member:true};m.event.course_member_price=15;
+ context.window.BarfordEventView.render(host,m,{compact:true});
+ const pay=host.querySelector('[data-member-action="pay"]');assert.ok(pay);assert.equal(pay.attrs.href,undefined);assert.match(host.innerHTML,/Pay now · £15.00/);
+ await pay.click();assert.equal(calls.length,1);assert.equal(calls[0][0],m.event);assert.equal(calls[0][1],m.rsvp);assert.equal(calls[0][2],pay);
+ m.rsvp.payment_status='paid';context.window.BarfordEventView.render(host,m,{compact:true});assert.equal(host.querySelector('[data-member-action="pay"]'),null);
+});
