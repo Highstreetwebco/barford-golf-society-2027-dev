@@ -283,3 +283,15 @@ test('camera auto-publishes to the correct event and retries the gallery record 
  await document.getElementById('eventPhotoRetry').click();assert.equal(uploads,1);assert.equal(inserts,2);assert.equal(records[0].id,records[1].id);assert.equal(records[1].event_id,'event-1');assert.equal(records[1].uploaded_by,'member-1');assert.equal(records[1].approved,true);assert.match(document.getElementById('eventPhotoStatus').textContent,/Photo added/);
  c.navigator.onLine=false;await input.listeners.change();assert.equal(uploads,1);assert.match(document.getElementById('eventPhotoStatus').textContent,/No signal/);
 });
+
+test('dashboard results use a fixed 48-hour publication window, including across midnight',()=>{
+ const c={window:{BarfordMemberFlow:F},Date};vm.createContext(c);vm.runInContext(source('dashboard-results.js'),c);const R=c.window.BarfordDashboardResults,at=Date.parse('2026-09-15T17:30:00Z'),e={id:'round',status:'completed',results_published_at:new Date(at).toISOString()};
+ assert.equal(R.select([e],at).id,'round');assert.equal(R.select([e],at+48*3600000-1).id,'round');assert.equal(R.select([e],at+48*3600000),null);assert.equal(R.select([e],at-1),null);
+ for(const change of [{status:'scheduled'},{status:'cancelled'},{results_published_at:null},{results_published_at:'bad'}])assert.equal(R.select([{...e,...change}],at+100),null);
+ assert.equal(R.select([{...e,updated_at:new Date(at+3600000).toISOString()}],at+48*3600000),null);
+});
+test('dashboard result summary respects restricted rounds and shows personal points only when published',()=>{
+ const c={window:{BarfordMemberFlow:F},Date};vm.createContext(c);vm.runInContext(source('dashboard-results.js'),c);const host={},e={id:'event-1',name:'Golf round',event_date:'2026-09-15'},round={id:'round-1',locked:true,results:[{playerId:'member-1',points:35,nextHandicap:12,dnp:false}]},snapshot={players:[{id:'member-1',name:'Player'}],rounds:[round]};
+ c.window.BarfordDashboardResults.render(host,e,snapshot,'round-1','member-1');assert.match(host.innerHTML,/You scored 35/);assert.match(host.innerHTML,/event=event-1/);
+ round.restricted=true;c.window.BarfordDashboardResults.render(host,e,snapshot,'round-1','member-1');assert.doesNotMatch(host.innerHTML,/You scored 35/);assert.match(host.innerHTML,/presentation evening/);
+});

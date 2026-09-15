@@ -2,7 +2,7 @@
   'use strict';
   const F=window.BarfordMemberFlow,client=window.BarfordSupabase,member=document.getElementById('memberHomeDashboard'),publicHome=document.getElementById('publicHome'),host=document.getElementById('memberDashboardEvent');
   if(!F||!member)return;
-  let loading=false;
+  let loading=false,expiryTimer;
   async function load(){
     if(loading)return;loading=true;
     try{
@@ -11,8 +11,18 @@
       if(!auth.session)return;
       document.getElementById('dashboardFirstName').textContent=(auth.session.user.user_metadata?.full_name||'member').trim().split(/\s+/)[0];
       const day=F.today();
-      const fetchedEvents=await F.request(client.from('events').select('*').in('status',['scheduled','completed']).gte('event_date',day).order('event_date').order('first_tee_time'));
-      const events=fetchedEvents.filter(event=>event.status==='scheduled'||event.event_date===day);
+      clearTimeout(expiryTimer);
+      const [events,recent]=await Promise.all([
+        F.request(client.from('events').select('*').eq('status','scheduled').gte('event_date',day).order('event_date').order('first_tee_time')),
+        F.request(client.from('events').select('*').eq('status','completed').gte('results_published_at',new Date(Date.now()-48*60*60*1000).toISOString()).order('results_published_at',{ascending:false}))
+      ]);
+      const results=window.BarfordDashboardResults,recentRound=results.select(recent);
+      if(recentRound){
+        let snapshot=null,roundId=null;
+        try{const [data,round]=await Promise.all([F.request(client.rpc('get_2027_leaderboard_snapshot')),F.request(client.from('rounds').select('id').eq('event_id',recentRound.id).eq('season',2027).maybeSingle())]);snapshot=data;roundId=round?.id;}catch{}
+        // A slow connection must not keep an expired result on screen.
+        if(results.select([recentRound])){results.render(host,recentRound,snapshot,roundId,auth.session.user.id);expiryTimer=setTimeout(load,Math.max(1,results.expires(recentRound)-Date.now()));return;}
+      }
       if(!events.length){host.innerHTML='<article class="simple-card"><h2>No upcoming events yet</h2><p>The committee will add the next event here.</p><a class="button button-primary" href="events.html">View event calendar</a></article>';return;}
       const rsvps=await F.request(client.from('rsvps').select('id,event_id,status,payment_status,is_course_member,buggy_requested,preferred_tee_time').eq('member_id',auth.session.user.id).in('event_id',events.map(e=>e.id)));
       const next=F.dashboardEvent(events,rsvps);
@@ -27,5 +37,6 @@
   }
   window.addEventListener('barford-booking-changed',load);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load();});
+  setInterval(()=>{if(document.visibilityState==='visible')load();},60000);
   load();F.promotions();
 })();
