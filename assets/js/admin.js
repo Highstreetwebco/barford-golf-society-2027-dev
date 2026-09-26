@@ -1,19 +1,19 @@
 import {
   operationTabs,
   showOperations,
-} from "./operations-admin.js?v=2027-colour-1";
-import { operation } from "./operations.js?v=2027-colour-1";
+} from "./operations-admin.js?v=2027-refined-1";
+import { operation } from "./operations.js?v=2027-refined-1";
 import {
   mountEventFields,
   eventFields,
   updateEventType,
-} from "./event-fields.js?v=2027-colour-1";
+} from "./event-fields.js?v=2027-refined-1";
 import {
   showLeagueTab,
   canLeaveLeague,
-} from "./league-admin.js?v=2027-colour-1";
-import { loadAccounts } from "./account-admin.js?v=2027-colour-1";
-import { packPlayers } from "./tee-groups.js?v=2027-colour-1";
+} from "./league-admin.js?v=2027-refined-1";
+import { loadAccounts } from "./account-admin.js?v=2027-refined-1";
+import { packPlayers } from "./tee-groups.js?v=2027-refined-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),

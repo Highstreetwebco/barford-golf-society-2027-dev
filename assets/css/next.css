@@ -7,21 +7,21 @@
   font-display: swap;
 }
 
-/* Barford 2027: a bright, fast club companion. */
+/* Barford 2027: contemporary golf society identity. */
 :root {
-  --ink: #171f38;
-  --green: #3048ed;
-  --gold: #3048ed;
-  --paper: #f2f5fb;
+  --ink: #192b36;
+  --green: #274d68;
+  --gold: #274d68;
+  --paper: #f3f2ef;
   --surface: #fff;
-  --muted: #5c647a;
-  --line: #dce1ef;
-  --soft: #edf0ff;
+  --muted: #647078;
+  --line: #dde0df;
+  --soft: #edf1f3;
   --danger: #b32638;
-  --radius: 22px;
-  --lime: #ddff5f;
-  --coral: #ff9274;
-  --lilac: #c4c8ff;
+  --radius: 14px;
+  --lime: #d7b98d;
+  --coral: #d6b6a4;
+  --lilac: #cbd9e0;
 }
 body {
   -webkit-font-smoothing: antialiased;
@@ -84,7 +84,7 @@ h3 {
   padding: 4px 8px;
   border-radius: 7px;
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
   font:
     700 11px/1.4 system-ui,
     sans-serif;
@@ -123,8 +123,8 @@ button,
   border-radius: 12px;
   min-height: 48px;
   font-weight: 700;
-  background: #3048ed;
-  border-color: #3048ed;
+  background: #274d68;
+  border-color: #274d68;
   color: #fff;
   transition:
     transform 0.15s ease,
@@ -134,7 +134,7 @@ button:hover,
 .button:hover {
   color: #fff;
   filter: none;
-  background: #243bd3;
+  background: #1c3c53;
   transform: translateY(-1px);
 }
 button:disabled {
@@ -162,7 +162,7 @@ button.text-button {
   border: 0;
 }
 :focus-visible {
-  outline: 3px solid #8493ff;
+  outline: 3px solid #6a8eaa;
   outline-offset: 4px;
 }
 .eyebrow {
@@ -174,7 +174,7 @@ button.text-button {
   position: relative;
   grid-template-columns: 1.15fr 1fr;
   min-height: 485px;
-  background: #3048ed;
+  background: #274d68;
   color: #fff;
   border: 0;
   border-radius: 30px;
@@ -186,7 +186,7 @@ button.text-button {
   z-index: 1;
 }
 .hero-copy .eyebrow {
-  color: #e1e5ff;
+  color: #dce5ea;
   display: flex;
   gap: 9px;
   align-items: center;
@@ -208,7 +208,7 @@ button.text-button {
   font-style: normal;
 }
 .hero-copy > p:not(.eyebrow) {
-  color: #e0e5ff;
+  color: #dce5ea;
   font-size: 16px;
   max-width: 390px;
   line-height: 1.6;
@@ -220,7 +220,7 @@ button.text-button {
 }
 .hero-copy .button {
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
   border-color: var(--lime);
 }
 .hero-copy .button.secondary {
@@ -230,7 +230,7 @@ button.text-button {
 }
 .hero-copy .button:hover {
   background: #fff;
-  color: #171f38;
+  color: #192b36;
 }
 .season-chips {
   display: flex;
@@ -240,7 +240,7 @@ button.text-button {
 }
 .season-chips span {
   font-size: 11px;
-  color: #e4e8ff;
+  color: #dce5ea;
   border: 1px solid #ffffff40;
   border-radius: 30px;
   padding: 5px 10px;
@@ -261,7 +261,7 @@ button.text-button {
   position: absolute;
   top: 34px;
   right: 28px;
-  color: #171f38;
+  color: #192b36;
   background: var(--coral);
   border-radius: 50%;
   width: 102px;
@@ -331,7 +331,7 @@ button.text-button {
 .empty-icon {
   border: 0;
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
   width: 52px;
   height: 52px;
   border-radius: 17px;
@@ -431,7 +431,7 @@ button.text-button {
   place-items: center;
   border-radius: 50%;
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
   width: 32px;
   height: 32px;
   flex-shrink: 0;
@@ -446,7 +446,7 @@ button.text-button {
   padding: 27px;
   position: relative;
   min-height: 205px;
-  color: #171f38;
+  color: #192b36;
   overflow: hidden;
   background: var(--lime);
 }
@@ -458,7 +458,7 @@ button.text-button {
 }
 .quick-links > a:hover {
   transform: translateY(-3px);
-  color: #171f38;
+  color: #192b36;
   box-shadow: 0 8px 25px #17213d12;
 }
 .tile-tag {
@@ -472,7 +472,7 @@ button.text-button {
   margin-bottom: 8px;
 }
 .quick-links p {
-  color: #35405a;
+  color: #435864;
   font-size: 14px;
   max-width: 220px;
 }
@@ -493,7 +493,7 @@ button.text-button {
   padding: 34px;
   margin: 0 0 28px;
   background: var(--lilac);
-  color: #171f38;
+  color: #192b36;
   border-radius: 26px;
   overflow: hidden;
 }
@@ -503,7 +503,7 @@ button.text-button {
   position: absolute;
   right: 28px;
   top: 12px;
-  color: #3048ed25;
+  color: #274d6825;
   pointer-events: none;
 }
 .page-heading > * {
@@ -516,7 +516,7 @@ button.text-button {
 }
 .page-heading .eyebrow,
 .page-heading .lede {
-  color: #35405a;
+  color: #435864;
 }
 .page-events .page-heading,
 .page-event .page-heading {
@@ -529,7 +529,7 @@ button.text-button {
 .page-account .page-heading,
 .page-signup .page-heading,
 .page-guest .page-heading {
-  background: #3048ed;
+  background: #274d68;
   color: #fff;
 }
 .page-account .page-heading .eyebrow,
@@ -538,7 +538,7 @@ button.text-button {
 .page-signup .page-heading .lede,
 .page-guest .page-heading .eyebrow,
 .page-guest .page-heading .lede {
-  color: #e1e5ff;
+  color: #dce5ea;
 }
 .page-account .page-heading::after,
 .page-signup .page-heading::after,
@@ -573,7 +573,7 @@ button.text-button {
 }
 .event-top .date-block {
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
   border: 0;
   border-radius: 17px;
   padding: 13px;
@@ -612,7 +612,7 @@ button.text-button {
 }
 .segmented button.active,
 .segmented button[aria-selected="true"] {
-  background: #3048ed;
+  background: #274d68;
   color: #fff;
 }
 .admin-tabs {
@@ -634,7 +634,7 @@ button.text-button {
   color: var(--ink);
 }
 .admin-tabs button.active:hover {
-  background: #3048ed;
+  background: #274d68;
   color: #fff;
 }
 input,
@@ -649,7 +649,7 @@ textarea {
 input[type="checkbox"],
 input[type="radio"] {
   min-height: 0;
-  accent-color: #3048ed;
+  accent-color: #274d68;
 }
 label {
   font-weight: 650;
@@ -664,7 +664,7 @@ label {
   color: var(--green);
 }
 .notice {
-  border-left-color: #3048ed;
+  border-left-color: #274d68;
   border-radius: 12px;
 }
 .status-pill {
@@ -683,20 +683,19 @@ label {
   padding: 5px 12px;
   border-radius: 9px;
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
 }
 .portrait-initials {
   background: var(--lilac);
-  color: #171f38;
+  color: #192b36;
 }
 .course-cover {
   border-radius: 22px;
-  background: #3048ed;
+  background: #274d68;
 }
 .cover-placeholder {
   font-family: Barford, Arial, sans-serif;
-  background: #3048ed url("../brand/golf-2027.svg") right center/auto 130%
-    no-repeat;
+  background: #1d3443;
   font-size: 2.5rem;
   font-weight: 800;
   color: #fff;
@@ -763,32 +762,32 @@ dialog::backdrop {
   display: none;
 }
 body.dark-mode {
-  --ink: #f0f2ff;
-  --green: #a4afff;
-  --gold: #a4afff;
-  --paper: #101525;
-  --surface: #1a2136;
-  --muted: #aab4ce;
-  --line: #343e59;
-  --soft: #252e49;
+  --ink: #eef3f6;
+  --green: #a7c3d7;
+  --gold: #a7c3d7;
+  --paper: #111c25;
+  --surface: #1b2b37;
+  --muted: #afbec8;
+  --line: #384b59;
+  --soft: #243a4a;
   --danger: #ff9ea8;
 }
 .dark-mode .site-nav .account-link {
   background: var(--lime);
-  color: #171f38;
+  color: #192b36;
 }
 .dark-mode .next-event-heading .eyebrow {
-  color: #a4afff;
+  color: #a7c3d7;
 }
 .dark-mode .status-pill {
   color: #253814;
 }
 .dark-mode .page-heading a {
-  color: #243bd3;
+  color: #1c3c53;
 }
 @media (min-width: 761px) {
   .account-layout > :first-child {
-    border-top: 5px solid #3048ed;
+    border-top: 5px solid #274d68;
   }
 }
 @media (max-width: 1000px) {
@@ -1205,5 +1204,406 @@ body.dark-mode {
   }
   .next-event-heading .button {
     align-self: stretch;
+  }
+}
+
+/* A more restrained, editorial finish. */
+h1,
+h2,
+h3 {
+  font-family: Barford, Arial, sans-serif;
+  letter-spacing: -0.035em;
+}
+.brand {
+  font-size: 28px;
+  letter-spacing: -1px;
+}
+.brand-icon {
+  border-radius: 8px;
+}
+.brand-year {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+}
+button,
+.button,
+.site-nav .account-link {
+  border-radius: 7px;
+}
+.site-nav > a {
+  border-radius: 7px;
+}
+.home-hero {
+  background: #1d3443;
+  border-radius: 16px;
+  grid-template-columns: 1.45fr 1fr;
+  min-height: 440px;
+}
+.hero-copy {
+  padding: 48px 20px 42px 44px;
+}
+.home-hero h1 {
+  font-size: clamp(2.8rem, 4.8vw, 4.35rem);
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+}
+.home-hero h1 em {
+  color: #d7b98d;
+}
+.hero-copy .eyebrow {
+  letter-spacing: 0.17em;
+  font-size: 10px;
+}
+.season-dot {
+  display: none;
+}
+.hero-copy > p:not(.eyebrow) {
+  max-width: 340px;
+  color: #c7d3dc;
+  font-size: 15px;
+}
+.hero-copy .button {
+  background: #d7b98d;
+  border-color: #d7b98d;
+  color: #192b36;
+}
+.hero-copy .button.secondary {
+  border-color: #ffffff40;
+  color: #f3f5f6;
+  background: transparent;
+}
+.season-chips {
+  gap: 0;
+  margin-top: 32px;
+}
+.season-chips span {
+  border: 0;
+  border-radius: 0;
+  padding: 0 14px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.season-chips span:first-child {
+  padding-left: 0;
+}
+.season-chips span + span {
+  border-left: 1px solid #ffffff35;
+}
+.season-panel {
+  margin: 32px 32px 32px 0;
+  padding: 24px 28px;
+  background: #ffffff05;
+  border: 1px solid #ffffff25;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.season-panel::before,
+.season-panel::after {
+  content: "";
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border: 1px solid #ffffff0c;
+  border-radius: 50%;
+  right: -240px;
+  top: 50px;
+  pointer-events: none;
+}
+.season-panel::after {
+  width: 440px;
+  height: 440px;
+  right: -270px;
+  top: 20px;
+}
+.season-panel-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #aebfc9;
+}
+.season-year {
+  font:
+    500 clamp(90px, 9.5vw, 140px) / 0.85 Arial,
+    sans-serif;
+  letter-spacing: -0.08em;
+  color: #edf1f3;
+  padding: 22px 0;
+}
+.season-year span {
+  display: block;
+  color: #d7b98d;
+}
+.season-panel-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #ffffff25;
+  padding-top: 18px;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  color: #aebfc9;
+}
+.season-panel-footer b {
+  display: block;
+  font:
+    400 22px/1.6 Arial,
+    sans-serif;
+  color: #fff;
+  letter-spacing: 0;
+}
+.signed-in .season-panel {
+  margin: 24px 26px 24px 0;
+  padding: 18px 24px;
+}
+.signed-in .season-year {
+  font-size: 62px;
+  padding: 12px 0;
+}
+.signed-in .season-year span {
+  display: inline;
+}
+.signed-in .season-panel-footer {
+  padding-top: 10px;
+}
+.signed-in .season-panel-footer b {
+  display: inline;
+  font-size: 16px;
+  margin-right: 8px;
+}
+.signed-in .home-hero h1 {
+  font-size: clamp(2.1rem, 4vw, 3.4rem);
+}
+.panel,
+.member-tee-card,
+.course-cover {
+  border-radius: 14px;
+}
+.empty-icon {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  color: var(--green);
+  border-radius: 50%;
+  transform: none;
+}
+#nextEvent:not(.has-event) {
+  border-style: solid;
+}
+.quick-links > a,
+.quick-links > a:nth-child(2),
+.quick-links > a:nth-child(3) {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-top: 3px solid #547a93;
+  border-radius: 12px;
+  min-height: 185px;
+}
+.quick-links > a:nth-child(2) {
+  border-top-color: #b58e6e;
+}
+.quick-links > a:nth-child(3) {
+  border-top-color: #788a7d;
+}
+.quick-links h3 {
+  font-size: 1.5rem;
+  margin-top: 31px;
+  letter-spacing: -0.025em;
+}
+.quick-links p {
+  color: var(--muted);
+}
+.quick-links > a:hover {
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+.quick-links .arrow {
+  background: var(--soft);
+  color: var(--green);
+  border-radius: 7px;
+}
+.tile-tag {
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  font-size: 9px;
+}
+.page-heading,
+.page-events .page-heading,
+.page-event .page-heading,
+.page-scores .page-heading,
+.page-gallery .page-heading {
+  background: #e5eaeb;
+  color: #192b36;
+  border-radius: 14px;
+  border-left: 3px solid #547a93;
+}
+.page-scores .page-heading,
+.page-gallery .page-heading {
+  border-left-color: #b58e6e;
+}
+.page-heading::after {
+  display: none;
+}
+.page-account .page-heading,
+.page-signup .page-heading,
+.page-guest .page-heading {
+  background: #1d3443;
+  border: 0;
+  color: #fff;
+}
+.page-heading h1 {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+}
+.event-top .date-block {
+  border-radius: 9px;
+  background: #d6e0e5;
+}
+.event-card:nth-child(3n + 2) .date-block {
+  background: #e6d7cc;
+}
+.event-card:nth-child(3n + 3) .date-block {
+  background: #d9e0d9;
+}
+.status-pill {
+  background: #e1ebe4;
+  color: #304d3b;
+}
+.tee-clock {
+  background: #d6e0e5;
+  color: #233e50;
+  border-radius: 6px;
+}
+.portrait-initials {
+  background: #d6e0e5;
+  color: #233e50;
+}
+.home-guide > summary span {
+  background: var(--soft);
+  color: var(--green);
+  border-radius: 6px;
+}
+.cover-placeholder {
+  background: #1d3443;
+  text-shadow: none;
+}
+.next-event-facts,
+#homeTeeGroup,
+#homeOperations [data-guest-invites],
+.segmented,
+.admin-tabs {
+  border-radius: 10px;
+}
+.dark-mode .brand-year {
+  color: var(--muted);
+}
+.dark-mode .site-nav .account-link {
+  background: #d7b98d;
+}
+.dark-mode .page-heading {
+  background: #243a4a;
+  color: var(--ink);
+}
+.dark-mode .page-heading .eyebrow,
+.dark-mode .page-heading .lede {
+  color: var(--muted);
+}
+.dark-mode .page-heading a {
+  color: #b4cddd;
+}
+@media (max-width: 760px) {
+  .brand {
+    font-size: 25px;
+  }
+  .home-hero {
+    grid-template-columns: 1fr;
+    border-radius: 14px;
+  }
+  .hero-copy {
+    padding: 30px 25px 26px;
+  }
+  .home-hero h1 {
+    font-size: clamp(2.4rem, 9.1vw, 3.65rem);
+  }
+  .hero-copy .eyebrow {
+    font-size: 8px;
+    margin-bottom: 20px;
+  }
+  .hero-copy > p:not(.eyebrow) {
+    font-size: 14px;
+    max-width: 280px;
+  }
+  .season-panel {
+    margin: 0 25px 25px;
+    padding: 16px 0 0;
+    border: 0;
+    border-top: 1px solid #ffffff25;
+    background: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  .season-panel-label {
+    display: none;
+  }
+  .season-year {
+    font-size: 47px;
+    padding: 0;
+    letter-spacing: -0.065em;
+  }
+  .season-year span {
+    display: inline;
+  }
+  .season-panel-footer {
+    padding: 0;
+    border: 0;
+    gap: 21px;
+    font-size: 8px;
+  }
+  .season-panel-footer b {
+    font-size: 20px;
+  }
+  .season-panel::before,
+  .season-panel::after {
+    display: none;
+  }
+  .season-chips {
+    display: none;
+  }
+  .signed-in .season-panel {
+    display: none;
+  }
+  .signed-in .home-hero h1 {
+    font-size: 2.15rem;
+  }
+  .quick-links > a,
+  .quick-links > a:nth-child(2),
+  .quick-links > a:nth-child(3) {
+    min-height: 160px;
+    padding: 24px;
+  }
+  .quick-links h3 {
+    font-size: 1.5rem;
+  }
+  .page-heading {
+    padding: 25px 23px;
+    border-radius: 12px;
+  }
+  .page-heading h1 {
+    font-size: 2rem;
+  }
+  .mobile-dock a,
+  .mobile-dock a[aria-current="page"] {
+    border-radius: 7px;
+  }
+}
+@media print {
+  .season-panel {
+    display: none;
   }
 }

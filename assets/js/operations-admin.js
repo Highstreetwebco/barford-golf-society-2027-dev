@@ -1,4 +1,4 @@
-import { guestAction } from "./guest-invites.js?v=2027-colour-1";
+import { guestAction } from "./guest-invites.js?v=2027-refined-1";
 import {
   operation,
   field,
@@ -6,8 +6,8 @@ import {
   bindForms,
   stamp,
   reservationNotices,
-} from "./operations.js?v=2027-colour-1";
-import { handicapAt } from "./league-rules.js?v=2027-colour-1";
+} from "./operations.js?v=2027-refined-1";
+import { handicapAt } from "./league-rules.js?v=2027-refined-1";
 const b = await window.barfordReady,
   e = b.escape;
 let token = 0;

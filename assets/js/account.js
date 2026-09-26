@@ -1,10 +1,10 @@
-import { mountPayments } from "./operations.js?v=2027-colour-1";
+import { mountPayments } from "./operations.js?v=2027-refined-1";
 import {
   photoPickerHTML,
   wirePhotoPicker,
   savePhoto,
   mountPhotoEditor,
-} from "./member-photos.js?v=2027-colour-1";
+} from "./member-photos.js?v=2027-refined-1";
 const b = await window.barfordReady;
 const { raw, state, escape: e, submit } = b;
 const isSignup = location.pathname.endsWith("signup.html");

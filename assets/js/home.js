@@ -1,11 +1,11 @@
-import { guestAction } from "./guest-invites.js?v=2027-colour-1";
-import { mountEventOperations } from "./operations.js?v=2027-colour-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-colour-1";
+import { guestAction } from "./guest-invites.js?v=2027-refined-1";
+import { mountEventOperations } from "./operations.js?v=2027-refined-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-refined-1";
 import {
   mountExperience,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-colour-1";
+} from "./event-experience.js?v=2027-refined-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 if (b.state.user) {
@@ -13,7 +13,7 @@ if (b.state.user) {
   a.textContent = "My account";
   a.href = "account.html";
   document.querySelector(".home-hero h1").textContent =
-    "Let’s play, " +
+    "Welcome back, " +
     (b.state.profile?.full_name?.split(" ")[0] || "golfer") +
     ".";
 }

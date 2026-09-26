@@ -1,4 +1,4 @@
-import { operation, stamp } from "./operations.js?v=2027-colour-1";
+import { operation, stamp } from "./operations.js?v=2027-refined-1";
 const b = await window.barfordReady;
 const e = b.escape;
 export const londonToday = () =>

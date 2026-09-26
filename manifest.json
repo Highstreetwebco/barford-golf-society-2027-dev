@@ -3,8 +3,8 @@
   "short_name": "Barford 2027",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f2f5fb",
-  "theme_color": "#3048ed",
+  "background_color": "#f3f2ef",
+  "theme_color": "#1d3443",
   "orientation": "portrait",
   "id": "./index.html",
   "icons": [

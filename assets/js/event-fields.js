@@ -1,4 +1,4 @@
-import { field, textfield } from "./operations.js?v=2027-colour-1";
+import { field, textfield } from "./operations.js?v=2027-refined-1";
 export function mountEventFields(form) {
   if (form.querySelector("[data-operation-fields]")) return;
   const area = document.createElement("div");
