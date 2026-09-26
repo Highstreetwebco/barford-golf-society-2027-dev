@@ -1,9 +1,0 @@
-/* Light overlays keep the satellite hole visible and the controls legible. */
-.gps-page{color:#252a27}
-.gps-back,.hole-card,.distance-card,.green-yardages,.side-button,.hole-nav,.setup-card,.hole-grid{background:rgba(255,255,255,.93)!important;color:#252a27!important;border:1px solid rgba(226,229,225,.9)!important;box-shadow:0 8px 24px rgba(24,36,29,.16)!important;backdrop-filter:blur(14px)}
-.hole-number{border-right-color:#e2e5e1!important}.hole-number small,.hole-main small,.hole-stat small{color:#68716c!important}.hole-main strong,.hole-stat b{color:#252a27!important}
-.distance-card span{color:#4f8066!important}.distance-card.target span{color:#315c4a!important}.green-yardages b{color:#252a27!important}
-.hole-nav button{color:#315c4a!important}.current-hole{background:#315c4a!important;color:#fff!important}.current-hole small{color:#dce6df!important}
-.side-button{color:#315c4a!important}.quick-score{background:#315c4a!important;color:#fff!important;border-color:#fff!important;box-shadow:0 8px 24px rgba(37,42,39,.28)!important;animation:none!important}
-.setup-actions .primary{background:#315c4a!important}.setup-actions .save,.confirm-marker{background:#4f8066!important}.setup-close{color:#315c4a!important}
-.mapping-hint{background:rgba(49,92,74,.95)!important;color:#fff!important}.hole-grid button{background:#f1f4f1!important;color:#315c4a!important}.hole-grid button.active{background:#315c4a!important;color:#fff!important}

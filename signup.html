@@ -1,83 +1,410 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Barford Golf Society 2027 website">
-  <meta name="theme-color" content="#10261c">
+<link rel="icon" href="icon-logo.png" type="image/png">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;">
+  <script src="assets/js/baseline.js" defer></script>
+  <meta name="robots" content="noindex, nofollow">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up | Barford Golf Society</title>
-  <link rel="stylesheet" href="assets/dist/styles.25b6981ca7d7.css" data-css-sources="assets/css/styles.css">
-<link rel="stylesheet" href="assets/dist/member-ui.8d17e07a42d5.css" data-css-sources="assets/css/accessible-mobile.css,assets/css/personal-theme.css,assets/css/member-simple.css,assets/css/clubhouse.css,assets/css/members.css,assets/css/fairway.css" data-ui-ready data-personal-theme>
-<link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin>
-<link rel="preload" href="assets/dist/design-drive.24eb74aeeeb8.css" as="style" data-startup-preload><link rel="preload" href="assets/dist/design-drive.84f52612a6d3.js" as="script" data-startup-preload></head>
-<body class="clubhouse page-signup">
-<a class="skip-link" href="#main-content">Skip to content</a>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --accent: #d4af37;
+    --accent-light: #f5e29d;
+    --dark: #1a1a1a;
+    --white: #ffffff;
+    --gray: #666666;
+    --background: #f5f9fc;
+    --radius: 14px;
+    --bigShadow: 0 12px 40px rgba(0,0,0,0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Inter", sans-serif;
+    background: var(--background);
+    color: var(--dark);
+  }
+
+  /* HEADER */
+  .site-header {
+    background: var(--white);
+    padding: 18px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .site-title {
+    display: flex;
+    gap: .3rem;
+    align-items: baseline;
+  }
+
+  .site-title span:first-child {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    color: var(--accent);
+  }
+
+  .site-title span:last-child {
+    font-size: 1.7rem;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .site-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 16px;
+  }
+
+  .site-nav a {
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--dark);
+  }
+
+  .site-nav a.active,
+  .site-nav a:hover {
+    color: var(--accent);
+  }
+
+  /* MAIN */
+  .container {
+    max-width: 700px;
+    margin: 60px auto;
+    padding: 0 20px;
+    text-align: center;
+  }
+
+  h2 {
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  form {
+    background: #fff;
+    padding: 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--bigShadow);
+  }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .message {
+    margin-top: 14px;
+    font-size: 1rem;
+  }
+
+  /* ADMIN BOX */
+  #adminAccess {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: var(--bigShadow);
+    text-align: left;
+    margin: 40px auto 0;
+    max-width: 700px;
+  }
+
+  /* MOBILE ADMIN TWEAK */
+  @media (max-width: 600px) {
+    #adminAccess {
+      margin: 20px auto;
+      width: 90%;
+    }
+  }
+
+  /* ✅ MOBILE NAVIGATION FIX */
+  @media (max-width: 768px) {
+    .header-container {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+    }
+
+    .site-nav {
+      width: 100%;
+    }
+
+    .site-nav ul {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      gap: 12px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .site-nav li {
+      display: inline-block !important;
+    }
+
+    .site-nav a {
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: #222;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .site-nav a.active {
+      font-weight: 700;
+      color: #064d2b;
+    }
+
+    .site-nav a.active::after {
+      content: "";
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #c9aa4d;
+    }
+  }
+
+  /* ADMIN PANEL STYLES */
+  #adminAccess h3 {
+    font-size: 1rem;
+    margin-bottom: 6px;
+  }
+
+  #pendingCount {
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  #adminPanel {
+    display: none;
+    margin-top: 30px;
+    text-align: left;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+
+  th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+  }
+
+  th {
+    background: var(--accent-light);
+  }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--gray);
+  }
+</style>
+</head>
+
+<body>
+
 <header class="site-header">
-  <div class="shell header-inner">
-    <a class="brand" href="index.html" aria-label="Barford Golf Society home">
-      <img decoding="async" fetchpriority="high" src="assets/images/barford-golf-society-logo.png" alt="Barford Golf Society">
-    </a>
-    <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-navigation">
-      <span class="sr-only">Open menu</span><span></span><span></span><span></span>
-    </button>
-    <nav id="primary-navigation" class="site-nav" aria-label="Primary navigation">
-      <a class="" href="index.html">Home</a>
-<a class="" href="events.html">Events</a>
-<a class="" href="worldevents.html">Society Trips</a>
-<a class="" href="scores.html">League Table</a>
-<a class="" href="shop.html">Shop</a>
-<a class="" href="gallery.html">Photos</a>
-<a class="" href="about.html">About Us</a>
-<a class="active" href="signup.html" aria-current="page">Sign Up</a>
-<a class="" href="admin.html" hidden>Admin</a>
-    </nav>
+  <div class="header-container">
+    <h1 class="site-title">
+      <span>Barford</span><span>Golf Society</span>
+    </h1>
+  <nav class="site-nav">
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="events.html">Events</a></li>
+    <li><a href="worldevents.html">World Events</a></li>
+    <li><a href="scores.html">Scores</a></li>
+    <li><a href="gallery.html">Gallery</a></li>
+    <li><a href="shop.html">Shop</a></li> <!-- NEW -->
+    <li><a href="about.html">About Us</a></li>
+    <li><a href="signup.html">Sign Up</a></li>
+  </ul>
+</nav>
   </div>
 </header>
-<main id="main-content">
-<section class="page-hero signup"><div class="shell"><p class="eyebrow">2027 member account</p><h1>Set up your account</h1><p>Create your secure Barford Golf Society login. It only takes a minute.</p></div></section>
-<section class="section shell"><div class="signup-grid"><div><p class="eyebrow">Simple setup</p><h2>Your golf, all in one place</h2><p>Choose your name and create your Barford Golf Society login.</p><ul class="check-list"><li>Stay signed in on your device</li><li>Manage your profile and golf information</li><li>Access events, tee times and the League Table</li></ul></div><form id="memberSignupForm" class="form-card member-create-form">
-  <label>Your name<select id="signupName" required><option value="">Select your name…</option><option value="__new__">My name isn’t listed / I’m a new member</option></select></label>
-  <label id="signupNewNameWrap" class="hidden">Your full name<input id="signupNewName" type="text" autocomplete="name" placeholder="Type your full name"></label>
-  <label>Playing category<select id="signupPlayingCategory" required><option value="">Select men’s or women’s…</option><option value="men">Men’s — yellow tees</option><option value="women">Women’s — red tees</option></select><small>Used to load the correct tee distances, par and stroke indexes on event scorecards.</small></label>
-  <p class="signup-handicap-note">The committee will set your society handicap after you sign up. You can still browse events and RSVP while it is awaiting admin.</p>
-  <label>Email address<input id="signupEmail" type="email" required autocomplete="email" placeholder="name@example.com"></label>
-  <label>Create password<input id="signupPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></label>
-  <label>Confirm password<input id="signupPasswordConfirm" type="password" required minlength="8" autocomplete="new-password" placeholder="Type it again"></label>
-  <button class="password-toggle" type="button" data-password-toggle="signupPassword,signupPasswordConfirm" aria-pressed="false">Show password</button>
-  <label>Mobile number <span class="optional-label">Optional</span><input id="signupPhone" type="tel" autocomplete="tel" placeholder="07..."></label>
-  <details class="simple-details"><summary>Personalise my colours (optional)</summary><fieldset class="theme-picker">
-    <legend>Choose your dashboard colours</legend>
-    <p>Pick two colours that feel like you. Tap either colour square to open the full colour chart.</p>
-    <div class="theme-colour-controls">
-      <label><input id="signupThemePrimary" type="color" value="#315C4A" aria-label="Choose your main dashboard colour"><span>Main colour</span></label>
-      <label><input id="signupThemeAccent" type="color" value="#C7A96B" aria-label="Choose your dashboard accent colour"><span>Accent colour</span></label>
-    </div>
-    <div id="signupThemePreview" class="theme-preview" aria-label="Your dashboard colour preview">
-      <div class="theme-preview-header">My dashboard</div>
-      <div class="theme-preview-body"><span>Next golf event</span><b>Open scorecard</b></div>
-    </div>
-  </fieldset></details>
-  <button class="button button-primary full-button" type="submit">Create my account</button>
-  <p class="account-helper">Already have an account? <a href="account.html">Sign in here</a>.</p>
-  <p id="signupStatus" class="form-status" aria-live="polite"></p>
-</form></div></section>
 
-</main>
-<footer class="site-footer">
-  <div class="shell footer-inner">
-    <div class="footer-brand"><img decoding="async" loading="lazy" src="assets/images/barford-golf-society-logo.png" alt=""><span>Barford Golf Society</span></div>
-    <p>© <span id="year"></span> Barford Golf Society</p>
+<!-- ADMIN BOX -->
+<div id="adminAccess">
+  <h3>Admin Access</h3>
+  <div id="pendingCount">Loading sign‑ups…</div>
+
+  <button id="adminBtn">Access Signups</button>
+</div>
+
+<div class="container">
+  <h2>Join Barford Golf Society</h2>
+
+  <form id="signupForm">
+    <input id="name" placeholder="Full Name" required>
+    <input id="email" type="email" placeholder="Email Address" required>
+    <input id="phone" placeholder="Phone Number" required>
+    <button type="submit">Submit</button>
+  </form>
+
+  <p class="message" id="message"></p>
+
+  <div id="adminPanel">
+    <h3>Member Signups</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Joined</th>
+          <th>Contacted</th>
+        </tr>
+      </thead>
+      <tbody id="signupTableBody"></tbody>
+    </table>
   </div>
-</footer>
-<script src="assets/dist/site-navigation.cab36c48d3e2.js" defer></script><script src="assets/dist/app.7a45507511f3.js" defer></script>
-<script src="assets/dist/supabase-2.116.0.5d9469dec2ac.js" defer></script>
-<script src="assets/dist/supabase-config.4e8135035d26.js" defer></script>
-<script src="assets/dist/supabase-client.bd4aa0131b3e.js" defer></script>
-<script src="assets/dist/passkeys.62ea9831687c.js" defer></script>
-<script src="assets/dist/member-workflow.243f6db5c9a5.js" defer></script>
-<script src="assets/dist/member-auth.b36c71f2179f.js" defer></script>
+</div>
 
-<script src="assets/dist/accessible-mobile.dea27d303f10.js" defer></script>
+<footer>© 2027 Barford Golf Society · Development</footer>
 
-<script src="assets/dist/design-preview.c3577da7110a.js" defer></script></body>
+<script type="module">
+await window.barfordReady;
+
+  const createClient = () => window.barford.client;
+
+  const supabase = createClient(
+    'https://xspzmthygrajzktydvvj.supabase.co',
+    'sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c'
+  );
+
+  const form = document.getElementById('signupForm');
+  const msg = document.getElementById('message');
+  const tbody = document.getElementById('signupTableBody');
+  const pendingCountEl = document.getElementById('pendingCount');
+
+  async function updatePendingCount() {
+    const { count, error } = await supabase
+      .from('signups')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) {
+      pendingCountEl.textContent = 'Unable to load sign‑ups';
+      return;
+    }
+
+    pendingCountEl.textContent =
+      count === 0
+        ? 'No sign‑ups waiting'
+        : `${count} sign‑up${count === 1 ? '' : 's'} waiting`;
+  }
+
+  if(await window.barford.isAdmin()) updatePendingCount();
+  else pendingCountEl.textContent='Sign in to view enquiries.';
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    msg.textContent = 'Submitting…';
+
+    const { error } = await supabase.from('signups').insert([{
+      name: document.getElementById('name').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim()
+    }]);
+
+    if (error) {
+      msg.textContent = '❌ Something went wrong.';
+    } else {
+      msg.textContent = '✅ Thanks — someone will be in touch soon to confirm your sign up.';
+      form.reset();
+      if(await window.barford.isAdmin()) updatePendingCount();
+    }
+  });
+
+  document.getElementById('adminBtn').onclick = async () => {
+    if (!await window.barford.requireAdmin()) return;
+    updatePendingCount();
+
+    const { data, error } = await supabase
+      .from('signups')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      alert('Error loading signups');
+      return;
+    }
+
+    tbody.innerHTML = '';
+
+    data.forEach(entry => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${entry.name}</td>
+        <td>${entry.email}</td>
+        <td>${entry.phone}</td>
+        <td>${new Date(entry.created_at).toLocaleDateString()}</td>
+        <td><input type="checkbox" data-id="${entry.id}"></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('adminPanel').style.display = 'block';
+  };
+
+  tbody.addEventListener('change', async e => {
+    const id = e.target.dataset.id;
+    if (!id) return;
+
+    if (!confirm('Mark as contacted and remove?')) {
+      e.target.checked = false;
+      return;
+    }
+
+    await supabase.from('signups').delete().eq('id', id);
+    e.target.closest('tr').remove();
+    updatePendingCount();
+  });
+
+window.updatePendingCount = updatePendingCount;
+</script>
+
+</body>
 </html>

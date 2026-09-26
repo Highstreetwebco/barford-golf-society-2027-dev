@@ -1,0 +1,19 @@
+{
+  "name": "Barford Golf Society 2027",
+  "short_name": "Barford 2027",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#d4af37",
+  "orientation": "portrait",
+  "id": "./index.html",
+  "icons": [
+    {
+      "src": "icon-logo.png",
+      "type": "image/png",
+      "sizes": "620x620",
+      "purpose": "any"
+    }
+  ],
+  "scope": "./"
+}
