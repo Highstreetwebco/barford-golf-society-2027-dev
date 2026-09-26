@@ -1,3 +1,4 @@
+import { loadAccounts } from "./account-admin.js?v=2027-admin-1";
 import { packPlayers } from "./tee-groups.js?v=2027-experience-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
@@ -50,16 +51,21 @@ async function init() {
   document.querySelectorAll("[data-tab]").forEach(
     (button) =>
       (button.onclick = () => {
+        document.getElementById("eventToolbar").hidden =
+          button.dataset.tab === "accounts";
         document
           .querySelectorAll("[data-tab]")
           .forEach((btn) => btn.classList.toggle("active", btn === button));
-        ["details", "responses", "tees"].forEach(
+        ["accounts", "details", "responses", "tees"].forEach(
           (tab) =>
             (document.getElementById(
               "admin" +
-                { details: "Details", responses: "Responses", tees: "Tees" }[
-                  tab
-                ],
+                {
+                  accounts: "Accounts",
+                  details: "Details",
+                  responses: "Responses",
+                  tees: "Tees",
+                }[tab],
             ).hidden = tab !== button.dataset.tab),
         );
       }),
@@ -157,6 +163,7 @@ async function init() {
   await fillEvent();
   await loadEnquiries();
   await loadMemberRecovery();
+  await loadAccounts();
   document.getElementById("findCourse").onclick = async () => {
     const button = document.getElementById("findCourse"),
       status = document.getElementById("courseLookupStatus");

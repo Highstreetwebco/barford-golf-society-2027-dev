@@ -54,3 +54,10 @@ Course lookup uses the existing server-side GOOGLE_MAPS_API_KEY. Only place IDs 
 Open-Meteo provides hourly forecasts within 16 days. The scheduled GitHub Action refreshes upcoming events daily; page views refresh stale data as fallback. Courses need coordinates or a valid Google course match. Forecast probabilities are hourly, not aggregated round probabilities. Dates and calendars use Europe/London; duration is an organiser-set estimate. GitHub scheduled jobs can be delayed or disabled after repository inactivity.
 
 Verification: `tests/member-rsvp.sql` and `tests/member-experience.sql` use synthetic accounts and roll back. `tests/baseline.cjs` checks desktop/mobile layout and member/organiser flows without sending messages or creating real registrations.
+
+
+## Account administration
+
+`admin.html` opens on Accounts and requires a current administrator profile. Admins can search every account, edit usernames/mobile numbers/handicaps, grant or revoke admin access, and set a replacement password for a verified member. Member edits use protected RPCs; role changes are audited. Self-demotion and removal of the final administrator are blocked server-side, including older profile-update routes. Password resets run only in the Edge Function after validating the caller and current admin role. Existing passwords cannot be viewed.
+
+The six pre-reset accounts were removed on 26 September 2026 at the owner's request and replaced with one newly created administrator. Old sessions and refresh tokens were removed. The member roster remains available for fresh registration. Credentials and mobile numbers are not committed to this repository.

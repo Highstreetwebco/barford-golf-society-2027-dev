@@ -12,9 +12,9 @@
     <title>Organiser tools | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-experience-1" />
-    <script src="assets/js/baseline.js?v=2027-experience-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-experience-1"></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-admin-1" />
+    <script src="assets/js/baseline.js?v=2027-admin-1" defer></script>
+    <script type="module" src="assets/js/admin.js?v=2027-admin-1"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -48,18 +48,21 @@
           <a class="account-link" href="account.html" id="accountNav"
             >Sign in</a
           >
+          <a href="admin.html" data-admin hidden>Admin</a>
         </nav>
       </div>
     </header>
     <main id="main" class="container">
       <div class="page-heading">
         <p class="eyebrow">ORGANISER AREA</p>
-        <h1>Keep the day running smoothly.</h1>
-        <p class="lede">Manage events, member responses and tee groups.</p>
+        <h1>Society administration.</h1>
+        <p class="lede">
+          Manage member accounts, admin access, events and tee groups.
+        </p>
       </div>
       <div id="adminGate" class="panel">Checking organiser access…</div>
       <div id="adminContent" hidden>
-        <div class="toolbar">
+        <div class="toolbar" id="eventToolbar" hidden>
           <label for="adminEvent">Choose an event</label
           ><select id="adminEvent">
             <option value="">New event</option></select
@@ -70,7 +73,33 @@
           ><button data-tab="responses">RSVPs</button
           ><button data-tab="tees">Tee groups</button>
         </div>
-        <section id="adminDetails" class="panel">
+        <section id="adminAccounts" class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">MEMBER MANAGEMENT</p>
+              <h2>All accounts</h2>
+              <p id="accountSummary" class="muted">Loading accounts…</p>
+            </div>
+            <button id="refreshAccounts" class="secondary">
+              Refresh accounts
+            </button>
+          </div>
+          <label for="accountSearch">Find a member</label
+          ><input
+            id="accountSearch"
+            type="search"
+            placeholder="Name or mobile number"
+            autocomplete="off"
+          />
+          <p class="muted">
+            Edit member details and choose who can administer the society. You
+            cannot remove your own admin access.
+          </p>
+          <div id="accountList" class="account-list" aria-live="polite">
+            Loading…
+          </div>
+        </section>
+        <section id="adminDetails" class="panel" hidden>
           <form id="eventForm" class="form-grid">
             <details class="panel" open>
               <summary>Course information</summary>
@@ -246,8 +275,8 @@
             <p role="status"></p>
           </form>
           <p>
-            For password resets, use Supabase Auth’s account recovery tools.
-            Name-only accounts cannot receive email reset links.
+            Use the Accounts tab to reset a member’s password. Name-only
+            accounts cannot receive email reset links.
           </p>
           <h3>Membership enquiries</h3>
           <div id="enquiries"></div>

@@ -1737,3 +1737,61 @@ td button {
 .cover-placeholder .eyebrow {
   color: #e5eddf;
 }
+
+.account-list {
+  margin-top: 24px;
+}
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border, #dce2d8);
+}
+.account-row h3 {
+  margin: 0 0 8px;
+}
+.account-row h3 small {
+  font-family: inherit;
+  font-size: 14px;
+}
+.account-row p {
+  margin: 0 0 8px;
+}
+.account-row-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.account-editor {
+  width: min(540px, calc(100% - 32px));
+}
+.admin-role-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-role-choice input {
+  width: auto;
+}
+.admin-tabs {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .account-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .account-row-actions {
+    width: 100%;
+  }
+  .account-editor {
+    padding: 24px;
+  }
+  .admin-tabs button {
+    padding: 10px 14px;
+  }
+}

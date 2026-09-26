@@ -85,6 +85,49 @@ Deno.serve(async (req) => {
     if (Number(req.headers.get("content-length") || 0) > 10000)
       return reply({ error: "Request too large" }, 413);
     const body = await req.json();
+    if (body.action === "admin_reset_password") {
+      await admin(req);
+      const target = String(body.target || "");
+      const password = String(body.password || "");
+      if (
+        !/^[0-9a-f-]{36}$/i.test(target) ||
+        password.length < 12 ||
+        password.length > 128
+      )
+        return reply(
+          { error: "Choose an account and a password of 12–128 characters." },
+          400,
+        );
+      const person = (await db("profiles?select=full_name&id=eq." + target))[0];
+      if (
+        !person ||
+        String(body.confirmation_name || "").trim() !== person.full_name
+      )
+        return reply(
+          { error: "Account details have changed. Refresh and try again." },
+          400,
+        );
+      const account = (
+        await db(
+          "baseline_member_accounts?select=disabled&user_id=eq." + target,
+        )
+      )[0];
+      if (!account || account.disabled)
+        return reply(
+          { error: "Resolve this account’s name claim first." },
+          400,
+        );
+      await get(URL_BASE + "/auth/v1/admin/users/" + target, {
+        method: "PUT",
+        headers: {
+          apikey: SERVICE,
+          Authorization: "Bearer " + SERVICE,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
+      return reply({ updated: true });
+    }
     if (body.action === "capabilities") {
       let youtube = false;
       if (YOUTUBE && (await budget("youtube-capability-check", 86400, 3))) {

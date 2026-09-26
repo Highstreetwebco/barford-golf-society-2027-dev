@@ -137,6 +137,38 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       if (body.action === "weather")
         return reply(model.weather || { status: "too_early" });
       if (body.action === "search_course") return reply({ places: [] });
+      if (body.action === "admin_reset_password") {
+        model.passwordReset = body;
+        return reply({ updated: true });
+      }
+    }
+    if (p.endsWith("/rpc/baseline_admin_accounts"))
+      return admin
+        ? reply(
+            model.accounts || [
+              {
+                id: uid,
+                username: "Test Member",
+                mobile: "07000000000",
+                handicap: null,
+                is_admin: true,
+                disabled: false,
+                member_id: uid,
+                created_at: "2026-09-26T09:00:00Z",
+              },
+            ],
+          )
+        : reply({ message: "Organiser access required" }, 403);
+    if (p.endsWith("/rpc/baseline_admin_save_account")) {
+      model.accountEdits = body;
+      const person = model.accounts.find((p) => p.id === body.target);
+      Object.assign(person, {
+        username: body.username,
+        mobile: body.mobile,
+        handicap: body.society_handicap,
+        is_admin: body.admin_access,
+      });
+      return reply(null);
     }
     if (p.endsWith("/baseline_member_accounts"))
       return reply({ member_id: uid, disabled: false });
@@ -329,7 +361,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           assert.equal(await page.locator("h1").count(), 1, name + " heading");
           assert.equal(
             await page.locator(".site-nav a").count(),
-            8,
+            9,
             name + " navigation",
           );
           assert.equal(
@@ -710,6 +742,97 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       });
       await context.close();
     }
+    {
+      const context = await browser.newContext({
+          viewport: { width: 390, height: 960 },
+          serviceWorkers: "block",
+        }),
+        model = await mocks(context, { signedIn: true, admin: true }),
+        page = await context.newPage();
+      const second = "22222222-2222-4222-8222-222222222222";
+      model.accounts = [
+        {
+          id: uid,
+          username: "Test Member",
+          mobile: "07000000000",
+          is_admin: true,
+          member_id: uid,
+          created_at: "2026-09-26T09:00:00Z",
+        },
+        {
+          id: second,
+          username: "Another Member",
+          mobile: "07000000002",
+          is_admin: false,
+          member_id: second,
+          created_at: "2026-09-26T09:00:00Z",
+        },
+      ];
+      await page.goto(base + "admin.html");
+      await page
+        .getByRole("heading", { name: "All accounts", exact: true })
+        .waitFor();
+      await page.getByLabel("Find a member", { exact: true }).fill("Another");
+      await page
+        .getByRole("button", { name: "Edit account", exact: true })
+        .click();
+      await page.getByLabel("Username", { exact: true }).fill("Renamed Member");
+      await page.getByLabel("Society handicap", { exact: true }).fill("18.2");
+      await page.getByLabel("Administrator access", { exact: true }).check();
+      page.once("dialog", (d) => d.accept());
+      await page
+        .getByRole("button", { name: "Save changes", exact: true })
+        .click();
+      await page.getByRole("dialog").waitFor({ state: "hidden" });
+      assert.equal(model.accountEdits.admin_access, true);
+      assert.equal(model.accountEdits.society_handicap, 18.2);
+      await page.getByLabel("Find a member", { exact: true }).fill("Renamed");
+      await page
+        .getByRole("button", { name: "Reset password", exact: true })
+        .click();
+      await page
+        .getByLabel("New password", { exact: true })
+        .fill("temporary-test-password");
+      await page
+        .getByLabel("Confirm new password", { exact: true })
+        .fill("temporary-test-password");
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Reset password", exact: true })
+        .click();
+      await page.getByRole("dialog").waitFor({ state: "hidden" });
+      assert.equal(model.passwordReset.target, second);
+      await page
+        .getByLabel("Find a member", { exact: true })
+        .fill("Test Member");
+      await page
+        .getByRole("button", { name: "Edit account", exact: true })
+        .click();
+      assert.equal(
+        await page
+          .getByLabel("Administrator access", { exact: true })
+          .isDisabled(),
+        true,
+      );
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      await page.getByLabel("Find a member", { exact: true }).fill("");
+      await page.screenshot({
+        path: path.join(out, "admin-accounts-390.png"),
+        fullPage: true,
+      });
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      report.push({
+        page: "account-review-edit-admin-role-password-reset",
+        width: 390,
+        status: "passed",
+      });
+      await context.close();
+    }
     // Organiser can create events and publish every confirmed member once.
     const context = await browser.newContext({
         viewport: { width: 390, height: 960 },
@@ -732,6 +855,9 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       },
     ];
     await page.goto(base + "admin.html");
+    await page
+      .getByRole("button", { name: "Event details", exact: true })
+      .click();
     await page.getByLabel("Choose an event").selectOption("999");
     await page.getByRole("button", { name: "RSVPs", exact: true }).click();
     await page.getByText("Test Member", { exact: true }).waitFor();

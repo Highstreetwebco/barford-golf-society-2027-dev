@@ -115,8 +115,12 @@ window.barfordReady = (async () => {
           .maybeSingle(),
         raw.rpc("is_admin"),
       ]);
+      if (!p.error && !p.data) {
+        await raw.auth.signOut({ scope: "local" });
+        state.user = null;
+      }
       state.profile = p.data;
-      state.admin = !a.error && a.data === true;
+      state.admin = !!state.user && !a.error && a.data === true;
     }
     document
       .querySelectorAll("[data-admin]")
