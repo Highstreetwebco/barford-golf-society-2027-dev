@@ -1,4 +1,4 @@
-import { mountGuestInvites } from "./guest-invites.js?v=2027-refined-1";
+import { mountGuestInvites } from "./guest-invites.js?v=2027-club-1";
 const b = await window.barfordReady,
   e = b.escape;
 export async function operation(action, payload = {}) {

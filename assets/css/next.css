@@ -1607,3 +1607,346 @@ button,
     display: none;
   }
 }
+
+/* Society colours: a stronger sporting identity, with the original crest. */
+:root {
+  --green: #1858a8;
+  --gold: #b77d18;
+  --paper: #f5f7fa;
+  --soft: #edf3fa;
+  --line: #dce4ec;
+  --ink: #172c42;
+  --muted: #586c7e;
+}
+.brand-icon {
+  width: 70px;
+  height: 70px;
+  padding: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: #133d60;
+  border-radius: 9px;
+}
+.brand {
+  gap: 13px;
+}
+.brand-year {
+  color: #80540b;
+  background: #fff0c8;
+  border-color: #eddcae;
+}
+.header-inner {
+  padding-block: 12px;
+}
+button,
+.button {
+  background: #1858a8;
+  border-color: #1858a8;
+}
+button:hover,
+.button:hover {
+  background: #134786;
+}
+.segmented button.active,
+.segmented button[aria-selected="true"],
+.admin-tabs button.active:hover {
+  background: #1858a8;
+}
+button.secondary,
+.button.secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+button.text-button {
+  background: transparent;
+}
+button.danger {
+  background: transparent;
+  border-color: var(--danger);
+}
+.home-hero {
+  background: linear-gradient(115deg, #153e75 0%, #175987 66%, #147080 100%);
+}
+.home-hero h1 em {
+  color: #f4c45e;
+}
+.hero-copy > p:not(.eyebrow) {
+  color: #dce9f3;
+}
+.hero-copy .button {
+  background: #f4c45e;
+  border-color: #f4c45e;
+  color: #172c42;
+}
+.hero-copy .button.secondary {
+  color: #fff;
+  border-color: #ffffff60;
+  background: #ffffff08;
+}
+.hero-copy .button:hover {
+  background: #ffda89;
+  color: #172c42;
+}
+.hero-copy .button.secondary:hover {
+  background: #ffffff20;
+  color: #fff;
+}
+.season-panel {
+  background: #092c4680;
+  border: 1px solid #ffffff25;
+  padding: 22px 26px;
+}
+.season-panel-label,
+.season-panel-footer {
+  color: #d4e4ec;
+}
+.season-logo {
+  display: block;
+  width: 260px;
+  height: 260px;
+  object-fit: contain;
+  align-self: center;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+.season-panel-footer b {
+  color: #f4c45e;
+}
+.season-panel::before,
+.season-panel::after {
+  border-color: #ffffff12;
+}
+.signed-in .season-logo {
+  width: 145px;
+  height: 145px;
+}
+.signed-in .season-panel {
+  padding: 14px 22px;
+  margin: 20px 24px 20px 0;
+}
+.signed-in .season-panel-label {
+  display: none;
+}
+.quick-links > a {
+  background: #dceafd;
+  border-color: #c2d7f0;
+  border-top: 3px solid #3775bc;
+  color: #163c6d;
+}
+.quick-links > a:nth-child(2) {
+  background: #ffedbd;
+  border-color: #efd79b;
+  border-top: 3px solid #cb942a;
+  color: #59451e;
+}
+.quick-links > a:nth-child(3) {
+  background: #d7eee5;
+  border-color: #bad9cb;
+  border-top: 3px solid #36846b;
+  color: #214c3c;
+}
+.quick-links p,
+.tile-tag {
+  color: inherit;
+}
+.quick-links .arrow {
+  background: #ffffff85;
+  color: inherit;
+}
+.quick-links > a:hover {
+  color: #172c42;
+}
+.empty-icon {
+  background: #e2edf9;
+  color: #1858a8;
+  border-color: #c9dbee;
+}
+.page-heading {
+  background: #e0eafa;
+  border-left-color: #3775bc;
+}
+.page-events .page-heading,
+.page-event .page-heading {
+  background: #d7eee5;
+  border-left-color: #36846b;
+}
+.page-scores .page-heading {
+  background: #ffedbd;
+  border-left-color: #cb942a;
+}
+.page-gallery .page-heading {
+  background: #e0eafa;
+  border-left-color: #3775bc;
+}
+.page-account .page-heading,
+.page-signup .page-heading,
+.page-guest .page-heading {
+  background: linear-gradient(115deg, #153e75, #17647d);
+}
+.event-top .date-block {
+  background: #dceafd;
+  color: #163c6d;
+}
+.event-card:nth-child(3n + 2) .date-block {
+  background: #ffedbd;
+  color: #59451e;
+}
+.event-card:nth-child(3n + 3) .date-block {
+  background: #d7eee5;
+  color: #214c3c;
+}
+.next-event-facts {
+  background: #e9f1fa;
+}
+#homeTeeGroup {
+  background: #e2eee9;
+}
+#homeOperations [data-guest-invites] {
+  background: #e9f1fa;
+}
+.tee-clock {
+  background: #f4d18a;
+  color: #44351a;
+}
+.portrait-initials {
+  background: #d2e3f7;
+  color: #194776;
+}
+.home-guide > summary span {
+  background: #e0ecfb;
+  color: #1858a8;
+}
+.cover-placeholder {
+  background: linear-gradient(115deg, #153e75, #17647d);
+}
+body.dark-mode {
+  --green: #9bc5f5;
+  --paper: #101e2c;
+  --surface: #1a2d3e;
+  --soft: #233e55;
+  --line: #354e63;
+  --ink: #eef4fa;
+  --muted: #b0c4d5;
+}
+.dark-mode .brand-year {
+  color: #f4d18a;
+  background: #413821;
+  border-color: #716044;
+}
+.dark-mode .site-nav .account-link {
+  background: #f4c45e;
+}
+.dark-mode .quick-links > a {
+  background: #203f65;
+  border-color: #3f6592;
+  color: #eff6ff;
+}
+.dark-mode .quick-links > a:nth-child(2) {
+  background: #4b4025;
+  border-color: #806b38;
+  color: #fff0c8;
+}
+.dark-mode .quick-links > a:nth-child(3) {
+  background: #244c41;
+  border-color: #447662;
+  color: #e0f4eb;
+}
+.dark-mode .quick-links .arrow {
+  background: #ffffff15;
+}
+.dark-mode .quick-links > a:hover {
+  color: #fff;
+}
+.dark-mode .page-heading {
+  background: #203f65;
+}
+.dark-mode .page-events .page-heading,
+.dark-mode .page-event .page-heading {
+  background: #244c41;
+}
+.dark-mode .page-scores .page-heading {
+  background: #4b4025;
+}
+.dark-mode .page-gallery .page-heading {
+  background: #203f65;
+}
+.dark-mode .next-event-facts,
+.dark-mode #homeOperations [data-guest-invites] {
+  background: #233e55;
+}
+.dark-mode #homeTeeGroup {
+  background: #244239;
+}
+.dark-mode .home-guide > summary span {
+  background: #294b6a;
+  color: #b4d5ff;
+}
+@media (max-width: 1000px) and (min-width: 761px) {
+  .brand-icon {
+    width: 62px;
+    height: 62px;
+  }
+}
+@media (max-width: 760px) {
+  .brand {
+    gap: 10px;
+    font-size: 24px;
+  }
+  .brand-icon {
+    width: 60px;
+    height: 60px;
+    padding: 3px;
+  }
+  .header-inner {
+    min-height: 88px;
+    padding-block: 10px;
+  }
+  .season-panel {
+    margin: 0 25px 25px;
+    padding: 14px 18px;
+    border: 1px solid #ffffff25;
+    border-radius: 9px;
+    flex-direction: row;
+    justify-content: space-between;
+    background: #092c4655;
+  }
+  .season-logo {
+    width: 120px;
+    height: 120px;
+    margin: 0;
+  }
+  .season-panel-footer {
+    flex-direction: column;
+    gap: 12px;
+    min-width: 65px;
+  }
+  .season-panel-footer b {
+    display: inline;
+    font-size: 22px;
+    margin-right: 5px;
+  }
+  .quick-links > a {
+    background: #dceafd;
+  }
+  .quick-links > a:nth-child(2) {
+    background: #ffedbd;
+  }
+  .quick-links > a:nth-child(3) {
+    background: #d7eee5;
+  }
+}
+@media (max-width: 360px) {
+  .brand-icon {
+    width: 54px;
+    height: 54px;
+  }
+  .season-panel {
+    padding: 12px;
+  }
+  .season-logo {
+    width: 100px;
+    height: 100px;
+  }
+}

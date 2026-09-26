@@ -2,7 +2,7 @@ import {
   adjustment,
   roundAverage,
   handicapAt,
-} from "./league-rules.js?v=2027-refined-1";
+} from "./league-rules.js?v=2027-club-1";
 const b = await window.barfordReady,
   e = b.escape;
 export function openScoreWizard({

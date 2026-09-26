@@ -1,11 +1,11 @@
-import { guestAction } from "./guest-invites.js?v=2027-refined-1";
-import { mountEventOperations } from "./operations.js?v=2027-refined-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-refined-1";
+import { guestAction } from "./guest-invites.js?v=2027-club-1";
+import { mountEventOperations } from "./operations.js?v=2027-club-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-club-1";
 import {
   mountExperience,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-refined-1";
+} from "./event-experience.js?v=2027-club-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 if (b.state.user) {

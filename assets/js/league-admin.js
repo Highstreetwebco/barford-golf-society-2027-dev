@@ -1,10 +1,10 @@
-import { openScoreWizard } from "./score-wizard.js?v=2027-refined-1";
+import { openScoreWizard } from "./score-wizard.js?v=2027-club-1";
 import {
   adjustment,
   roundAverage,
   handicapAt,
   rulesHTML,
-} from "./league-rules.js?v=2027-refined-1";
+} from "./league-rules.js?v=2027-club-1";
 const b = await window.barfordReady,
   e = b.escape;
 let state,

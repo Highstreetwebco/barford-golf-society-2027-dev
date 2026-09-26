@@ -1,4 +1,4 @@
-import { photoUrls } from "./member-photos.js?v=2027-refined-1";
+import { photoUrls } from "./member-photos.js?v=2027-club-1";
 const b = await window.barfordReady,
   e = b.escape;
 const rendered = new WeakMap();
