@@ -5,6 +5,8 @@
   border: 0;
   background: transparent;
   box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
 }
 .page-events .page-heading::after { display: none; }
 .page-events .page-heading h1 { margin-bottom: 12px; }
