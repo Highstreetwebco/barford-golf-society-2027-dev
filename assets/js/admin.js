@@ -1,4 +1,4 @@
-import {packPlayers} from "./tee-groups.js?v=2027-experience-1";
+import { packPlayers } from "./tee-groups.js?v=2027-experience-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),
@@ -283,10 +283,22 @@ async function generate() {
     gap = Number(document.getElementById("teeGap").value);
   if (!start || gap < 1 || gap > 60)
     return b.toast("Enter a start time and a gap from 1 to 60 minutes.");
-  const [h,m]=start.split(':').map(Number);
-  const packed=packPlayers(players);
-  if(h*60+m+Math.max(0,packed.length-1)*gap>=1440)return b.toast('The tee times would run into the next day. Adjust the start time or gap.');
-  groups=packed.map((people,i)=>{const mins=h*60+m+i*gap;return {time:String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'),players:people.map(p=>p.user_id)};});
+  const [h, m] = start.split(":").map(Number);
+  const packed = packPlayers(players);
+  if (h * 60 + m + Math.max(0, packed.length - 1) * gap >= 1440)
+    return b.toast(
+      "The tee times would run into the next day. Adjust the start time or gap.",
+    );
+  groups = packed.map((people, i) => {
+    const mins = h * 60 + m + i * gap;
+    return {
+      time:
+        String(Math.floor(mins / 60)).padStart(2, "0") +
+        ":" +
+        String(mins % 60).padStart(2, "0"),
+      players: people.map((p) => p.user_id),
+    };
+  });
   renderGroups();
   document.getElementById("teeMessage").textContent =
     "Draft groups generated. Review buggy pairs and preferences before publishing.";
@@ -335,7 +347,7 @@ function renderGroups() {
           .map((id) => {
             const r = rows.find((r) => r.user_id === id);
             if (!r) return "";
-            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"} · ${e(r.preferred_time||"No tee time")} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
+            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"} · ${e(r.preferred_time || "No tee time")} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
           })
           .join(
             "",
@@ -364,8 +376,17 @@ function renderGroups() {
 async function saveGroups() {
   if (!selected) return b.toast("Choose an event first.");
   if (!groups.length) return b.toast("Generate or load tee groups first.");
-  const odd=groups.filter(g=>g.players.filter(id=>rows.find(r=>r.user_id===id)?.buggy).length%2===1);
-  if(odd.length>1)return b.toast('There are unpaired buggy players in different groups. Move them into pairs before publishing.');
+  const odd = groups.filter(
+    (g) =>
+      g.players.filter((id) => rows.find((r) => r.user_id === id)?.buggy)
+        .length %
+        2 ===
+      1,
+  );
+  if (odd.length > 1)
+    return b.toast(
+      "There are unpaired buggy players in different groups. Move them into pairs before publishing.",
+    );
   const button = document.getElementById("saveTees");
   button.disabled = true;
   try {
@@ -400,7 +421,7 @@ async function loadEnquiries() {
             `<div class="panel"><strong>${e(row.name)}</strong><p>${e(row.email)} · ${e(row.phone)}</p><button class="secondary" data-enquiry="${row.id}">Mark handled</button></div>`,
         )
         .join("")
-    : '<p class="muted">No outstanding enquiries. New members can now create their own accounts.</p>';
+    : '<p class="muted">No outstanding enquiries. New members can create their own accounts.</p>';
   area.querySelectorAll("[data-enquiry]").forEach(
     (button) =>
       (button.onclick = async () => {
@@ -410,14 +431,6 @@ async function loadEnquiries() {
           .eq("id", Number(button.dataset.enquiry));
         if (error) return b.toast(error.message);
         await loadEnquiries();
-      }),
-            );
-          } catch (error) {
-            status.textContent = error.message;
-          } finally {
-            button.disabled = false;
-          }
-        };
       }),
   );
 }
