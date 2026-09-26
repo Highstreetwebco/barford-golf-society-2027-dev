@@ -772,6 +772,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       assert.equal(await form.getByRole("button", { name: "Save RSVP", exact: true }).isEnabled(), true);
       await form.getByRole("button", { name: "Save RSVP", exact: true }).click();
       await page.getByRole("button", { name: "Change RSVP", exact: true }).waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(model.payloads.length, 1);
       assert(!("name" in model.payloads[0]));
       assert(!("user_id" in model.payloads[0]));
@@ -787,6 +788,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
       await page.locator("#homeOperations").getByText("Buggy requested · Tee preference: End", { exact: true }).waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(model.responses.length, 1);
       assert.equal(model.payloads[1].preferred_time, "End");
       await page
@@ -802,6 +804,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("heading", { name: "You’re not booked", exact: true })
         .waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(model.payloads[2].attending, false);
       model.wait = true;
       await page
@@ -821,6 +824,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("heading", { name: "You’re on the waiting list", exact: true })
         .waitFor();
       assert.equal(new URL(page.url()).pathname, "/index.html", "RSVP and all edits stay on the homepage");
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(await page.locator(".rsvp-dialog[open]").count(), 0, "Successful RSVP closes its dialog");
       assert.equal(model.payloads[3].preferred_time, "Middle");
       assert.equal(model.responses[0].reserve, true);
@@ -1888,6 +1892,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Save RSVP", exact: true })
         .click();
       await page.getByRole("button", { name: "Change RSVP", exact: true }).waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(model.payloads.at(-1).buggy, false);
       assert.equal(model.payloads.at(-1).accept_terms, true);
       await page.goto(base + "event.html?id=999");
@@ -1912,6 +1917,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("heading", { name: "You’re not booked", exact: true })
         .waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       await page.goto(base + "admin.html");
       await page
         .getByRole("button", {
@@ -2268,6 +2274,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await form.getByRole("radio", { name: "Yes, I’m playing", exact: true }).check();
       await form.getByRole("button", { name: "Save RSVP", exact: true }).click();
       await page.getByRole("button", { name: "Change RSVP", exact: true }).waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(model.payloads[0].event_id, 996, "The selected event survives the homepage handoff");
       assert.equal(model.responses.some(row => row.event_id === 999), false, "The next event was not booked accidentally");
       const invite = page.locator("#nextEvent [data-home-invite]");
@@ -2300,6 +2307,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await form.getByRole("radio", { name: "Yes, I’m playing", exact: true }).check();
       await form.getByRole("button", { name: "Save changes", exact: true }).click();
       await page.locator("#homeOperations").getByRole("heading", { name: "You’re booked", exact: true }).waitFor();
+      await page.locator(".rsvp-dialog").waitFor({ state: "detached" });
       assert.equal(model.payloads[0].event_id, 999, "A withdrawn invited guest can rejoin their own event");
       assert.equal(await page.locator("[data-home-invite]").count(), 0, "Guests cannot invite more guests");
       report.push({ page: "homepage-guest-invitation-scope-and-rejoin", width: 390, status: "passed" });
