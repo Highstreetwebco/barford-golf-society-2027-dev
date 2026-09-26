@@ -1880,3 +1880,112 @@ td button {
     border: 1px solid #000;
   }
 }
+
+@media screen and (max-width: 600px) {
+  .score-entry-table,
+  .score-entry-table tbody,
+  .scorecard-table,
+  .scorecard-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .score-entry-table thead,
+  .scorecard-table thead {
+    display: none;
+  }
+  .score-entry-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 84px 44px;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .score-entry-table tr > * {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+  .score-entry-table th {
+    grid-column: 1 / -1;
+    font-size: 1rem;
+  }
+  .score-entry-table td:nth-child(2)::before {
+    content: "Round HCP";
+  }
+  .score-entry-table td:nth-child(3)::before {
+    content: "Points";
+  }
+  .score-entry-table td:nth-child(4)::before {
+    content: "DNP";
+  }
+  .score-entry-table td:nth-child(5) {
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .score-entry-table td:nth-child(5)::before {
+    content: "Next HCP: ";
+  }
+  .score-entry-table td:nth-child(2)::before,
+  .score-entry-table td:nth-child(3)::before,
+  .score-entry-table td:nth-child(4)::before {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .score-entry-table input[type="number"] {
+    width: 84px;
+    min-width: 0;
+  }
+  .score-entry-table input[type="checkbox"] {
+    margin: 10px 0;
+  }
+  .scorecard-table tr {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) 70px;
+    gap: 8px 12px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+  }
+  .scorecard-table tr > * {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+  .scorecard-table th {
+    overflow-wrap: anywhere;
+  }
+  .scorecard-table td:nth-child(3)::before {
+    content: "Round HCP";
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .scorecard-table td:nth-child(4) {
+    grid-column: 2;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .scorecard-table td:nth-child(4)::before {
+    content: "Tee: ";
+  }
+  .scorecard-table td:nth-child(5) {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .league-table th,
+  .league-table td {
+    padding: 12px 8px;
+  }
+  .league-table th:nth-child(2),
+  .league-table td:nth-child(2) {
+    min-width: 125px;
+    max-width: 150px;
+    white-space: normal;
+  }
+}

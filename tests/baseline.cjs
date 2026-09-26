@@ -822,7 +822,9 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Edit account", exact: true })
         .click();
       await page.getByLabel("Username", { exact: true }).fill("Renamed Member");
-      await page.getByLabel("Season starting handicap", { exact: true }).fill("18.2");
+      await page
+        .getByLabel("Season starting handicap", { exact: true })
+        .fill("18.2");
       await page.getByLabel("Administrator access", { exact: true }).check();
       page.once("dialog", (d) => d.accept());
       await page
@@ -1006,6 +1008,13 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         ),
         false,
       );
+      const dnpBox = await page
+        .getByLabel("DNP for Player 1", { exact: true })
+        .boundingBox();
+      assert(
+        dnpBox.x + dnpBox.width <= 390,
+        "DNP should fit without horizontal scrolling",
+      );
       // Round 2 card preparation must use round 1's resulting handicap.
       model.responses = model.responses.map((x) => ({ ...x, event_id: 1000 }));
       await page.getByLabel("Choose an event").selectOption("1000");
@@ -1062,16 +1071,14 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         rounds: [1, 2, 3, 4, 5].map((n) => ({
           round: n,
           average: 30,
-          results: people
-            .slice(0, 2)
-            .map((p, i) => ({
-              user_id: p.id,
-              points: i ? 25 : 30,
-              handicap: 20,
-              adjustment: 0,
-              next_handicap: 20,
-              winner: i === 0,
-            })),
+          results: people.slice(0, 2).map((p, i) => ({
+            user_id: p.id,
+            points: i ? 25 : 30,
+            handicap: 20,
+            adjustment: 0,
+            next_handicap: 20,
+            winner: i === 0,
+          })),
         })),
       };
       const mp = await member.newPage();
@@ -1083,7 +1090,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           .locator(".league-table tbody tr")
           .first()
           .locator("td")
-          .nth(8)
+          .nth(1)
           .textContent(),
         "150",
       );
@@ -1131,7 +1138,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           .locator(".league-table tbody tr")
           .first()
           .locator("td")
-          .nth(8)
+          .nth(1)
           .textContent(),
         "170",
       );

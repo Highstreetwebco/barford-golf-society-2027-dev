@@ -47,7 +47,7 @@ async function load() {
         b.total - a.total || b.wins - a.wins || a.name.localeCompare(b.name),
     );
   let rank = 0;
-  area.innerHTML = `<div class="table-scroll"><table class="league-table"><caption>2027 season leaderboard · best five scores</caption><thead><tr><th>Rank</th><th>Player</th>${Array.from({ length: 7 }, (_, i) => `<th>R${i + 1}${i >= cutoff ? " 🔒" : ""}</th>`).join("")}<th>Best five</th><th>Wins</th></tr></thead><tbody>${ranked
+  area.innerHTML = `<h2>Season leaderboard</h2><p class="muted">Best five scores count. Scroll across for each round.</p><div class="table-scroll"><table class="league-table"><caption class="visually-hidden">2027 season leaderboard · best five scores</caption><thead><tr><th>Rank</th><th>Player</th><th>Best five</th><th>Wins</th>${Array.from({ length: 7 }, (_, i) => `<th>R${i + 1}${i >= cutoff ? " 🔒" : ""}</th>`).join("")}</tr></thead><tbody>${ranked
     .map((p, i) => {
       if (
         !i ||
@@ -55,13 +55,13 @@ async function load() {
         p.wins !== ranked[i - 1].wins
       )
         rank = i + 1;
-      return `<tr><td>${rank}</td><th scope="row">${e(p.name)}</th>${Array.from(
+      return `<tr><td>${rank}</td><th scope="row">${e(p.name)}</th><td><strong>${p.total}</strong></td><td>${p.wins}</td>${Array.from(
         { length: 7 },
         (_, i) => {
           const s = p.scores.find((s) => s.round === i + 1);
           return `<td>${i >= cutoff ? secret : s ? (s.points ?? "DNP") : "—"}</td>`;
         },
-      ).join("")}<td><strong>${p.total}</strong></td><td>${p.wins}</td></tr>`;
+      ).join("")}</tr>`;
     })
     .join("")}</tbody></table></div>`;
   const select = document.getElementById("leagueRound");
