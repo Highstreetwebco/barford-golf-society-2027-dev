@@ -755,20 +755,8 @@ await window.barfordReady;
 
     btnAndroidInstall.style.display = 'inline-block';
 
-    // Optional auto prompt after a delay
-    setTimeout(() => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(choice => {
-          if (choice.outcome === 'accepted') {
-            console.log('✅ Installed automatically');
-          } else {
-            console.log('❌ User dismissed install');
-          }
-          deferredPrompt = null;
-        });
-      }
-    }, 4000);
+    // Installation is requested only by the member tapping the button.
+
   });
 
   // ✅ Manual click trigger for Android install
