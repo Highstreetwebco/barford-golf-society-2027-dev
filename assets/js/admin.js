@@ -17,9 +17,11 @@ const form = document.getElementById("eventForm"),
 if (!b.state.admin) {
   gate.innerHTML = `<h2>Organiser access</h2><p>${b.state.user ? "Your account does not have organiser access." : "Sign in with your organiser account to manage the society."}</p><a class="button section" href="account.html?next=admin.html">${b.state.user ? "My account" : "Sign in"}</a>`;
 } else {
-  gate.hidden = true;
-  content.hidden = false;
-  await init();
+  const ready = await init();
+  if (ready) {
+    gate.hidden = true;
+    content.hidden = false;
+  }
   const initialTab = new URLSearchParams(location.search).get("tab");
   if (["scoring", "scorecards", "handicaps"].includes(initialTab))
     document.querySelector(`[data-tab="${initialTab}"]`)?.click();
@@ -29,7 +31,7 @@ async function init() {
   if (error) {
     gate.hidden = false;
     gate.textContent = error.message;
-    return;
+    return false;
   }
   events = data;
   picker.innerHTML =
@@ -233,6 +235,7 @@ async function init() {
       button.disabled = false;
     }
   };
+  return true;
 }
 async function fillEvent() {
   form.reset();
