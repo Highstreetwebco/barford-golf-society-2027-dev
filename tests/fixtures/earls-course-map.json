@@ -1,0 +1,527 @@
+{
+  "name": "The Warwickshire · Earls",
+  "tee_name": "Yellow (men)",
+  "place_id": "ChIJg5m3CCjLcEgRGLQu_NoCJpk",
+  "center": {
+    "lat": 52.3122149,
+    "lng": -1.580061
+  },
+  "address": "",
+  "holes": [
+    {
+      "number": 1,
+      "par": 4,
+      "yards": 423,
+      "stroke_index": 6,
+      "tee": {
+        "lat": 52.3106645,
+        "lng": -1.5903152
+      },
+      "green": {
+        "lat": 52.3141777423664,
+        "lng": -1.5893132756171708
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3129298,
+        "lng": -1.5901531
+      },
+      "reviewed": false
+    },
+    {
+      "number": 2,
+      "par": 3,
+      "yards": 187,
+      "stroke_index": 12,
+      "tee": {
+        "lat": 52.3145496,
+        "lng": -1.5898608
+      },
+      "green": {
+        "lat": 52.313253016507254,
+        "lng": -1.5911043378834129
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 3,
+      "par": 4,
+      "yards": 383,
+      "stroke_index": 16,
+      "tee": {
+        "lat": 52.3135496,
+        "lng": -1.5924455
+      },
+      "green": {
+        "lat": 52.316587826835466,
+        "lng": -1.5924350006832921
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3146829,
+        "lng": -1.59173
+      },
+      "reviewed": false
+    },
+    {
+      "number": 4,
+      "par": 5,
+      "yards": 607,
+      "stroke_index": 4,
+      "tee": {
+        "lat": 52.3173242,
+        "lng": -1.5911677
+      },
+      "green": {
+        "lat": 52.31785253465555,
+        "lng": -1.5838628104851793
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3185432,
+        "lng": -1.5886917
+      },
+      "reviewed": false
+    },
+    {
+      "number": 5,
+      "par": 4,
+      "yards": 413,
+      "stroke_index": 10,
+      "tee": {
+        "lat": 52.3175565,
+        "lng": -1.584955
+      },
+      "green": {
+        "lat": 52.317033115784106,
+        "lng": -1.5904649551969523
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3176906,
+        "lng": -1.5884787
+      },
+      "reviewed": false
+    },
+    {
+      "number": 6,
+      "par": 5,
+      "yards": 507,
+      "stroke_index": 14,
+      "tee": {
+        "lat": 52.3163321,
+        "lng": -1.5904875
+      },
+      "green": {
+        "lat": 52.31670849534612,
+        "lng": -1.583986248716636
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.316989,
+        "lng": -1.5877299
+      },
+      "reviewed": false
+    },
+    {
+      "number": 7,
+      "par": 4,
+      "yards": 397,
+      "stroke_index": 2,
+      "tee": {
+        "lat": 52.3161041,
+        "lng": -1.5849454
+      },
+      "green": {
+        "lat": 52.31600026634369,
+        "lng": -1.5902732764340803
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 8,
+      "par": 3,
+      "yards": 135,
+      "stroke_index": 18,
+      "tee": {
+        "lat": 52.3156404,
+        "lng": -1.5904478
+      },
+      "green": {
+        "lat": 52.31537628557274,
+        "lng": -1.5885139664151147
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 9,
+      "par": 4,
+      "yards": 404,
+      "stroke_index": 8,
+      "tee": {
+        "lat": 52.3146183,
+        "lng": -1.588368
+      },
+      "green": {
+        "lat": 52.31125014382452,
+        "lng": -1.5895056689744766
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 10,
+      "par": 5,
+      "yards": 568,
+      "stroke_index": 7,
+      "tee": {
+        "lat": 52.3109999,
+        "lng": -1.5919317
+      },
+      "green": {
+        "lat": 52.31486528977142,
+        "lng": -1.5956986494436842
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3125759,
+        "lng": -1.5947845
+      },
+      "reviewed": false
+    },
+    {
+      "number": 11,
+      "par": 3,
+      "yards": 154,
+      "stroke_index": 13,
+      "tee": {
+        "lat": 52.3160534,
+        "lng": -1.5957724
+      },
+      "green": {
+        "lat": 52.31716739296527,
+        "lng": -1.5947452959314805
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 12,
+      "par": 4,
+      "yards": 402,
+      "stroke_index": 5,
+      "tee": {
+        "lat": 52.3171619,
+        "lng": -1.5957674
+      },
+      "green": {
+        "lat": 52.320259257386645,
+        "lng": -1.5941739954777128
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3192483,
+        "lng": -1.5942598
+      },
+      "reviewed": false
+    },
+    {
+      "number": 13,
+      "par": 3,
+      "yards": 147,
+      "stroke_index": 17,
+      "tee": {
+        "lat": 52.3211682,
+        "lng": -1.5931745
+      },
+      "green": {
+        "lat": 52.3220240606973,
+        "lng": -1.591780010565851
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 14,
+      "par": 4,
+      "yards": 370,
+      "stroke_index": 3,
+      "tee": {
+        "lat": 52.3210535,
+        "lng": -1.5917773
+      },
+      "green": {
+        "lat": 52.31852316115664,
+        "lng": -1.5931318109885626
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3196159,
+        "lng": -1.5931708
+      },
+      "reviewed": false
+    },
+    {
+      "number": 15,
+      "par": 4,
+      "yards": 357,
+      "stroke_index": 9,
+      "tee": {
+        "lat": 52.3182594,
+        "lng": -1.5923759
+      },
+      "green": {
+        "lat": 52.32121836722145,
+        "lng": -1.5905674797691058
+      },
+      "front": null,
+      "back": null,
+      "dogleg": null,
+      "reviewed": false
+    },
+    {
+      "number": 16,
+      "par": 4,
+      "yards": 432,
+      "stroke_index": 1,
+      "tee": {
+        "lat": 52.3204865,
+        "lng": -1.5902502
+      },
+      "green": {
+        "lat": 52.317395686930304,
+        "lng": -1.5924318814763794
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3184156,
+        "lng": -1.5906536
+      },
+      "reviewed": false
+    },
+    {
+      "number": 17,
+      "par": 4,
+      "yards": 351,
+      "stroke_index": 15,
+      "tee": {
+        "lat": 52.3180351,
+        "lng": -1.593662
+      },
+      "green": {
+        "lat": 52.31536857772837,
+        "lng": -1.5944680973983758
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3161202,
+        "lng": -1.5935343
+      },
+      "reviewed": false
+    },
+    {
+      "number": 18,
+      "par": 5,
+      "yards": 534,
+      "stroke_index": 11,
+      "tee": {
+        "lat": 52.3148812,
+        "lng": -1.5948077
+      },
+      "green": {
+        "lat": 52.31086293609483,
+        "lng": -1.5909550506806893
+      },
+      "front": null,
+      "back": null,
+      "dogleg": {
+        "lat": 52.3128879,
+        "lng": -1.5934961
+      },
+      "reviewed": false
+    }
+  ],
+  "source": {
+    "provider": "openstreetmap",
+    "attribution": "© OpenStreetMap contributors",
+    "url": "https://www.openstreetmap.org/copyright",
+    "fetched_at": "2026-09-26T21:23:02.468Z",
+    "coverage": {
+      "mapped": 18,
+      "par": 18,
+      "yards": 18,
+      "stroke_index": 18
+    },
+    "warnings": [
+      "The numbered routes match mapped tee and green areas. Confirm the course preview before making it available to members. Tee colours are not verified by this map source."
+    ],
+    "boundary_id": 56758512,
+    "scorecard_url": "https://18birdies.com/golf-courses/club/c64c65f0-86ac-11e4-8c28-020000005b00/warwickshire-earls-course",
+    "numbering_shift": 0,
+    "validation": {
+      "status": "verified",
+      "method": "numbered_routes_inside_tee_green_footprints",
+      "mapped": 18,
+      "tee_anchors": 18,
+      "green_anchors": 18,
+      "course_name": "Earls",
+      "tee_colour_confirmed": false,
+      "scorecard_order_confirmed": true,
+      "order_evidence": "unique_18_hole_par_sequence",
+      "scorecard_url": "https://18birdies.com/golf-courses/club/c64c65f0-86ac-11e4-8c28-020000005b00/warwickshire-earls-course",
+      "evidence": [
+        {
+          "number": 1,
+          "osm_number": 1,
+          "route_id": 795304102,
+          "tee_feature_id": 795304097,
+          "green_feature_id": 795304100
+        },
+        {
+          "number": 2,
+          "osm_number": 2,
+          "route_id": 795304109,
+          "tee_feature_id": 795304103,
+          "green_feature_id": 795304107
+        },
+        {
+          "number": 3,
+          "osm_number": 3,
+          "route_id": 795304121,
+          "tee_feature_id": 795304110,
+          "green_feature_id": 795304120
+        },
+        {
+          "number": 4,
+          "osm_number": 4,
+          "route_id": 795304136,
+          "tee_feature_id": 795304124,
+          "green_feature_id": 795304135
+        },
+        {
+          "number": 5,
+          "osm_number": 5,
+          "route_id": 795304150,
+          "tee_feature_id": 795304140,
+          "green_feature_id": 795304145
+        },
+        {
+          "number": 6,
+          "osm_number": 6,
+          "route_id": 795304165,
+          "tee_feature_id": 795304157,
+          "green_feature_id": 795304164
+        },
+        {
+          "number": 7,
+          "osm_number": 7,
+          "route_id": 795309698,
+          "tee_feature_id": 795309694,
+          "green_feature_id": 795309697
+        },
+        {
+          "number": 8,
+          "osm_number": 8,
+          "route_id": 795309708,
+          "tee_feature_id": 795309699,
+          "green_feature_id": 795309704
+        },
+        {
+          "number": 9,
+          "osm_number": 9,
+          "route_id": 795311730,
+          "tee_feature_id": 795311720,
+          "green_feature_id": 795311729
+        },
+        {
+          "number": 10,
+          "osm_number": 10,
+          "route_id": 795315308,
+          "tee_feature_id": 795315298,
+          "green_feature_id": 795315307
+        },
+        {
+          "number": 11,
+          "osm_number": 11,
+          "route_id": 795315320,
+          "tee_feature_id": 795315312,
+          "green_feature_id": 795315319
+        },
+        {
+          "number": 12,
+          "osm_number": 12,
+          "route_id": 795333701,
+          "tee_feature_id": 795333692,
+          "green_feature_id": 795333697
+        },
+        {
+          "number": 13,
+          "osm_number": 13,
+          "route_id": 795338860,
+          "tee_feature_id": 795338856,
+          "green_feature_id": 795338858
+        },
+        {
+          "number": 14,
+          "osm_number": 14,
+          "route_id": 795338869,
+          "tee_feature_id": 795338862,
+          "green_feature_id": 795338868
+        },
+        {
+          "number": 15,
+          "osm_number": 15,
+          "route_id": 795345094,
+          "tee_feature_id": 795345088,
+          "green_feature_id": 795345093
+        },
+        {
+          "number": 16,
+          "osm_number": 16,
+          "route_id": 795345104,
+          "tee_feature_id": 795345097,
+          "green_feature_id": 795345102
+        },
+        {
+          "number": 17,
+          "osm_number": 17,
+          "route_id": 795347133,
+          "tee_feature_id": 795345106,
+          "green_feature_id": 795345114
+        },
+        {
+          "number": 18,
+          "osm_number": 18,
+          "route_id": 795347144,
+          "tee_feature_id": 795347132,
+          "green_feature_id": 795347143
+        }
+      ]
+    }
+  }
+}

@@ -1784,7 +1784,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       .getByLabel("Event name", { exact: true })
       .fill("Another Golf Day");
     await page.getByLabel("Date", { exact: true }).fill("2027-07-30");
-    await page.getByLabel("Round", { exact: true }).selectOption("1");
+    const eventRound = page.locator('#eventForm [name="round_number"]');
+    assert.equal(await eventRound.isVisible(), true, "League events must show their round selection");
+    assert.equal(await eventRound.isEnabled(), true, "League round selection must be enabled");
+    await eventRound.selectOption("1");
     await page.getByRole("button", { name: "Save event", exact: true }).click();
     await page.getByText("Event saved.", { exact: true }).waitFor();
     assert(model.events.some((ev) => ev.name === "Another Golf Day" && ev.round_number === 1));

@@ -35,7 +35,7 @@ async function fixture(browser, options = {}) {
   const model = { events: structuredClone(options.events || [eventFixture]), layout: options.layout === null ? null : structuredClone(options.layout || layoutFixture), requests: [], unexpected: [], errors: [], mapFailed: !!options.mapFailed, savedLayouts: [] };
   if (options.liveMap) {
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-    model.events.forEach(event => { event.date = today; event.name = "Google Maps smoke test — fixture coordinates"; });
+    model.events.forEach(event => { event.date = today; event.name = options.liveMapName || "Google Maps smoke test — fixture coordinates"; });
     await context.route(deployedOrigin + "**", route => {
       const relative = new URL(route.request().url()).pathname.slice(new URL(deployedOrigin).pathname.length);
       const target = path.resolve(root, decodeURIComponent(relative));
@@ -440,9 +440,16 @@ async function run() {
       }
     });
 
-    await check("Google satellite map renders real tiles under the 2027 site's actual origin", async () => {
-      const f = await fixture(browser, { liveMap: true });
-      const provider = { responses: [], failures: [], console: [], tileCount: 0 };
+    await check("Earls holes 1 and 10 render fresh discovered coordinates over real Google satellite tiles", async () => {
+      // Fresh provider output, including OSM feature IDs and scorecard provenance.
+      // Only this read-only member fixture marks the holes as organiser-confirmed.
+      const earls = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "earls-course-map.json"), "utf8"));
+      assert.equal(earls.source.validation.status, "verified");
+      assert.equal(earls.source.validation.tee_anchors, 18);
+      assert.equal(earls.source.validation.green_anchors, 18);
+      const layout = { ...earls, id: eventFixture.course_layout_id, revision: 1, ready_count: 18, holes: earls.holes.map(h => ({ ...h, reviewed: true })) };
+      const f = await fixture(browser, { liveMap: true, liveMapName: "Earls course mapping smoke test", layout });
+      const provider = { responses: [], failures: [], console: [], tileCount: 0, lastTileAt: 0, course: earls.name, holes: [1, 10] };
       f.page.on("console", message => {
         if (/Google Maps JavaScript API error|RefererNotAllowedMapError|InvalidKeyMapError|ApiNotActivatedMapError|BillingNotEnabledMapError|REQUEST_DENIED|This page can.t load Google Maps/i.test(message.text())) provider.console.push(message.text());
       });
@@ -455,7 +462,7 @@ async function run() {
         if (!/\.(googleapis|gstatic|google)\.com$/.test(url.hostname)) return;
         const contentType = response.headers()["content-type"] || "";
         provider.responses.push({ host: url.hostname, path: url.pathname, status: response.status(), contentType });
-        if (response.ok() && /^image\//.test(contentType) && /\/(kh|vt|tile)(\/|$)/.test(url.pathname) && !(await response.finished())) provider.tileCount++;
+        if (response.ok() && /^image\//.test(contentType) && /\/(kh|vt|tile)(\/|$)/.test(url.pathname) && !(await response.finished())) { provider.tileCount++; provider.lastTileAt = Date.now(); }
       });
       try {
         await openHole(f.page);
@@ -474,6 +481,23 @@ async function run() {
         await noOverflow(f.page);
         await f.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         await f.page.screenshot({ path: path.join(out, "google-hole-map.png"), fullPage: false });
+        await f.page.screenshot({ path: path.join(out, "google-earls-hole-1.png"), fullPage: false });
+        assert.match(await f.page.locator("[data-hole-course]").textContent(), /Earls/);
+        assert.match(await f.page.locator("[data-hole-stats]").textContent(), /423/);
+        await f.page.locator("[data-hole-grid-back]").click();
+        await f.page.locator("[data-hole='10']").click();
+        await f.page.locator("[data-hole-screen]").waitFor();
+        assert.equal(await f.page.locator("[data-hole-title]").textContent(), "Hole 10");
+        assert.match(await f.page.locator("[data-hole-stats]").textContent(), /568/);
+        // Let the real camera and newly requested tiles settle before inspecting
+        // the second half of the course; this is bounded and performs no writes.
+        const changedAt = Date.now(), settleDeadline = changedAt + 10000;
+        while (Date.now() < settleDeadline && (Date.now() - changedAt < 1500 || Date.now() - provider.lastTileAt < 750)) await new Promise(resolve => setTimeout(resolve, 150));
+        await f.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await f.page.screenshot({ path: path.join(out, "google-earls-hole-10.png"), fullPage: false });
+        assert.equal(await f.page.locator(".gm-err-content,.gm-err-message").count(), 0);
+        assert.deepEqual(provider.console, []);
+        await noOverflow(f.page);
         await clean(f);
       } finally {
         fs.writeFileSync(path.join(out, "google-map-provider.json"), JSON.stringify(provider, null, 2));

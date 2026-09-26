@@ -26,7 +26,7 @@ async function action(b, name, payload = {}) {
 export function mountHoleSetup(form, b) {
   const section = document.createElement('section');
   section.className = 'full hole-setup';
-  section.innerHTML = `<h3>Course hole maps</h3><p>Course search finds the available scorecards and matches numbered holes to mapped tee and green areas. A map is offered only when all 18 holes pass the checks.</p><input type="hidden" name="course_layout_id"><label data-scorecard-field hidden>Course and tees<select data-scorecard-choice><option value="">Choose the course and tees</option></select></label><p data-course-preparation role="status">Choose the course above to find its hole maps.</p><p data-layout-status role="status"></p><div class="actions"><button type="button" class="secondary" data-course-prepare disabled>Find hole positions</button><button type="button" class="secondary" data-preview-layout hidden>Preview hole maps</button><button type="button" data-confirm-maps hidden>Confirm hole maps</button></div><p class="muted" data-map-source hidden></p>`;
+  section.innerHTML = `<h3>Course hole maps</h3><p>Course search finds the available scorecards and matches numbered holes to mapped tee and green areas. A map is offered only when all 18 holes pass the checks.</p><input type="hidden" name="course_layout_id"><label data-scorecard-field hidden>Course and tees<select data-scorecard-choice><option value="">Choose the course and tees</option></select></label><details data-scorecard-warnings hidden><summary>Some course or tee options are unavailable</summary><p class="muted"></p></details><p data-course-preparation role="status">Choose the course above to find its hole maps.</p><p data-layout-status role="status"></p><div class="actions"><button type="button" class="secondary" data-course-prepare disabled>Find hole positions</button><button type="button" class="secondary" data-preview-layout hidden>Preview hole maps</button><button type="button" data-confirm-maps hidden>Confirm hole maps</button></div><p class="muted" data-map-source hidden></p>`;
   form.querySelector('.actions.full').before(section);
   const $ = selector => section.querySelector(selector), select = $('[data-scorecard-choice]'), hidden = $('[name=course_layout_id]'), message = $('[data-course-preparation]'), status = $('[data-layout-status]');
   let course = null, draft = null, confirmed = null, cards = [], key = '', sequence = 0, busy = false, loadFailed = false;
@@ -51,7 +51,7 @@ export function mountHoleSetup(form, b) {
   }
   function reset(value = null) {
     sequence++; busy = false; loadFailed = false; course = courseDetails(value);
-    clear(); cards = []; key = ''; select.innerHTML = '<option value="">Choose the course and tees</option>';
+    clear(); cards = []; key = ''; $('[data-scorecard-warnings]').hidden = true; select.innerHTML = '<option value="">Choose the course and tees</option>';
     message.textContent = course?.place_id ? 'Find fresh hole positions for this course. Earlier incomplete layouts will not be reused.' : 'Choose the course above to find its hole maps.';
     render();
   }
@@ -71,6 +71,9 @@ export function mountHoleSetup(form, b) {
       const result = await b.service('prepare_course', { place_id: requested, ...(selectedKey ? { scorecard_key: selectedKey } : {}) });
       if (token !== sequence || social()) return;
       fillChoices(result.scorecards, result.selected_key || selectedKey);
+      const warnings = (result.warnings || []).filter(text => /unavailable because|invalid|excluded|could not be loaded/i.test(text));
+      $('[data-scorecard-warnings]').hidden = result.status === 'ready' || !warnings.length;
+      $('[data-scorecard-warnings] p').textContent = warnings.join(' ');
       if (result.status === 'ready') {
         if (!completeCourseMap(result.draft) || result.draft.place_id !== requested) throw new Error('The returned course map did not pass all 18 hole checks. No map has been created.');
         draft = result.draft;
