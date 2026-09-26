@@ -17,6 +17,11 @@ do $$declare payload jsonb; result jsonb; rev integer; eid bigint; published jso
  if jsonb_array_length(public.baseline_league_board()->'rounds')<>0 then raise exception 'Draft leaked';end if;
  begin perform public.baseline_league_save_round(eid,payload,null,true,rev);raise exception 'Stale overwrite allowed';exception when raise_exception then if sqlerrm<>'Scores or handicaps changed. Reload before saving' then raise;end if;end;
  rev:=(result->>'revision')::integer;
+ begin perform public.baseline_league_save_round((select id from public.baseline_events where round_number=2),payload,null,true,rev);raise exception 'Out-of-order publish allowed';exception when raise_exception then if sqlerrm<>'Publish earlier rounds first so handicaps are correct' then raise;end if;end;
+ begin perform public.baseline_league_save_round(eid,payload||jsonb_build_array(payload->0),null,true,rev);raise exception 'Duplicate score allowed';exception when raise_exception then if sqlerrm<>'Duplicate player' then raise;end if;end;
+ begin perform public.baseline_league_save_round(eid,jsonb_set(payload,'{0,status}','"pending"'),null,true,rev);raise exception 'Incomplete round allowed';exception when raise_exception then if sqlerrm<>'Complete every score or mark DNP before publishing' then raise;end if;end;
+ begin perform public.baseline_league_save_round(eid,(select jsonb_agg(v) from jsonb_array_elements(payload) with ordinality t(v,n) where n<=3),null,true,rev);raise exception 'Three-player handicap calculation allowed';exception when raise_exception then if sqlerrm<>'At least four played scores are needed for handicap calculation' then raise;end if;end;
+
  result:=public.baseline_league_save_round(eid,payload,null,true,rev);
  select r into published from jsonb_array_elements(result->'rounds') r where (r->>'round_number')::int=1;
  if (published->>'average')::int<>30 then raise exception 'Trimmed mean wrong';end if;

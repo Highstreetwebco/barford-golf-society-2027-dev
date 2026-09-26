@@ -822,7 +822,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Edit account", exact: true })
         .click();
       await page.getByLabel("Username", { exact: true }).fill("Renamed Member");
-      await page.getByLabel("Society handicap", { exact: true }).fill("18.2");
+      await page.getByLabel("Season starting handicap", { exact: true }).fill("18.2");
       await page.getByLabel("Administrator access", { exact: true }).check();
       page.once("dialog", (d) => d.accept());
       await page
