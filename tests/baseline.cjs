@@ -205,6 +205,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           bookings: model.guestBookings,
         });
       if (body.action === "create") {
+        model.guestCreates = (model.guestCreates || 0) + 1;
         model.guestLinks.push({ token, event_id: 999, claimed: false });
         return reply({ token, event_id: 999, host_name: "Test Member" });
       }
@@ -552,7 +553,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       return reply(
         u.searchParams.get("user_id") &&
           !u.searchParams.get("select")?.includes("baseline_events")
-          ? model.responses.find((r) => r.user_id === uid) || null
+          ? model.responses.find((r) => r.user_id === uid && (!u.searchParams.get("event_id") || "eq." + r.event_id === u.searchParams.get("event_id"))) || null
           : model.responses.map((r) =>
               u.searchParams.get("select")?.includes("baseline_events")
                 ? {
@@ -567,6 +568,11 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
     }
     if (p.endsWith("/baseline_tee_times")) return reply(model.groups);
     if (p.endsWith("/rpc/baseline_submit_rsvp")) {
+      model.rsvpAttempts = (model.rsvpAttempts || 0) + 1;
+      if (model.rsvpFailure) {
+        model.rsvpFailure = false;
+        return reply({ message: "Unable to save right now. Please try again." }, 503);
+      }
       model.payloads.push(body.payload);
       let r = model.responses.find((r) => r.event_id === body.payload.event_id);
       if (!r) {
@@ -708,7 +714,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         await page.getByRole("button", { name: "Menu", exact: true }).click();
         await page.getByRole("link", { name: "Events", exact: true }).click();
         await page
-          .getByRole("heading", { name: "Your next golf day." })
+          .getByRole("heading", { name: "The season ahead." })
           .waitFor();
       }
       await context.close();
@@ -723,7 +729,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
-      await page.goto(base + "event.html?id=999");
+      await page.goto(base + "index.html");
       await page
         .getByRole("button", { name: "Sign in to RSVP", exact: true })
         .click();
@@ -758,18 +764,20 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         path: path.join(out, `rsvp-form-${width}.png`),
         fullPage: true,
       });
-      await form
-        .getByRole("button", { name: "Save RSVP", exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: "Change booking", exact: true })
-        .waitFor();
+      model.rsvpFailure = true;
+      await form.getByRole("button", { name: "Save RSVP", exact: true }).click();
+      await form.getByText("Unable to save right now. Please try again.", { exact: true }).waitFor();
+      assert.equal(model.responses.length, 0, "Failed save must not appear as a confirmed booking");
+      assert.equal(await form.getByRole("radio", { name: "First", exact: true }).isChecked(), true, "Retry retains the chosen tee preference");
+      assert.equal(await form.getByRole("button", { name: "Save RSVP", exact: true }).isEnabled(), true);
+      await form.getByRole("button", { name: "Save RSVP", exact: true }).click();
+      await page.getByRole("button", { name: "Change RSVP", exact: true }).waitFor();
       assert.equal(model.payloads.length, 1);
       assert(!("name" in model.payloads[0]));
       assert(!("user_id" in model.payloads[0]));
       assert.equal(model.responses.length, 1);
       await page
-        .getByRole("button", { name: "Change booking", exact: true })
+        .getByRole("button", { name: "Change RSVP", exact: true })
         .click();
       await form
         .getByRole("radio", { name: "Yes, please", exact: true })
@@ -778,13 +786,11 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await form
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
-      await page
-        .getByText("Buggy requested · End tee time preference", { exact: true })
-        .waitFor();
+      await page.locator("#homeOperations").getByText("Buggy requested · Tee preference: End", { exact: true }).waitFor();
       assert.equal(model.responses.length, 1);
       assert.equal(model.payloads[1].preferred_time, "End");
       await page
-        .getByRole("button", { name: "Change booking", exact: true })
+        .getByRole("button", { name: "Change RSVP", exact: true })
         .click();
       await form
         .getByRole("radio", { name: "Not this time", exact: true })
@@ -794,12 +800,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
       await page
-        .getByRole("heading", { name: "Not playing", exact: true })
+        .getByRole("heading", { name: "You’re not booked", exact: true })
         .waitFor();
       assert.equal(model.payloads[2].attending, false);
       model.wait = true;
       await page
-        .getByRole("button", { name: "Change booking", exact: true })
+        .getByRole("button", { name: "Change RSVP", exact: true })
         .click();
       await form
         .getByRole("radio", { name: "Yes, I’m playing", exact: true })
@@ -812,13 +818,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
       await page
-        .getByRole("heading", { name: "On the waiting list", exact: true })
+        .getByRole("heading", { name: "You’re on the waiting list", exact: true })
         .waitFor();
-      assert.equal(
-        await page.locator("#event-998 button[data-rsvp]").count(),
-        0,
-      );
-      await page.locator("#event-999 summary").click();
+      assert.equal(new URL(page.url()).pathname, "/index.html", "RSVP and all edits stay on the homepage");
+      assert.equal(await page.locator(".rsvp-dialog[open]").count(), 0, "Successful RSVP closes its dialog");
+      assert.equal(model.payloads[3].preferred_time, "Middle");
+      assert.equal(model.responses[0].reserve, true);
       await page.screenshot({
         path: path.join(out, `event-saved-${width}.png`),
         fullPage: true,
@@ -1001,6 +1006,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         })),
       };
       await page.goto(base + "event.html?id=999");
+      await page.locator('[data-detail-section="buggy"] > summary').click();
       await page.getByText("Your partner is", { exact: false }).waitFor();
       await page
         .getByRole("button", { name: "I’ll book the buggy", exact: true })
@@ -1011,8 +1017,11 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         })
         .waitFor();
       assert.equal(await page.locator('a[href="tel:07000000002"]').count(), 1);
+      await page.locator('[data-detail-section="weather"] > summary').click();
+      await page.locator("[data-weather] .weather-summary").waitFor();
       assert.match(await page.locator("[data-weather]").innerText(), /40%/);
       assert.match(await page.locator("[data-weather]").innerText(), /09:32/);
+      await page.locator('[data-detail-section="travel"] > summary').click();
       const downloadPromise = page.waitForEvent("download");
       await page
         .getByRole("button", { name: "Add to phone calendar", exact: true })
@@ -1864,25 +1873,25 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         buggies: [],
         handicap_history: [],
       };
-      await page.goto(base + "event.html?id=999");
-      await page
-        .getByRole("button", { name: "Save your RSVP", exact: true })
-        .click();
+      await page.goto(base + "index.html");
+      await page.locator("[data-home-rsvp]").click();
       await page
         .getByRole("radio", { name: "Yes, I’m attending", exact: true })
         .check();
       assert.equal(await page.locator("[data-playing]").isVisible(), false);
       assert.equal(await page.locator("[data-weather]").count(), 0);
+      await page.locator(".rsvp-form").getByRole("button", { name: "Save RSVP", exact: true }).click();
+      assert.equal(model.payloads.length, 0, "Cancellation terms require explicit consent before RSVP saves");
       await page.getByLabel("I accept the cancellation terms").check();
       await page
         .locator(".rsvp-form")
         .getByRole("button", { name: "Save RSVP", exact: true })
         .click();
-      await page
-        .getByRole("button", { name: "Withdraw", exact: true })
-        .waitFor();
+      await page.getByRole("button", { name: "Change RSVP", exact: true }).waitFor();
       assert.equal(model.payloads.at(-1).buggy, false);
       assert.equal(model.payloads.at(-1).accept_terms, true);
+      await page.goto(base + "event.html?id=999");
+      await page.locator('[data-detail-section="booking"] > summary').click();
       await page
         .getByRole("button", { name: "I’ve sent the transfer", exact: true })
         .click();
@@ -1896,9 +1905,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         path: path.join(out, `operations-social-payment-${width}.png`),
         fullPage: true,
       });
-      await page.getByRole("button", { name: "Withdraw", exact: true }).click();
+      await page.goto(base + "index.html");
+      await page.locator("[data-home-rsvp]").click();
+      await page.getByRole("radio", { name: "Not this time", exact: true }).check();
+      await page.getByRole("button", { name: "Save changes", exact: true }).click();
       await page
-        .getByRole("heading", { name: "Not playing", exact: true })
+        .getByRole("heading", { name: "You’re not booked", exact: true })
         .waitFor();
       await page.goto(base + "admin.html");
       await page
@@ -1988,10 +2000,13 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         }),
       );
       await p.goto(base + "index.html");
-      await p
-        .getByRole("button", { name: "Invite a guest", exact: true })
-        .click();
+      await p.locator("#nextEvent [data-home-invite]").waitFor();
+      assert.equal(m.guestCreates || 0, 0, "Opening the homepage must not generate guest invitations");
+      assert.equal(await p.locator("#nextEvent [data-home-rsvp]").count(), 1, "RSVP and invitation sit beside the same event");
+      await p.locator("#nextEvent [data-home-invite]").click();
+      assert.equal(new URL(p.url()).pathname, "/index.html", "Guest invitation starts directly on the homepage");
       await p.getByRole("dialog", { name: "Share guest invitation" }).waitFor();
+      assert.equal(m.guestCreates, 1, "Only the explicit invitation click creates a link");
       assert.match(
         await p.getByLabel("Invitation message").inputValue(),
         /£45.00/,
@@ -2086,6 +2101,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           exact: true,
         })
         .click();
+      await gp.locator('[data-detail-section="booking"] > summary').click();
       await gp
         .getByText(
           "Pay Barford Treasurer · sort code 00-00-00 · account 00000000",
@@ -2125,6 +2141,170 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       });
       await guestCtx.close();
     }
+    // The redesigned browse/detail hierarchy stays compact while retaining every event tool.
+    // The cover is the official Earls course photograph (visual fixture only, not a site asset).
+    const visualCover = "https://tcc-one-production-storage.s3.eu-west-2.amazonaws.com/sections/01KCVEZ11KQ91GCSK4TF18KA6V.webp";
+    for (const width of [320, 390, 1365]) {
+      const context = await browser.newContext({ viewport: { width, height: 960 }, serviceWorkers: "block" });
+      const model = await mocks(context, { signedIn: true });
+      const page = await context.newPage();
+      const errors = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      const ev = {
+        ...fixture,
+        event_type: "league",
+        round_number: 3,
+        course_name: "The Warwickshire · Earls Course",
+        location: "The Warwickshire · Earls Course",
+        cover_url: visualCover,
+        cover_credit: "The Club Company — official Earls course photograph",
+        member_price: 45,
+        guest_price: 55,
+        address: "Leek Wootton, Warwick, CV35 7QT",
+        course_link: "https://www.theclubcompany.com/the-warwickshire/golf/golf-courses",
+        course_phone: "01926 409409",
+        refreshment_time: "09:00",
+        included: "Coffee, bacon roll and 18 holes",
+        practice: "Driving range and practice putting green",
+        cancellation_terms: "Contact the organiser at least seven days before the round.",
+        payment_due: "2027-06-18",
+        rsvp_deadline: "2027-06-11",
+        event_notice: "Please be ready on the first tee ten minutes before your time.",
+        video_link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      };
+      model.events = [ev, { ...ev, id: 998, name: "August summer golf", date: "2027-08-20", first_time: "11:00" }];
+      model.responses = [{ id: 111, event_id: 999, user_id: uid, name: "Test Member", attending: true, reserve: false, buggy: true, preferred_time: "Middle" }];
+      model.groups = [{ event_id: 999, group_number: 1, tee_time: "10:08", players: [{ user_id: uid, name: "Test Member", type: "buggy" }, { user_id: "partner", name: "Partner Member", type: "buggy" }] }];
+      model.buggy = { status: "paired", partner_name: "Partner Member", partner_phone: "07000000002", booking_name: "Partner Member", booking_me: false };
+      model.course = {
+        description: "A woodland course with tree-lined fairways and water in play on several holes.",
+        rating: 4.5,
+        review_count: 123,
+        reviews: [{ text: "Well-kept greens and a friendly welcome", author: "Course reviewer", rating: 5, url: "https://maps.google.com/" }],
+        maps_url: "https://maps.google.com/",
+      };
+      model.ops = { settings: { bank_instructions: "Society transfer details", guest_policy: "Organisers approve guest handicaps." }, charges: [{ id: 1, event_id: 999, user_id: uid, label: fixture.name, amount: 45, received: 0 }], guests: [], changes: [], pairs: [], players: [] };
+      await page.goto(base + "index.html");
+      await page.locator("#homeOperations").getByRole("heading", { name: "You’re booked", exact: true }).waitFor();
+      if (width === 320) {
+        const redirects = await page.evaluate(() => {
+          const original = location.href;
+          const values = ["index.html?event=998#rsvp", "https://example.invalid/", "//example.invalid/"];
+          const resolved = values.map(value => {
+            history.replaceState(null, "", "index.html?next=" + encodeURIComponent(value));
+            return window.barford.nextPath();
+          });
+          history.replaceState(null, "", original);
+          return resolved;
+        });
+        assert.deepEqual(redirects, ["index.html?event=998#rsvp", "events.html", "events.html"], "Sign-in/signup preserve the chosen local event and reject external redirects");
+      }
+      assert.equal(await page.locator("#nextEvent [data-home-rsvp]").count(), 1);
+      assert.equal(await page.locator("#nextEvent [data-home-invite]").count(), 1);
+      assert.equal(await page.locator("#nextEvent [data-weather], #nextEvent [data-course-live]").count(), 0);
+      await page.screenshot({ path: path.join(out, `simple-home-populated-${width}.png`), fullPage: true });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, "Home quick actions fit narrow screens");
+      await page.goto(base + "events.html");
+      const poster = page.locator('a.event-poster-card[href="event.html?id=999"]');
+      await poster.waitFor();
+      assert.equal(await poster.locator(".event-poster-image").getAttribute("src"), visualCover, "Events uses the uploaded cover as the card background");
+      assert.match(await poster.innerText(), /The Warwickshire Golf Day/);
+      assert.match(await poster.innerText(), /10:00/);
+      assert.match(await poster.innerText(), /45/);
+      assert.match(await poster.innerText(), /23.*24/);
+      assert.equal(await poster.locator("button, form, details").count(), 0, "Summary card has one navigation action");
+      assert.equal(await page.locator(".event-poster-card").count(), 2);
+      await page.waitForFunction(() => Array.from(document.querySelectorAll(".event-poster-image")).every(img => img.complete));
+      const loadedPhoto = await poster.locator(".event-poster-image").evaluate(img => img.naturalWidth > 0);
+      await page.screenshot({ path: path.join(out, `simple-events-populated-${width}.png`), fullPage: true });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, "Photo summary cards fit narrow screens");
+      // Click the edge of the cover, away from its title: the entire card must navigate.
+      await poster.click({ position: { x: 18, y: 18 } });
+      await page.waitForURL("**/event.html?id=999");
+      await page.locator(".event-detail-hero h1").waitFor();
+      await page.locator("#eventOperations .payment-card").waitFor({ state: "attached" });
+      assert.equal(await page.locator("h1").count(), 1, "The event title appears once");
+      assert.equal(await page.locator(".rsvp-form, [data-home-invite], [data-rsvp], #quickRsvp").count(), 0, "Event details have no duplicate RSVP or invite interface");
+      assert.equal(await page.getByRole("button", { name: "Invite a guest", exact: true }).count(), 0);
+      assert.equal(await page.locator(".event-info-section[open]").count(), 0, "Detailed sections start collapsed");
+      assert.equal(await page.locator(".event-info-section").count(), 6, "Travel, course, weather, players, booking and requested buggy details are retained");
+      const facts = await page.locator(".event-essentials").innerText();
+      assert.match(facts, /45/);
+      assert.match(facts, /55/);
+      assert.match(facts, /10:00/);
+      assert.match(facts, /23.*24/);
+      await page.screenshot({ path: path.join(out, `simple-event-collapsed-${width}.png`), fullPage: true });
+      for (const name of ["travel", "course", "weather", "players", "booking", "buggy"])
+        await page.locator(`[data-detail-section="${name}"] > summary`).click();
+      await page.locator('[data-detail-section="course"]').getByText(model.course.description, { exact: true }).waitFor();
+      await page.locator('[data-detail-section="players"]').getByText("10:08", { exact: false }).first().waitFor();
+      assert.equal(await page.getByRole("link", { name: "Google Maps ↗", exact: true }).count(), 1);
+      assert.equal(await page.getByRole("link", { name: "Apple Maps ↗", exact: true }).count(), 1);
+      assert.equal(await page.getByRole("link", { name: "Waze ↗", exact: true }).count(), 1);
+      assert.equal(await page.getByRole("button", { name: "Add to phone calendar", exact: true }).count(), 1);
+      assert.equal(await page.locator("[data-play-video]").count(), 1);
+      assert.match(await page.locator('[data-detail-section="course"]').innerText(), /Course reviewer/);
+      assert.match(await page.locator('[data-detail-section="booking"]').innerText(), /Society transfer details/);
+      assert.match(await page.locator('[data-detail-section="booking"]').innerText(), /seven days/);
+      assert.match(await page.locator('[data-detail-section="buggy"]').innerText(), /Partner Member is booking the buggy/);
+      assert.equal(await page.locator('a[href="tel:07000000002"]').count(), 1);
+      assert.equal(await page.locator('a[href="tel:01926409409"]').count() >= 1, true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 2), false, "Expanded event details fit narrow screens");
+      await page.screenshot({ path: path.join(out, `simple-event-expanded-${width}.png`), fullPage: true });
+      assert.deepEqual(errors, []);
+      report.push({ page: "simple-home-photo-events-collapsible-complete-details", width, status: "passed", loadedPhoto });
+      await context.close();
+    }
+    // An event-details link must RSVP to that event, even when it is not the next event.
+    {
+      const context = await browser.newContext({ viewport: { width: 390, height: 960 }, serviceWorkers: "block" });
+      const model = await mocks(context, { signedIn: true });
+      model.events = [fixture, { ...fixture, id: 996, name: "Later summer round", date: "2027-08-20", guest_price: null }];
+      const page = await context.newPage();
+      await page.goto(base + "index.html?event=996#rsvp");
+      const form = page.locator("#form-996 form");
+      await form.waitFor();
+      assert.match(await form.innerText(), /Later summer round/);
+      await form.getByRole("radio", { name: "Yes, I’m playing", exact: true }).check();
+      await form.getByRole("button", { name: "Save RSVP", exact: true }).click();
+      await page.getByRole("button", { name: "Change RSVP", exact: true }).waitFor();
+      assert.equal(model.payloads[0].event_id, 996, "The selected event survives the homepage handoff");
+      assert.equal(model.responses.some(row => row.event_id === 999), false, "The next event was not booked accidentally");
+      const invite = page.locator("#nextEvent [data-home-invite]");
+      assert.equal(await invite.isDisabled(), true, "Guest invitations cannot begin before a guest price is set");
+      assert.equal(model.guestCreates || 0, 0);
+      report.push({ page: "selected-event-home-rsvp-and-unpriced-guest-guard", width: 390, status: "passed" });
+      await context.close();
+    }
+    // Guest bookings remain invitation-scoped when RSVP moves onto Home.
+    {
+      const context = await browser.newContext({ viewport: { width: 390, height: 960 }, serviceWorkers: "block" });
+      const model = await mocks(context, { signedIn: true });
+      const page = await context.newPage();
+      model.guestCategory = "guest";
+      model.guestBookings = [];
+      model.events = [fixture, { ...fixture, id: 996, name: "A round without an invitation", date: "2027-08-20" }];
+      await page.goto(base + "index.html");
+      await page.getByRole("heading", { name: "Your next invitation starts here.", exact: true }).waitFor();
+      assert.equal(await page.locator("[data-home-rsvp], [data-home-invite]").count(), 0, "Guests with no invitation cannot book the next member event");
+      assert.equal((await page.locator("#nextEvent").innerText()).includes(fixture.name), false);
+      await page.goto(base + "event.html?id=996#rsvp");
+      await page.getByText("A member needs to invite you to this event. Open their invitation link to book your guest place.", { exact: true }).waitFor();
+      assert.equal(await page.locator(".rsvp-form").count(), 0, "Legacy event links cannot bypass the guest invitation requirement");
+      assert.equal(model.payloads.length, 0);
+      model.guestBookings = [{ event_id: 999, host_name: "Gary Host", status: "approved", attending: false, reserve: false, guest_price: 45 }];
+      model.responses = [{ id: 111, event_id: 999, user_id: uid, name: "Test Member (guest)", attending: false, reserve: false, buggy: false, guest_host_id: "host" }];
+      await page.goto(base + "index.html?event=999#rsvp");
+      const form = page.locator("#form-999 form");
+      await form.waitFor();
+      await form.getByRole("radio", { name: "Yes, I’m playing", exact: true }).check();
+      await form.getByRole("button", { name: "Save changes", exact: true }).click();
+      await page.locator("#homeOperations").getByRole("heading", { name: "You’re booked", exact: true }).waitFor();
+      assert.equal(model.payloads[0].event_id, 999, "A withdrawn invited guest can rejoin their own event");
+      assert.equal(await page.locator("[data-home-invite]").count(), 0, "Guests cannot invite more guests");
+      report.push({ page: "homepage-guest-invitation-scope-and-rejoin", width: 390, status: "passed" });
+      await context.close();
+    }
     // New visual layout: narrow phone, tablet, desktop and dark mode.
     for (const width of [320, 768, 1365]) {
       const context = await browser.newContext({
@@ -2141,13 +2321,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .filter({ hasText: /available|spaces|places|slots/i })
         .waitFor();
       assert.equal(
-        await page.locator("#homeExperience [data-weather]").count(),
+        await page.locator("[data-weather]").count(),
         0,
-        "Forecast loads on demand",
+        "Detailed forecast belongs on the event page",
       );
-      await page.locator(".home-guide > summary").click();
-      await page.locator("#homeExperience [data-weather]").waitFor();
-      await page.locator(".home-guide > summary").click();
+      assert.equal(await page.locator(".home-guide").count(), 0, "The homepage no longer duplicates the course guide");
+      assert.equal(await page.locator("[data-home-rsvp]").count(), 1, "One direct RSVP action beside the next event");
       await page
         .getByRole("button", { name: "Dark mode", exact: true })
         .click();
@@ -2172,7 +2351,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           .getByRole("link", { name: "Events tab", exact: true })
           .click();
         await page
-          .getByRole("heading", { name: "Your next golf day." })
+          .getByRole("heading", { name: "The season ahead." })
           .waitFor();
         assert.equal(
           await page
@@ -2183,7 +2362,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       }
       assert.deepEqual(errors, []);
       report.push({
-        page: "redesign-responsive-dark-mode-lazy-guide",
+        page: "redesign-responsive-dark-mode-simple-home",
         width,
         status: "passed",
       });

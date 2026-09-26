@@ -1,0 +1,66 @@
+/* Quick member actions, shared with the RSVP dialog on older event links. */
+.page-index.home-member .home-hero {
+  display: block;
+  min-height: 0;
+  padding: 22px 28px;
+  margin-bottom: 24px;
+}
+.page-index.home-member .home-hero .hero-copy { padding: 0; }
+.page-index.home-member .home-hero h1 { font-size: clamp(1.6rem, 4vw, 2.25rem); margin: 5px 0 0; line-height: 1.15; }
+.page-index.home-member .home-hero .season-panel,
+.page-index.home-member .home-hero .hero-copy > p:not(.eyebrow),
+.page-index.home-member .home-hero .actions,
+.page-index.home-member .home-hero .season-chips { display: none; }
+.page-index.home-member .home-hero .eyebrow { margin: 0; font-size: .67rem; }
+.page-index.home-member .home-hero + .section { margin-top: 0; }
+.home-event-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 8px; }
+.home-event-actions button { min-height: 48px; flex: 0 1 auto; }
+.home-event-details { display: inline-flex; align-items: center; gap: 10px; font-weight: 750; padding: 8px 0 4px; }
+.home-invite-note { margin: 8px 0 14px; font-size: .88rem; }
+[data-home-status]:empty { display: none; }
+.home-invite-management { border-top: 1px solid var(--line); padding: 16px 0; margin-top: 18px; }
+.home-invite-management summary { font-weight: 750; cursor: pointer; }
+.home-invite-management .response-row { min-width: 0; flex-wrap: wrap; gap: 10px; }
+.home-invite-management .response-row > span { flex-basis: 100%; }
+#homeBuggy[hidden], .home-hole-action[hidden] { display: none; }
+#homeOperations .booking-status h2 { font-size: 1.35rem; }
+#homeOperations .booking-status { margin-bottom: 10px; }
+#homeOperations [data-guest-invites][hidden] { display: none; }
+.rsvp-dialog {
+  width: min(540px, calc(100% - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.rsvp-dialog::backdrop { background: rgb(9 26 43 / .62); }
+.rsvp-dialog .rsvp-form { margin: 0; padding: 0; border: 0; background: none; }
+.rsvp-dialog h2 { margin: 0 0 6px; font-size: 1.7rem; }
+.rsvp-dialog .rsvp-event-name { margin: 0 0 14px; color: var(--muted); font-size: .95rem; }
+.rsvp-dialog .identity { margin: 0 0 20px; font-size: .85rem; }
+.rsvp-dialog fieldset { min-width: 0; margin-bottom: 20px; }
+.rsvp-dialog legend { margin-bottom: 9px; font-weight: 750; }
+.rsvp-dialog .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.rsvp-dialog .choices > label { flex: 1 1 40%; min-width: 0; }
+.rsvp-dialog .choices span { padding: 11px 12px; text-align: center; min-height: 44px; }
+.rsvp-dialog [data-playing] > fieldset:nth-child(2) .choices > label { flex-basis: calc(50% - 8px); }
+.rsvp-dialog .check { line-height: 1.45; align-items: flex-start; }
+.rsvp-dialog .check input { flex-shrink: 0; margin-top: 4px; }
+.rsvp-dialog small { display: block; color: var(--muted); margin: 10px 0 16px; }
+.rsvp-dialog .actions { margin-top: 22px; gap: 10px; }
+.rsvp-dialog .actions button { min-height: 48px; flex: 1; }
+.rsvp-dialog [hidden] { display: none !important; }
+.rsvp-dialog .form-status:empty { display: none; }
+@media (max-width: 600px) {
+  .page-index.home-member .home-hero { padding: 18px 20px; margin: 16px 0 22px; border-radius: 18px; }
+  .page-index.home-member .home-hero h1 { font-size: 1.7rem; }
+  .page-index.home-member #nextEvent { padding: 20px 16px; }
+  .home-event-actions button { flex: 1 1 110px; padding: 12px 14px; }
+  .home-event-actions { gap: 8px; }
+  .home-member-grid > .panel { padding: 18px 15px; }
+  .rsvp-dialog { padding: 22px 18px; }
+}

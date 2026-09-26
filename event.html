@@ -15,8 +15,10 @@
     <link rel="apple-touch-icon" href="icon-logo.png" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
-    <script src="assets/js/baseline.js?v=2027-results-1" defer></script>
-    <script type="module" src="assets/js/events.js?v=2027-results-1"></script>
+    <link rel="stylesheet" href="assets/css/home-booking.css?v=2027-simple-events-1" />
+    <link rel="stylesheet" href="assets/css/event-pages.css?v=2027-simple-events-1" />
+    <script src="assets/js/baseline.js?v=2027-simple-events-1" defer></script>
+    <script type="module" src="assets/js/events.js?v=2027-simple-events-1"></script>
   </head>
   <body class="page-event">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -61,28 +63,12 @@
       </div>
     </header>
     <main id="main" class="container">
-      <div class="page-heading">
-        <p class="eyebrow">THE 2027 SEASON</p>
-        <h1>Your next golf day.</h1>
-        <p class="lede">
-          Choose an event, save your RSVP and we’ll see you on the first tee.
-        </p>
-      </div>
-      <div class="toolbar">
-        <div class="segmented" aria-label="Event filter">
-          <button class="active" data-filter="upcoming" aria-pressed="true">
-            Upcoming</button
-          ><button data-filter="past" aria-pressed="false">Past events</button>
-        </div>
-        <a class="button secondary" href="admin.html" data-admin hidden
-          >Manage events</a
-        >
-      </div>
+      <nav class="event-back" aria-label="Event navigation"><a href="events.html">← All events</a><a href="index.html">Home</a></nav>
       <p class="notice" id="memberNotice" hidden>
         Sign in to save your RSVP and see who’s playing.
         <a href="signup.html">Create an account</a> if you’re new here.
       </p>
-      <div id="eventList" class="stack" aria-live="polite">Loading events…</div>
+      <div id="eventList" class="stack" aria-live="polite">Loading event…</div>
     </main>
     <footer class="site-footer">
       <div>

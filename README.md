@@ -99,7 +99,7 @@ Database coverage: `tests/committee-operations.sql` and existing scoring/member 
 
 ## Shared guest invitations
 
-Home and event pages now offer **Invite a guest** once the organiser sets the event’s guest price. A generated message has **Send invite** (native device sharing), WhatsApp fallback and copy controls. No message is sent automatically. Each link admits one guest, belongs to one host and event, can be revoked before use, and closes with bookings. The opaque token stays in the URL fragment.
+The homepage offers **Invite a guest** beside the selected event once the organiser sets the event’s guest price. A generated message has **Send invite** (native device sharing), WhatsApp fallback and copy controls. No message is sent automatically. Each link admits one guest, belongs to one host and event, can be revoked before use, and closes with bookings. The opaque token stays in the URL fragment.
 
 `guest.html` collects name, mobile, password, stated handicap, optional portrait, buggy preference and cancellation acceptance. The validated account trigger creates the guest account and RSVP in one transaction. Existing accounts can sign in and accept without creating another account. Capacity and waiting-list order are enforced; waiting guests are charged only on promotion. New guest accounts do not receive annual membership charges. The guest rate, private transfer instructions and reference are shown with their booking; the guest homepage follows their invited round.
 
@@ -122,3 +122,9 @@ On the event date in Europe/London, signed-in members see **View hole** on the h
 Layouts and audit data live in `baseline_private`. `baseline_course_layout` checks active membership/admin access, redacts unreviewed coordinates for members, and uses revisions to reject concurrent layout saves. SQL checks in `tests/course-layout.sql` roll back all fixtures. `tests/hole-view.cjs` exercises event-day gating, map/GPS states and mobile presentation with mocked location and Google Maps; a physical on-course phone check is still needed to assess real GPS accuracy.
 
 Course preparation coverage: `tests/course-mapping.mjs` checks boundary selection, duplicate hole numbers, partial coverage, scorecard alignment, response bounds and provider fallback. `tests/course-preparation.sql` verifies metadata, matching, member redaction/provenance and Storage policies in a rolled-back transaction. `tests/event-setup.cjs` checks practical event fields, photo validation/retry, stale course responses, legacy restoration, partial mapping and scorecard changes. Public map attribution is retained for OSM-derived geometry.
+
+## Simpler member event journey
+
+Home puts RSVP and guest invitations next to the event. RSVP opens a small dialog on the same page, using the existing one-account-per-event booking procedure, cancellation terms and waiting list. The member can change or withdraw the same booking. Links to a different round use `index.html?event=ID#rsvp` and must match that event, without silently substituting the next round.
+
+Events are full-card links with the uploaded course photograph behind a short date, tee-time, price and availability summary. The dedicated event page holds the full information in expandable sections, including travel, calendar, course preview, weather, players and private booking details. Legacy event RSVP links continue to work.

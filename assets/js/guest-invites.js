@@ -16,6 +16,7 @@ export function inviteURL(token) {
 export function shareInvite(ev, token, host) {
   const url = inviteURL(token);
   const message = `${host} has invited you to join Barford Golf Society for ${ev.name} on ${b.date(ev.date)}${ev.first_time ? `, first tee ${ev.first_time}` : ""}.\n\nGuest price: ${b.money(ev.guest_price)}. Create your account and join this round using the link below. We’ll try to place you in the same tee group as your host. Places are subject to availability.\n\n${url}`;
+  const trigger = document.activeElement;
   const dialog = document.createElement("dialog");
   dialog.className = "invite-dialog";
   dialog.setAttribute("aria-label", "Share guest invitation");
@@ -23,7 +24,11 @@ export function shareInvite(ev, token, host) {
   document.body.append(dialog);
   dialog.showModal();
   dialog.querySelector("[data-close]").onclick = () => dialog.close();
-  dialog.onclose = () => dialog.remove();
+  dialog.onclose = () => {
+    dialog.remove();
+    if (trigger?.isConnected && !trigger.disabled) trigger.focus({ preventScroll: true });
+    else document.querySelector("[data-home-invite]")?.focus({ preventScroll: true });
+  };
   const status = dialog.querySelector("[role=status]");
   const fallback = () => {
     dialog.querySelector("[data-fallback]").hidden = false;
@@ -58,7 +63,9 @@ export function shareInvite(ev, token, host) {
     }
   };
 }
-export async function mountGuestInvites(area, ev, category = "member") {
+export async function mountGuestInvites(area, ev, category = "member", { showCreate = true, showManagement = true } = {}) {
+  if (!area) return;
+  area.hidden = false;
   let data;
   try {
     data = await guestAction("mine", { event_id: ev.id });
@@ -70,26 +77,22 @@ export async function mountGuestInvites(area, ev, category = "member") {
     area.innerHTML = `<h3>Your guest place</h3><p>Invited by ${e(booking.host_name)} · Guest price ${b.money(booking.guest_price)}</p><p>${booking.reserve ? "Waiting list — no payment is due until your place is confirmed." : booking.attending ? "We’ll try to place you in your host’s tee group." : "You have withdrawn from this round."}</p>${booking.status === "pending" ? '<p class="notice">Your handicap is awaiting committee approval. Your booking is saved.</p>' : ""}`;
     return;
   }
-  if ((data.category || category) === "guest" || ev.cancelled) {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+  const closed = ev.cancelled || ev.date < today || (ev.rsvp_deadline && ev.rsvp_deadline < today);
+  const links = (data.links || []).filter((l) => !l.revoked);
+  if ((data.category || category) === "guest" || closed || (!showCreate && (!showManagement || !links.length))) {
     area.hidden = true;
     return;
   }
-  area.innerHTML = `<h3>Bring a guest</h3><p>${ev.guest_price == null ? "The organiser needs to confirm the guest price before invitations can be sent." : `Guest price: <strong>${b.money(ev.guest_price)}</strong>. Your guest fills in their own details. We’ll try to group you together.`}</p><button data-create-invite ${ev.guest_price == null ? "disabled" : ""}>Invite a guest</button><div data-invites>${(
-    data.links || []
-  )
-    .filter((l) => !l.revoked)
-    .map(
-      (l, i) =>
-        `<div class="response-row section"><span>${l.claimed ? `${e(l.guest_name)} (guest) has joined` : `Unused invitation ${i + 1}`}</span>${!l.claimed ? `<button class="secondary" data-reshare="${e(l.token)}">Share invite again</button><button class="text-button" data-revoke="${e(l.token)}">Cancel invite</button>` : ""}</div>`,
-    )
-    .join("")}</div><p role="status"></p>`;
-  area.querySelector("[data-create-invite]").onclick = async (event) => {
+  area.innerHTML = `${showCreate ? `<h3>Bring a guest</h3><p>${ev.guest_price == null ? "The organiser needs to confirm the guest price before invitations can be sent." : `Guest price: <strong>${b.money(ev.guest_price)}</strong>. Your guest fills in their own details. We’ll try to group you together.`}</p><button data-create-invite ${ev.guest_price == null ? "disabled" : ""}>Invite a guest</button>` : ""}${showManagement ? `<div data-invites>${links.map((l, i) => `<div class="response-row section"><span>${l.claimed ? `${e(l.guest_name)} (guest) has joined` : `Unused invitation ${i + 1}`}</span>${!l.claimed ? `<button class="secondary" data-reshare="${e(l.token)}">Share invite again</button><button class="text-button" data-revoke="${e(l.token)}">Cancel invite</button>` : ""}</div>`).join("")}</div>` : ""}<p role="status"></p>`;
+  const createButton = area.querySelector("[data-create-invite]");
+  if (createButton) createButton.onclick = async (event) => {
     const btn = event.currentTarget;
     btn.disabled = true;
     try {
       const link = await guestAction("create", { event_id: ev.id });
       shareInvite(ev, link.token, link.host_name);
-      await mountGuestInvites(area, ev, category);
+      await mountGuestInvites(area, ev, category, { showCreate, showManagement });
     } catch (err) {
       area.querySelector("[role=status]").textContent = err.message;
       btn.disabled = false;
@@ -111,7 +114,7 @@ export async function mountGuestInvites(area, ev, category = "member") {
       btn.disabled = true;
       try {
         await guestAction("revoke", { token: btn.dataset.revoke });
-        await mountGuestInvites(area, ev, category);
+        await mountGuestInvites(area, ev, category, { showCreate, showManagement });
       } catch (err) {
         area.querySelector("[role=status]").textContent = err.message;
         btn.disabled = false;

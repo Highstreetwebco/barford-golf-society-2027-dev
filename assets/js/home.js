@@ -1,153 +1,162 @@
 import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
-import { guestAction } from "./guest-invites.js?v=2027-results-1";
-import { mountEventOperations } from "./operations.js?v=2027-results-1";
+import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-simple-events-1";
+import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
-import {
-  mountExperience,
-  updateSlots,
-  londonToday,
-} from "./event-experience.js?v=2027-results-1";
+import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
+import { openRsvp, rsvpClosed } from "./rsvp.js?v=2027-simple-events-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 const personal = document.getElementById("personalResults");
-mountPersonalResults(personal, b);
-window.addEventListener("focus", () => mountPersonalResults(personal, b));
-setInterval(() => {
-  if (!document.hidden) mountPersonalResults(personal, b);
-}, 30000);
-if (b.state.user) {
+function memberWelcome() {
+  if (!b.state.user) return;
+  document.body.classList.add("home-member");
   const a = document.getElementById("homeAccount");
   a.textContent = "My account";
   a.href = "account.html";
-  document.querySelector(".home-hero h1").textContent =
-    "Welcome back, " +
-    (b.state.profile?.full_name?.split(" ")[0] || "golfer") +
-    ".";
+  document.querySelector(".home-hero h1").textContent = "Welcome back, " + (b.state.profile?.full_name?.split(" ")[0] || "golfer") + ".";
+  area.closest("section").after(personal);
 }
+memberWelcome();
+mountPersonalResults(personal, b);
+window.addEventListener("focus", () => mountPersonalResults(personal, b));
+setInterval(() => { if (!document.hidden) mountPersonalResults(personal, b); }, 30000);
 let guestHome = null;
 if (b.state.user) {
-  try {
-    guestHome = await guestAction("mine");
-  } catch {}
+  try { guestHome = await guestAction("mine"); } catch {}
 }
-const guestNext = (guestHome?.bookings || []).find(
-  (x) => x.attending || x.reserve,
-);
-let eventQuery = b.client
-  .from("events")
-  .select("*")
-  .gte("date", londonToday())
-  .eq("cancelled", false)
-  .order("date");
-if (guestHome?.category === "guest" && guestNext)
-  eventQuery = eventQuery.eq("id", guestNext.event_id);
-const { data, error } = await eventQuery.limit(1);
-if (error)
-  area.innerHTML = b.empty(
-    "Unable to load the next event.",
-    "Please try again shortly.",
-  );
-else if (!data?.length)
-  area.innerHTML = b.empty(
-    "A new season is taking shape.",
-    "The 2027 golf days will appear here as they’re announced. Create your account now so you’re ready for the first RSVP.",
-  );
+const requested = new URLSearchParams(location.search).get("event");
+const requestedId = requested && /^[1-9]\d*$/.test(requested) && Number.isSafeInteger(Number(requested)) ? Number(requested) : null;
+const guestNext = (guestHome?.bookings || []).find((x) => x.attending || x.reserve) || guestHome?.bookings?.[0];
+const unavailableRequest = requested !== null && (!requestedId || (guestHome?.category === "guest" && !(guestHome.bookings || []).some((x) => x.event_id === requestedId)));
+let eventQuery = b.client.from("events").select("*");
+if (requestedId) eventQuery = eventQuery.eq("id", requestedId);
+else {
+  eventQuery = eventQuery.gte("date", londonToday()).eq("cancelled", false).order("date");
+  if (guestHome?.category === "guest" && guestNext) eventQuery = eventQuery.eq("id", guestNext.event_id);
+}
+const { data, error } = b.state.user && !guestHome ? { data: null, error: new Error("Account details unavailable") } : unavailableRequest || (guestHome?.category === "guest" && !guestNext && !requestedId) ? { data: [], error: null } : await eventQuery.limit(1);
+if (error) area.innerHTML = b.empty("Unable to load the next event.", "Please try again shortly.");
+else if (!data?.length) area.innerHTML = b.empty(requested !== null ? "This event is unavailable." : guestHome?.category === "guest" ? "Your next invitation starts here." : "A new season is taking shape.", requested !== null ? "Choose another event from the Events page." : guestHome?.category === "guest" ? "Your invited rounds will appear here once you join them." : "The 2027 golf days will appear here as they’re announced.");
 else {
   const ev = data[0];
+  if (requestedId) {
+    document.querySelector("#nextEvent").closest("section").querySelector(".eyebrow").textContent = "YOUR SELECTED EVENT";
+    area.closest("section").querySelector("h2").textContent = "Your event.";
+  }
   area.classList.add("has-event");
-  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow">${b.escape(b.date(ev.date))}</p><h2>${b.escape(ev.name)}</h2></div><a class="button" href="event.html?id=${ev.id}#rsvp">RSVP & event details</a></div><div class="next-event-facts"><span><small>FIRST TEE</small><strong>${b.escape(ev.first_time || "To be announced")}</strong></span><span><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong></span><span><small>THE COURSE</small><strong>${b.escape(ev.location || ev.name)}</strong></span></div><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><details class="home-guide"><summary>Course guide, directions & forecast <span aria-hidden="true">↗</span></summary><div id="homeExperience"></div></details>`;
-  const holeArea = document.createElement('div');
-  holeArea.className = 'home-hole-action';
-  area.querySelector('.next-event-heading').after(holeArea);
+  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow" data-event-date></p><h2 data-event-name></h2></div></div><div class="home-event-actions" data-home-actions></div><p class="home-invite-note muted" data-invite-note hidden></p><p role="status" data-home-status></p><div class="next-event-facts"><span><small data-time-label>FIRST TEE</small><strong data-event-time></strong></span><span><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong></span><span><small>THE COURSE</small><strong data-event-course></strong></span></div><a class="home-event-details" href="event.html?id=${ev.id}">View event details <span aria-hidden="true">→</span></a><div class="home-hole-action"></div><details class="home-invite-management" hidden><summary>Your guest invitations</summary><div data-home-invites></div></details><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><section id="homeBuggy" class="panel section" hidden></section>`;
+  const actions = area.querySelector("[data-home-actions]");
+  const operationArea = document.getElementById("homeOperations");
+  const groupArea = document.getElementById("homeTeeGroup");
+  const buggyArea = document.getElementById("homeBuggy");
+  const inviteArea = area.querySelector("[data-home-invites]");
+  const inviteManagement = area.querySelector(".home-invite-management");
+  const options = { compact: true, showBookingLink: false, showInvites: false, showBrief: false };
+  let response = null;
+  let bookingRefresh = null;
+  let guestContext = guestHome;
+  let inviting = false;
+  let refreshing = false;
+  function updateFacts() {
+    area.querySelector("[data-event-date]").textContent = b.date(ev.date);
+    area.querySelector("[data-event-name]").textContent = ev.name;
+    area.querySelector("[data-event-time]").textContent = ev.first_time || "To be announced";
+    area.querySelector("[data-event-course]").textContent = ev.location || ev.course_name || ev.name;
+    area.querySelector("[data-time-label]").textContent = ev.event_type === "social" ? "START TIME" : "FIRST TEE";
+  }
+  function renderActions() {
+    const focusedAction = actions.contains(document.activeElement) ? (document.activeElement.hasAttribute("data-home-invite") ? "[data-home-invite]" : "[data-home-rsvp]") : null;
+    const closed = rsvpClosed(ev);
+    const guestClosed = closed || (ev.rsvp_deadline && ev.rsvp_deadline < londonToday());
+    const canInvite = !!b.state.user && guestContext && guestContext.category !== "guest" && !guestClosed;
+    const note = area.querySelector("[data-invite-note]");
+    actions.innerHTML = `${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change RSVP" : "RSVP"}</button>`}${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
+    note.hidden = !canInvite || ev.guest_price != null;
+    note.textContent = "The organiser needs to confirm the guest price before invitations can be sent.";
+    const rsvpButton = actions.querySelector("[data-home-rsvp]");
+    if (rsvpButton) rsvpButton.onclick = () => openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await updateSlots(ev, area); } });
+    const inviteButton = actions.querySelector("[data-home-invite]");
+    if (inviteButton) inviteButton.onclick = async () => {
+      if (inviting) return;
+      inviting = true;
+      inviteButton.disabled = true;
+      const status = area.querySelector("[data-home-status]");
+      status.textContent = "";
+      try {
+        const link = await guestAction("create", { event_id: ev.id });
+        shareInvite(ev, link.token, link.host_name);
+        await refreshInvites();
+      } catch (error) { status.textContent = error.message || "Your invitation could not be created. Please try again."; }
+      finally { inviting = false; inviteButton.disabled = ev.guest_price == null; }
+    };
+    if (focusedAction) (actions.querySelector(focusedAction) || area.querySelector(".home-event-details"))?.focus({ preventScroll: true });
+  }
+  async function refreshInvites() {
+    if (!b.state.user || guestContext?.category === "guest") { inviteManagement.hidden = true; return; }
+    if (inviteArea.contains(document.activeElement)) return;
+    await mountGuestInvites(inviteArea, ev, guestContext?.category, { showCreate: false, showManagement: true });
+    inviteManagement.hidden = inviteArea.hidden || !inviteArea.querySelector("[data-invites]")?.childElementCount;
+  }
+  async function refreshBooking({ force = false, background = false } = {}) {
+    if (bookingRefresh) {
+      await bookingRefresh;
+      if (force) return refreshBooking({ force: true });
+      return;
+    }
+    const task = (async () => {
+      if (b.state.user) {
+        const [own, guests] = await Promise.all([
+          b.client.from("rsvps").select("*").eq("event_id", ev.id).eq("user_id", b.state.user.id).maybeSingle(),
+          guestAction("mine", { event_id: ev.id }).catch(() => null),
+        ]);
+        if (!own.error) response = own.data;
+        guestContext = guests;
+      }
+      if (background && document.querySelector("dialog[open]")) return;
+      renderActions();
+      await Promise.all([
+        operationArea.contains(document.activeElement) ? Promise.resolve() : mountEventOperations(operationArea, ev, options),
+        refreshInvites(),
+        b.state.user && ev.event_type !== "social" ? mountMemberTees(groupArea, ev.id, { home: true }) : Promise.resolve().then(() => { groupArea.hidden = true; }),
+        b.state.user && ev.event_type !== "social" ? mountBuggy(buggyArea, ev).then(() => { buggyArea.hidden = !buggyArea.innerHTML; }) : Promise.resolve().then(() => { buggyArea.hidden = true; }),
+      ]);
+    })();
+    bookingRefresh = task;
+    try { await task; }
+    finally { if (bookingRefresh === task) bookingRefresh = null; }
+  }
+  const holeArea = area.querySelector(".home-hole-action");
   function refreshHoleAction() {
-    holeArea.hidden = !b.state.user || ev.cancelled || ev.event_type === 'social' || ev.date !== londonToday();
+    holeArea.hidden = !b.state.user || ev.cancelled || ev.event_type === "social" || ev.date !== londonToday();
     if (holeArea.hidden || holeArea.childElementCount) return;
     holeArea.innerHTML = '<div><strong>On the course today</strong><p>Choose your hole for the course map and GPS distances.</p></div><button type="button" data-view-hole>View hole</button>';
-    holeArea.querySelector('button').onclick = async event => {
+    holeArea.querySelector("button").onclick = async (event) => {
       const button = event.currentTarget;
       button.disabled = true;
-      try {
-        const { openHolePicker } = await import('./hole-view.js?v=2027-accurate-gps-1');
-        await openHolePicker(ev, b);
-      } catch (error) { b.toast(error.message); }
+      try { const { openHolePicker } = await import("./hole-view.js?v=2027-accurate-gps-1"); await openHolePicker(ev, b); }
+      catch (error) { b.toast(error.message); }
       finally { button.disabled = false; }
     };
   }
+  updateFacts();
+  renderActions();
   refreshHoleAction();
-  let ownTime = null;
-  const groupArea = document.getElementById("homeTeeGroup");
-  await mountEventOperations(document.getElementById("homeOperations"), ev, {
-    compact: true,
-  });
-  if (b.state.user && ev.event_type !== "social")
-    ownTime = await mountMemberTees(groupArea, ev.id, { home: true });
-  const detail = document.getElementById("homeExperience");
-  let experienceLoaded = false;
-  let experienceLoading = false;
-  async function showExperience() {
-    if (experienceLoading) return;
-    experienceLoading = true;
-    try {
-      await mountExperience(detail, ev, ownTime);
-      experienceLoaded = true;
-      await updateSlots(ev, area);
-    } finally {
-      experienceLoading = false;
-    }
-  }
-  area.querySelector(".home-guide").addEventListener("toggle", (event) => {
-    if (event.currentTarget.open && !experienceLoaded) showExperience();
-  });
-  await updateSlots(ev, area);
-  let refreshing = false;
+  const initialRefresh = Promise.all([refreshBooking(), updateSlots(ev, area)]);
+  if (location.hash === "#rsvp") await openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await updateSlots(ev, area); } });
+  await initialRefresh;
   async function refreshEvent() {
-    if (document.hidden || refreshing) return;
+    if (document.hidden || refreshing || document.querySelector("dialog[open]")) return;
     refreshing = true;
     try {
-      const current = await b.client
-        .from("events")
-        .select("*")
-        .eq("id", ev.id)
-        .single();
-      if (
-        !current.error &&
-        current.data &&
-        JSON.stringify(current.data) !== JSON.stringify(ev)
-      ) {
-        Object.assign(ev, current.data);
-        if (ev.cancelled) {
-          location.reload();
-          return;
-        }
-        if (experienceLoaded) await mountExperience(detail, ev, ownTime);
-      }
+      const current = await b.client.from("events").select("*").eq("id", ev.id).single();
+      if (document.querySelector("dialog[open]")) return;
+      if (!current.error && current.data) Object.assign(ev, current.data);
+      updateFacts();
       refreshHoleAction();
-      await updateSlots(ev, area);
-      if (
-        b.state.user &&
-        !document
-          .getElementById("homeOperations")
-          .contains(document.activeElement)
-      )
-        await mountEventOperations(
-          document.getElementById("homeOperations"),
-          ev,
-          { compact: true },
-        );
-      if (b.state.user && ev.event_type !== "social") {
-        const updated = await mountMemberTees(groupArea, ev.id, { home: true });
-        if (updated !== ownTime) {
-          ownTime = updated;
-          if (experienceLoaded) await mountExperience(detail, ev, ownTime);
-          await updateSlots(ev, area);
-        }
-      }
-    } finally {
-      refreshing = false;
-    }
+      await Promise.all([updateSlots(ev, area), refreshBooking({ background: true })]);
+    } finally { refreshing = false; }
   }
   setInterval(refreshEvent, 25000);
   window.addEventListener("focus", refreshEvent);
 }
-
 window.addEventListener("barford-signout", () => location.reload());

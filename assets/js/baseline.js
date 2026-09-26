@@ -71,9 +71,9 @@ window.barfordReady = (async () => {
   const nextPath = () => {
     const value =
       new URLSearchParams(location.search).get("next") || "index.html";
-    return /^(index|events|scores|gallery|shop|worldevents|admin|account|event)\.html(?:\?id=\d+)?(?:#[\w-]+)?$/.test(
-      value,
-    )
+    const allowed = /^(index|events|scores|gallery|shop|worldevents|admin|account|event)\.html(?:\?id=\d+)?(?:#[\w-]+)?$/.test(value)
+      || /^index\.html\?event=[1-9]\d*(?:#[\w-]+)?$/.test(value);
+    return allowed
       ? value
       : "events.html";
   };

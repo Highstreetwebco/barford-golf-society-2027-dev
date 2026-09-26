@@ -1,4 +1,4 @@
-import { operation, stamp } from "./operations.js?v=2027-results-1";
+import { operation, stamp } from "./operations.js?v=2027-simple-events-1";
 const b = await window.barfordReady;
 const e = b.escape;
 export const londonToday = () =>
@@ -140,9 +140,16 @@ export function calendar(ev, ownTime) {
       }),
   };
 }
-export async function mountExperience(area, ev, ownTime) {
-  area.innerHTML = `<div class="course-cover"><div class="cover-placeholder"><span class="eyebrow">YOUR NEXT ROUND</span><strong>${e(ev.course_name || ev.location || ev.name)}</strong><span>Course photograph will appear when available</span></div></div><div class="experience-grid"><section class="panel"><p class="eyebrow">THE DAY AT A GLANCE</p><h2>${e(ev.course_name || ev.location || ev.name)}</h2><dl class="event-facts"><div><dt>Date</dt><dd>${e(b.date(ev.date))}</dd></div><div><dt>First tee</dt><dd>${e(ev.first_time || "To be confirmed")}</dd></div>${ownTime ? `<div><dt>Your tee time</dt><dd>${e(ownTime)}</dd></div>` : ""}<div><dt>Availability</dt><dd data-live-slots>Checking places…</dd></div>${ev.member_price != null ? `<div><dt>Member price</dt><dd>${b.money(ev.member_price)}</dd></div>` : ev.price ? `<div><dt>Price</dt><dd>${e(ev.price)}</dd></div>` : ""}${ev.guest_price != null ? `<div><dt>Guest price</dt><dd>${b.money(ev.guest_price)}</dd></div>` : ""}</dl><p class="address">${e(ev.address || ev.location || "Course address to follow")}</p><div data-directions>${directions(ev)}</div><div class="actions"><button class="secondary" data-calendar>Add to phone calendar</button><a data-google-calendar target="_blank" rel="noopener">Google Calendar ↗</a></div><small>A calendar copy won’t update automatically when the event changes.</small></section><section class="panel" data-weather><p class="eyebrow">WEATHER FOR YOUR ROUND</p><h2>Looking ahead.</h2><p>Loading forecast…</p></section><section class="panel" data-course><p class="eyebrow">GET TO KNOW THE COURSE</p><h2>What to expect</h2><p class="event-description">${e(ev.description || "The organiser will add details about the golf day here.")}</p><div data-course-live></div>${b.safeUrl(ev.course_link) ? `<a href="${b.safeUrl(ev.course_link)}" target="_blank" rel="noopener">Course website ↗</a>` : ""}</section><section class="panel" data-video><p class="eyebrow">A LOOK AROUND</p><h2>Course preview</h2><div data-video-content>Finding a course video…</div></section></div>`;
-  if (ev.event_type === "social") {
+function detailExperience(ev) {
+  const section = (key, title, hint, content) => `<details class="event-info-section" data-detail-section="${key}"><summary><span><strong>${title}</strong><small>${hint}</small></span></summary><div class="event-info-content">${content}</div></details>`;
+  const social = ev.event_type === "social";
+  return section("travel", "Directions & calendar", "Get there and save the date", `<p class="address">${e(ev.address || ev.location || "Address to follow")}</p><div data-directions>${directions(ev)}</div>${ev.course_phone ? `<p><a href="tel:${e(ev.course_phone.replace(/[^+0-9]/g, ""))}">Call the ${social ? "venue" : "course"}: ${e(ev.course_phone)}</a></p>` : ""}<div class="actions calendar-actions"><button class="secondary" data-calendar>Add to phone calendar</button><a data-google-calendar target="_blank" rel="noopener">Google Calendar ↗</a></div><small class="muted">Calendar copies do not update automatically when the event changes.</small>`)
+    + section("course", social ? "About the event" : "About the course", social ? "What’s planned for the day" : "What to expect, reviews and course preview", `<section data-course><p class="event-description preserve-lines">${e(ev.description || (social ? "Event details will be confirmed by the organisers." : "Course details will appear here when available."))}</p><div data-course-live></div>${b.safeUrl(ev.course_link) ? `<p><a href="${b.safeUrl(ev.course_link)}" target="_blank" rel="noopener">${social ? "Venue" : "Course"} website ↗</a></p>` : ""}</section>${social ? "" : '<section class="course-preview-section" data-video><h3>Course preview</h3><div data-video-content>Finding a course video…</div></section>'}`)
+    + (social ? "" : section("weather", "Weather for your round", "Forecast for your tee time", '<div data-weather><p>Loading forecast…</p></div>'));
+}
+export async function mountExperience(area, ev, ownTime, { detail = false, onCover } = {}) {
+  area.innerHTML = detail ? detailExperience(ev) : `<div class="course-cover"><div class="cover-placeholder"><span class="eyebrow">YOUR NEXT ROUND</span><strong>${e(ev.course_name || ev.location || ev.name)}</strong><span>Course photograph will appear when available</span></div></div><div class="experience-grid"><section class="panel"><p class="eyebrow">THE DAY AT A GLANCE</p><h2>${e(ev.course_name || ev.location || ev.name)}</h2><dl class="event-facts"><div><dt>Date</dt><dd>${e(b.date(ev.date))}</dd></div><div><dt>First tee</dt><dd>${e(ev.first_time || "To be confirmed")}</dd></div>${ownTime ? `<div><dt>Your tee time</dt><dd>${e(ownTime)}</dd></div>` : ""}<div><dt>Availability</dt><dd data-live-slots>Checking places…</dd></div>${ev.member_price != null ? `<div><dt>Member price</dt><dd>${b.money(ev.member_price)}</dd></div>` : ev.price ? `<div><dt>Price</dt><dd>${e(ev.price)}</dd></div>` : ""}${ev.guest_price != null ? `<div><dt>Guest price</dt><dd>${b.money(ev.guest_price)}</dd></div>` : ""}</dl><p class="address">${e(ev.address || ev.location || "Course address to follow")}</p><div data-directions>${directions(ev)}</div><div class="actions"><button class="secondary" data-calendar>Add to phone calendar</button><a data-google-calendar target="_blank" rel="noopener">Google Calendar ↗</a></div><small>A calendar copy won’t update automatically when the event changes.</small></section><section class="panel" data-weather><p class="eyebrow">WEATHER FOR YOUR ROUND</p><h2>Looking ahead.</h2><p>Loading forecast…</p></section><section class="panel" data-course><p class="eyebrow">GET TO KNOW THE COURSE</p><h2>What to expect</h2><p class="event-description">${e(ev.description || "The organiser will add details about the golf day here.")}</p><div data-course-live></div>${b.safeUrl(ev.course_link) ? `<a href="${b.safeUrl(ev.course_link)}" target="_blank" rel="noopener">Course website ↗</a>` : ""}</section><section class="panel" data-video><p class="eyebrow">A LOOK AROUND</p><h2>Course preview</h2><div data-video-content>Finding a course video…</div></section></div>`;
+  if (ev.event_type === "social" && !detail) {
     area.querySelector("[data-weather]").remove();
     area.querySelector("[data-video]").remove();
     area.querySelector("[data-course] .eyebrow").textContent =
@@ -170,6 +177,7 @@ export async function mountExperience(area, ev, ownTime) {
   };
   const showCover = (url, credit) => {
     if (!b.safeUrl(url)) return;
+    if (detail) { onCover?.(url, credit); return; }
     const wrap = area.querySelector(".course-cover");
     wrap.innerHTML = `<img src="${b.safeUrl(url)}" alt="${e(ev.course_name || ev.location || ev.name)} golf course"><div class="cover-caption">${credit}</div>`;
     wrap.querySelector("img").onerror = () => {
@@ -267,7 +275,7 @@ function conditions(code) {
                 : "thunderstorms";
 }
 function renderWeather(area, w, ev, ownTime) {
-  const heading =
+  const heading = area.closest('[data-detail-section]') ? '' :
     '<p class="eyebrow">WEATHER FOR YOUR ROUND</p><h2>Looking ahead.</h2>';
   if (w.status !== "ready") {
     area.innerHTML =
