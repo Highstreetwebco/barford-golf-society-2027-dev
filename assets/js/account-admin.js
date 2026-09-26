@@ -1,14 +1,23 @@
 const b = await window.barfordReady;
 const e = b.escape;
+const { preparePhoto, photoUrls } = await import("./member-photos.js?v=2027-admin-photos-1");
 let accounts = [];
 export async function loadAccounts() {
   const list = document.getElementById("accountList");
-  const { data, error } = await b.client.rpc("admin_accounts");
+  const [{ data, error }, photos] = await Promise.all([
+    b.client.rpc("admin_accounts"),
+    b.client.rpc("admin_account_photos"),
+  ]);
   if (error) {
     list.innerHTML = b.empty("Accounts could not load.", error.message);
     return;
   }
-  accounts = data || [];
+  if (photos.error) {
+    list.innerHTML = b.empty("Account photos could not load.", photos.error.message);
+    return;
+  }
+  const paths = new Map((photos.data || []).map((p) => [p.id, p.avatar_path]));
+  accounts = (data || []).map((p) => ({ ...p, avatar_path: paths.get(p.id) }));
   render();
   document.getElementById("accountSearch").oninput = render;
   document.getElementById("refreshAccounts").onclick = loadAccounts;
@@ -65,12 +74,29 @@ function openDialog(title, contents) {
   dialog.showModal();
   return dialog;
 }
-function edit(person) {
+async function edit(person) {
+  const urls = await photoUrls([person.avatar_path]);
   const dialog = openDialog(
     "Edit " + person.username,
-    `<label for="managedUsername">Username</label><input id="managedUsername" name="username" value="${e(person.username)}" minlength="2" maxlength="150" required><small>Changing this name changes the member’s sign-in username and their saved RSVP name.</small><label for="managedMobile">Mobile number</label><input id="managedMobile" name="mobile" type="tel" value="${e(person.mobile || "")}" minlength="10" maxlength="25" required><label for="managedHandicap">Season starting handicap</label><input id="managedHandicap" name="handicap" type="number" min="0" max="36" step="0.1" value="${person.handicap ?? ""}"><small>Changing this starting value recalculates handicaps for all published rounds.</small><label class="admin-role-choice"><input name="admin_access" type="checkbox" ${person.is_admin ? "checked" : ""} ${person.id === b.state.user.id ? "disabled" : ""}>Administrator access</label><small>${person.id === b.state.user.id ? "You cannot remove your own admin access." : "Admins can edit all accounts, reset passwords, manage events and appoint other admins. Only give this access to someone you trust."}</small>`,
+    `<label for="managedUsername">Username</label><input id="managedUsername" name="username" value="${e(person.username)}" minlength="2" maxlength="150" required><small>Changing this name changes the member’s sign-in username and their saved RSVP name.</small><label for="managedMobile">Mobile number</label><input id="managedMobile" name="mobile" type="tel" value="${e(person.mobile || "")}" minlength="10" maxlength="25" required><label for="managedHandicap">Season starting handicap</label><input id="managedHandicap" name="handicap" type="number" min="0" max="36" step="0.1" value="${person.handicap ?? ""}"><small>Changing this starting value recalculates handicaps for all published rounds.</small><label for="managedPhoto">Profile photo</label>${urls[person.avatar_path] ? `<img class="photo-preview" src="${e(urls[person.avatar_path])}" alt="Current photo of ${e(person.username)}">` : ""}<input id="managedPhoto" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><small>Optional. JPEG, PNG or WebP; the photo is cropped to a square. Members can replace it themselves.</small><img id="managedPhotoPreview" class="photo-preview" alt="Selected new photo" hidden>${person.avatar_path ? '<label><input type="checkbox" name="remove_photo"> Remove current photo</label>' : ""}<label class="admin-role-choice"><input name="admin_access" type="checkbox" ${person.is_admin ? "checked" : ""} ${person.id === b.state.user.id ? "disabled" : ""}>Administrator access</label><small>${person.id === b.state.user.id ? "You cannot remove your own admin access." : "Admins can edit all accounts, reset passwords, manage events and appoint other admins. Only give this access to someone you trust."}</small>`,
   );
   const form = dialog.querySelector("form");
+  let previewUrl;
+  dialog.onclose = () => { if (previewUrl) URL.revokeObjectURL(previewUrl); dialog.remove(); };
+  form.elements.photo.onchange = async () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    const preview = dialog.querySelector("#managedPhotoPreview");
+    preview.hidden = true;
+    const file = form.elements.photo.files[0];
+    if (!file) return;
+    try {
+      const blob = await preparePhoto(file);
+      previewUrl = URL.createObjectURL(blob);
+      preview.src = previewUrl;
+      preview.hidden = false;
+      form.elements.remove_photo && (form.elements.remove_photo.checked = false);
+    } catch (error) { form.querySelector(".form-status").textContent = error.message; }
+  };
   form.onsubmit = (event) => {
     event.preventDefault();
     b.submit(form, async () => {
@@ -79,6 +105,10 @@ function edit(person) {
           person.id === b.state.user.id
             ? true
             : form.elements.admin_access.checked;
+      const file = form.elements.photo.files[0];
+      const removing = form.elements.remove_photo?.checked;
+      if (file && removing) throw new Error("Choose a new photo or remove the old one.");
+      const blob = file ? await preparePhoto(file) : null;
       if (
         adminAccess !== person.is_admin &&
         !confirm(
@@ -95,6 +125,19 @@ function edit(person) {
         admin_access: adminAccess,
       });
       if (error) throw error;
+      if (file) {
+        const path = `${person.id}/${crypto.randomUUID()}.jpg`;
+        const bucket = b.raw.storage.from("baseline-profile-images");
+        const upload = await bucket.upload(path, blob, { contentType: "image/jpeg", upsert: false });
+        if (upload.error) throw upload.error;
+        const result = await b.client.rpc("admin_set_account_photo", { target: person.id, photo_path: path });
+        if (result.error) { await bucket.remove([path]); throw result.error; }
+        if (person.avatar_path) await bucket.remove([person.avatar_path]);
+      } else if (removing) {
+        const result = await b.client.rpc("admin_set_account_photo", { target: person.id, photo_path: null });
+        if (result.error) throw result.error;
+        await b.raw.storage.from("baseline-profile-images").remove([person.avatar_path]);
+      }
       dialog.close();
       await b.refresh();
       await loadAccounts();

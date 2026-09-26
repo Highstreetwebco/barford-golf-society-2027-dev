@@ -16,7 +16,7 @@ import {
   canLeaveLeague,
   updateHandicapSetup,
 } from "./league-admin.js?v=2027-results-1";
-import { loadAccounts } from "./account-admin.js?v=2027-results-1";
+import { loadAccounts } from "./account-admin.js?v=2027-admin-photos-1";
 import { packPlayers } from "./tee-groups.js?v=2027-results-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
