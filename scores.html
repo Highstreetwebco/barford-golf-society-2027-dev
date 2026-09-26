@@ -63,7 +63,7 @@
     <main id="main" class="container">
       <div class="page-heading">
         <p class="eyebrow">THE SEASON SO FAR</p>
-        <h1>A little friendly competition.</h1>
+        <h1>The leaderboard.</h1>
         <p class="lede">
           Seven rounds. Your best five scores count towards the season total.
         </p>
@@ -75,13 +75,12 @@
         >
       </div>
       <p id="leagueVisibility" class="notice"></p>
-      <section id="leagueBoard" class="panel" aria-live="polite">
-        Loading scores…
-      </section>
-      <section class="panel section">
-        <h2>Choose your round</h2>
-        <label for="leagueRound">Choose round</label
-        ><select id="leagueRound"></select>
+      <section class="panel">
+        <div id="leagueBoard" aria-live="polite">Loading scores…</div>
+        <div class="round-selector">
+          <label for="leagueRound">Choose round</label
+          ><select id="leagueRound"></select>
+        </div>
         <div id="roundResults"></div>
       </section>
       <div id="leagueRules"></div>

@@ -2149,3 +2149,38 @@ body.dark-mode {
     align-items: flex-start;
   }
 }
+
+.round-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+@media (min-width: 900px) {
+  .standing-card {
+    display: grid;
+    grid-template-columns: minmax(250px, 1.15fr) 2fr;
+    gap: 26px;
+    align-items: center;
+  }
+  .standing-card .round-metrics {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .standing-card .metric-note {
+    grid-column: 1/-1;
+    margin: 0;
+  }
+}
+@media (max-width: 600px) {
+  #roundResults > .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  #roundResults > .section-heading p {
+    margin: 0;
+  }
+}

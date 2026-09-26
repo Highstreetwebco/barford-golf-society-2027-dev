@@ -13,8 +13,10 @@ export function expenseBadge(count) {
 }
 function csv(name, rows) {
   const cell = (v) => {
-    let s = String(v ?? "");
-    if (/^[\s]*[=+@-]/.test(s)) s = "'" + s;
+    let s = String(
+      typeof v === "number" ? Math.round(v * 100) / 100 : (v ?? ""),
+    );
+    if (typeof v === "string" && /^[\s]*[=+@-]/.test(s)) s = "'" + s;
     return '"' + s.replaceAll('"', '""') + '"';
   };
   const url = URL.createObjectURL(

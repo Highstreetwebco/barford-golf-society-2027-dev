@@ -68,8 +68,7 @@ export async function mountPersonalResults(area, b) {
     me = ranked.find((p) => p.id === b.state.user.id),
     e = b.escape;
   if (!me || !latest) {
-    area.innerHTML =
-      '<p class="eyebrow">YOUR SEASON</p><h2>Ready for round one.</h2><p>Your points, league position and handicap changes will appear here when results are published.</p>';
+    area.hidden = true;
     return;
   }
   const result = me.scores.find((s) => s.round === latest);

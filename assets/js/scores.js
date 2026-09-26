@@ -33,7 +33,7 @@ async function load() {
     const n = Number(select.value),
       round = data.rounds.find((r) => r.round === n && r.round <= cutoff),
       ranked = rankPlayers(data, n);
-    area.innerHTML = `<h2>Season leaderboard</h2><p class="muted">Best five scores count. Choose a round to see the standings and handicaps at that point in the season.</p>${cutoff < 7 ? '<div class="secret-rounds"><span>Round 6 <span class="secret-score" aria-label="Secret — admins only"><span aria-hidden="true">•••</span></span></span><span>Round 7 <span class="secret-score" aria-label="Secret — admins only"><span aria-hidden="true">•••</span></span></span></div>' : ""}`;
+    area.innerHTML = `<p class="muted">Choose a round to see the standings, scores and handicaps at that point in the season.</p>${cutoff < 7 ? '<div class="secret-rounds"><span>Round 6 <span class="secret-score" aria-label="Secret — admins only"><span aria-hidden="true">•••</span></span></span><span>Round 7 <span class="secret-score" aria-label="Secret — admins only"><span aria-hidden="true">•••</span></span></span></div>' : ""}`;
     if (n > cutoff) {
       target.innerHTML =
         '<p class="notice">🔒 Round ' +
