@@ -13,6 +13,22 @@
 .page-index.home-member .home-hero .season-chips { display: none; }
 .page-index.home-member .home-hero .eyebrow { margin: 0; font-size: .67rem; }
 .page-index.home-member .home-hero + .section { margin-top: 0; }
+#nextEvent.has-event { position: relative; isolation: isolate; overflow: hidden; background: var(--surface); }
+#nextEvent.has-event > :not(.home-event-cover) { position: relative; z-index: 1; }
+#nextEvent .home-event-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: .14; pointer-events: none; }
+.home-availability { min-width: 0; }
+.home-players-toggle { display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; padding: 3px 0; min-height: 30px; border: 0; background: none; color: var(--green); font-size: .83rem; font-weight: 750; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.home-players-toggle:hover { color: var(--ink); }
+.home-players-toggle:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+.home-players-toggle[aria-expanded="true"] span { transform: rotate(180deg); }
+.home-playing-list { margin: 10px 0 18px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface) 90%, transparent); }
+.home-playing-list[hidden] { display: none; }
+.home-playing-list h3 { font-size: 1rem; margin: 0 0 10px; }
+.home-playing-list h3:not(:first-child) { margin-top: 18px; }
+.home-playing-list ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 7px 20px; list-style: none; padding: 0; margin: 0; }
+.home-playing-list li { min-width: 0; overflow-wrap: anywhere; padding: 7px 0; border-bottom: 1px solid var(--line); font-weight: 600; }
+.home-playing-list li small { font-weight: 400; color: var(--muted); }
+.home-playing-list p { margin: 0; }
 .home-event-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 8px; }
 .home-event-actions button { min-height: 48px; flex: 0 1 auto; }
 .home-event-details { display: inline-flex; align-items: center; gap: 10px; font-weight: 750; padding: 8px 0 4px; }
@@ -59,8 +75,13 @@
   .page-index.home-member .home-hero { padding: 18px 20px; margin: 16px 0 22px; border-radius: 18px; }
   .page-index.home-member .home-hero h1 { font-size: 1.7rem; }
   .page-index.home-member #nextEvent { padding: 20px 16px; }
+  .home-playing-list { padding: 14px 16px; }
+  .home-playing-list ul { grid-template-columns: 1fr 1fr; gap: 4px 14px; }
   .home-event-actions button { flex: 1 1 110px; padding: 12px 14px; }
   .home-event-actions { gap: 8px; }
   .home-member-grid > .panel { padding: 18px 15px; }
   .rsvp-dialog { padding: 22px 18px; }
+}
+@media (max-width: 380px) {
+  .home-playing-list ul { grid-template-columns: 1fr; }
 }
