@@ -372,9 +372,13 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await form.waitFor();
       assert.equal(await form.locator("fieldset").count(), 3);
       assert.equal(await form.locator("input:not([type=radio])").count(), 0);
-      await form.getByText("Yes, I’m playing", { exact: true }).click();
-      await form.getByText("No, I’ll walk", { exact: true }).click();
-      await form.getByText("First", { exact: true }).click();
+      await form
+        .getByRole("radio", { name: "Yes, I’m playing", exact: true })
+        .check();
+      await form
+        .getByRole("radio", { name: "No, I’ll walk", exact: true })
+        .check();
+      await form.getByRole("radio", { name: "First", exact: true }).check();
       await page.screenshot({
         path: path.join(out, `rsvp-form-${width}.png`),
         fullPage: true,
@@ -392,8 +396,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("button", { name: "Edit RSVP", exact: true })
         .click();
-      await form.getByText("Yes, please", { exact: true }).click();
-      await form.getByText("End", { exact: true }).click();
+      await form
+        .getByRole("radio", { name: "Yes, please", exact: true })
+        .check();
+      await form.getByRole("radio", { name: "End", exact: true }).check();
       await form
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
@@ -405,7 +411,9 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("button", { name: "Edit RSVP", exact: true })
         .click();
-      await form.getByText("Not this time", { exact: true }).click();
+      await form
+        .getByRole("radio", { name: "Not this time", exact: true })
+        .check();
       assert.equal(await form.locator("[data-playing]").isVisible(), false);
       await form
         .getByRole("button", { name: "Save changes", exact: true })
@@ -418,9 +426,13 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("button", { name: "Edit RSVP", exact: true })
         .click();
-      await form.getByText("Yes, I’m playing", { exact: true }).click();
-      await form.getByText("No, I’ll walk", { exact: true }).click();
-      await form.getByText("Middle", { exact: true }).click();
+      await form
+        .getByRole("radio", { name: "Yes, I’m playing", exact: true })
+        .check();
+      await form
+        .getByRole("radio", { name: "No, I’ll walk", exact: true })
+        .check();
+      await form.getByRole("radio", { name: "Middle", exact: true }).check();
       await form
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
