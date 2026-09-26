@@ -1,11 +1,11 @@
-import { guestAction } from "./guest-invites.js?v=2027-guests-1";
-import { mountEventOperations } from "./operations.js?v=2027-guests-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-guests-1";
+import { guestAction } from "./guest-invites.js?v=2027-colour-1";
+import { mountEventOperations } from "./operations.js?v=2027-colour-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-colour-1";
 import {
   mountExperience,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-guests-1";
+} from "./event-experience.js?v=2027-colour-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 if (b.state.user) {
@@ -13,7 +13,7 @@ if (b.state.user) {
   a.textContent = "My account";
   a.href = "account.html";
   document.querySelector(".home-hero h1").textContent =
-    "Welcome back, " +
+    "Let’s play, " +
     (b.state.profile?.full_name?.split(" ")[0] || "golfer") +
     ".";
 }
@@ -47,7 +47,8 @@ else if (!data?.length)
   );
 else {
   const ev = data[0];
-  area.innerHTML = `<div class="section-heading"><div><p class="eyebrow">${b.escape(b.date(ev.date))}</p><h2>${b.escape(ev.name)}</h2></div><a class="button" href="event.html?id=${ev.id}#rsvp">RSVP & event details</a></div><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section><div id="homeExperience"></div>`;
+  area.classList.add("has-event");
+  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow">${b.escape(b.date(ev.date))}</p><h2>${b.escape(ev.name)}</h2></div><a class="button" href="event.html?id=${ev.id}#rsvp">RSVP & event details</a></div><div class="next-event-facts"><span><small>FIRST TEE</small><strong>${b.escape(ev.first_time || "To be announced")}</strong></span><span><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong></span><span><small>THE COURSE</small><strong>${b.escape(ev.location || ev.name)}</strong></span></div><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><details class="home-guide"><summary>Course guide, directions & forecast <span aria-hidden="true">↗</span></summary><div id="homeExperience"></div></details>`;
   let ownTime = null;
   const groupArea = document.getElementById("homeTeeGroup");
   await mountEventOperations(document.getElementById("homeOperations"), ev, {
@@ -56,8 +57,23 @@ else {
   if (b.state.user && ev.event_type !== "social")
     ownTime = await mountMemberTees(groupArea, ev.id, { home: true });
   const detail = document.getElementById("homeExperience");
-  await mountExperience(detail, ev, ownTime);
-  await updateSlots(ev, detail);
+  let experienceLoaded = false;
+  let experienceLoading = false;
+  async function showExperience() {
+    if (experienceLoading) return;
+    experienceLoading = true;
+    try {
+      await mountExperience(detail, ev, ownTime);
+      experienceLoaded = true;
+      await updateSlots(ev, area);
+    } finally {
+      experienceLoading = false;
+    }
+  }
+  area.querySelector(".home-guide").addEventListener("toggle", (event) => {
+    if (event.currentTarget.open && !experienceLoaded) showExperience();
+  });
+  await updateSlots(ev, area);
   let refreshing = false;
   async function refreshEvent() {
     if (document.hidden || refreshing) return;
@@ -78,9 +94,9 @@ else {
           location.reload();
           return;
         }
-        await mountExperience(detail, ev, ownTime);
+        if (experienceLoaded) await mountExperience(detail, ev, ownTime);
       }
-      await updateSlots(ev, detail);
+      await updateSlots(ev, area);
       if (
         b.state.user &&
         !document
@@ -96,8 +112,8 @@ else {
         const updated = await mountMemberTees(groupArea, ev.id, { home: true });
         if (updated !== ownTime) {
           ownTime = updated;
-          await mountExperience(detail, ev, ownTime);
-          await updateSlots(ev, detail);
+          if (experienceLoaded) await mountExperience(detail, ev, ownTime);
+          await updateSlots(ev, area);
         }
       }
     } finally {

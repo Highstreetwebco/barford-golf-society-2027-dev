@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="580" viewBox="0 0 660 580" fill="none">
+<defs><radialGradient id="ball" cx=".3" cy=".25" r=".8"><stop stop-color="#fff"/><stop offset=".7" stop-color="#f2f2fd"/><stop offset="1" stop-color="#c4caec"/></radialGradient><pattern id="dimples" width="17" height="15" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="2.7" fill="#b3bbdc" opacity=".34"/><circle cx="6" cy="6" r="2" fill="#fff" opacity=".65"/></pattern><clipPath id="ballClip"><circle cx="146" cy="379" r="86"/></clipPath></defs>
+<path d="M391 65c109 0 208 124 202 248-6 126-118 205-251 205S65 423 72 307 214 65 391 65Z" fill="#586cf5"/>
+<path d="m543 68 9 26 26 8-26 9-9 27-9-27-27-9 27-8 9-26Z" fill="#ff936f"/>
+<circle cx="94" cy="150" r="10" fill="#ddff5f"/><circle cx="580" cy="425" r="7" fill="#ddff5f"/>
+<path d="M166 139c46-30 84-25 111 6 49 55 129 12 195 28 82 21 121 112 95 183-19 55-106 51-117 105-17 82-201 59-252 16-61-51-128-214-32-338Z" fill="#c4c8ff"/>
+<path d="M223 188c68-16 86 48 147 38s86-40 140 2c54 40 12 115-50 130-75 18-72 99-144 104-84 5-165-82-163-150 3-64 18-111 70-124Z" fill="#ddff5f"/>
+<path d="M239 204c64-8 72 49 135 41 40-5 69-24 99-13M187 260c64-24 116 31 172 15 63-17 98-1 125 19M184 316c55-10 82 30 136 17 78-19 91 21 81 49M212 374c44 2 48 28 87 21" stroke="#b9df3e" stroke-width="17" stroke-linecap="round"/>
+<path d="M431 182c25-9 65 5 79 25 13 17-15 27-32 25-18-3-8-14-27-16-35-2-37-27-20-34Z" fill="#ff9576"/>
+<path d="M184 383c18-13 48-2 51 19s33 25 25 46c-6 15-58 9-73-7-17-18-28-42-3-58Z" fill="#ff9576"/>
+<ellipse cx="389" cy="302" rx="33" ry="10" fill="#728e22" opacity=".35"/><ellipse cx="386" cy="301" rx="16" ry="6" fill="#1e2945"/>
+<path d="M386 299V95" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+<path d="m390 94 99 30-99 42V94Z" fill="#ff9274"/><path d="m390 95 25 8v52l-25 11V95Z" fill="#ffb8a5"/>
+<path d="M257 410c64-133 183-31 181-162" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="7 10"/>
+<ellipse cx="144" cy="475" rx="85" ry="17" fill="#2035aa" opacity=".35"/>
+<circle cx="146" cy="379" r="86" fill="url(#ball)"/><g clip-path="url(#ballClip)"><circle cx="146" cy="379" r="86" fill="url(#dimples)"/></g>
+<path d="m578 224 6 15 16 6-16 6-6 16-5-16-16-6 16-6 5-15Z" fill="#fff"/>
+<path d="m104 235 6 15 16 6-16 6-6 16-5-16-16-6 16-6 5-15Z" fill="#ff9274"/>
+</svg>

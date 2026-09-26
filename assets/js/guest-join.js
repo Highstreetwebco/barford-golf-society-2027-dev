@@ -1,9 +1,9 @@
-import { guestAction } from "./guest-invites.js?v=2027-guests-1";
+import { guestAction } from "./guest-invites.js?v=2027-colour-1";
 import {
   photoPickerHTML,
   wirePhotoPicker,
   savePhoto,
-} from "./member-photos.js?v=2027-guests-1";
+} from "./member-photos.js?v=2027-colour-1";
 const b = await window.barfordReady,
   e = b.escape,
   area = document.getElementById("guestJoin");

@@ -4,22 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <meta name="theme-color" content="#183f34" />
+    <meta name="theme-color" content="#3048ed" />
     <meta
       http-equiv="Content-Security-Policy"
       content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
     />
     <title>Gallery | Barford Golf Society</title>
-    <link rel="icon" href="icon-logo.png" />
+    <link rel="icon" href="assets/brand/icon-2027.svg" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-guests-1" />
-    <script src="assets/js/baseline.js?v=2027-guests-1" defer></script>
-    <script
-      type="module"
-      src="assets/js/gallery.js?v=2027-guests-1"
-    ></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-colour-1" />
+    <link rel="stylesheet" href="assets/css/next.css?v=2027-colour-1" />
+    <script src="assets/js/baseline.js?v=2027-colour-1" defer></script>
+    <script type="module" src="assets/js/gallery.js?v=2027-colour-1"></script>
   </head>
-  <body>
+  <body class="page-gallery">
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
@@ -27,8 +25,14 @@
           href="index.html"
           class="brand"
           aria-label="Barford Golf Society home"
-          ><span class="brand-mark">B<span>G S</span></span
-          ><span>Barford<small>GOLF SOCIETY</small></span></a
+          ><img
+            class="brand-icon"
+            src="assets/brand/icon-2027.svg"
+            alt=""
+            width="44"
+            height="44"
+          /><span>barford.<small>GOLF SOCIETY</small></span
+          ><span class="brand-year">2027</span></a
         ><button
           class="menu-toggle secondary"
           id="menuToggle"
@@ -119,6 +123,28 @@
         </button>
       </div>
     </footer>
+    <nav class="mobile-dock" aria-label="Quick navigation">
+      <a href="index.html" aria-label="Home tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m3 10 9-7 9 7v10H3Z" />
+          <path d="M9 20v-7h6v7" /></svg
+        ><span>Home</span></a
+      ><a href="events.html" aria-label="Events tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3" />
+          <path d="M7 3v4m10-4v4M3 11h18m-13 5h3" /></svg
+        ><span>Events</span></a
+      ><a href="scores.html" aria-label="Scores tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 20v-6h5v6m1 0V5h5v15m1 0v-10h5v10M2 21h21" /></svg
+        ><span>Scores</span></a
+      ><a href="account.html" aria-label="Account tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg
+        ><span>Account</span></a
+      >
+    </nav>
     <div id="toast" role="status" aria-live="polite"></div>
     <noscript
       ><p class="notice">

@@ -27,6 +27,7 @@ const server = http.createServer((req, res) => {
       ".css": "text/css",
       ".json": "application/json",
       ".png": "image/png",
+      ".svg": "image/svg+xml",
     }[path.extname(target)] || "application/octet-stream",
   );
   fs.createReadStream(target).pipe(res);
@@ -2034,6 +2035,70 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         status: "passed",
       });
       await guestCtx.close();
+    }
+    // New visual layout: narrow phone, tablet, desktop and dark mode.
+    for (const width of [320, 768, 1365]) {
+      const context = await browser.newContext({
+        viewport: { width, height: 900 },
+        serviceWorkers: "block",
+      });
+      await mocks(context, { signedIn: true });
+      const page = await context.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.goto(base + "index.html");
+      await page
+        .locator(".next-event-facts [data-live-slots]")
+        .filter({ hasText: /available|spaces|places|slots/i })
+        .waitFor();
+      assert.equal(
+        await page.locator("#homeExperience [data-weather]").count(),
+        0,
+        "Forecast loads on demand",
+      );
+      await page.locator(".home-guide > summary").click();
+      await page.locator("#homeExperience [data-weather]").waitFor();
+      await page.locator(".home-guide > summary").click();
+      await page
+        .getByRole("button", { name: "Dark mode", exact: true })
+        .click();
+      assert(
+        await page
+          .locator("body")
+          .evaluate((e) => e.classList.contains("dark-mode")),
+      );
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+        "New layout overflow",
+      );
+      await page.screenshot({
+        path: path.join(out, `redesign-dark-home-${width}.png`),
+        fullPage: true,
+      });
+      if (width === 320) {
+        await page
+          .getByRole("link", { name: "Events tab", exact: true })
+          .click();
+        await page
+          .getByRole("heading", { name: "Your next golf day." })
+          .waitFor();
+        assert.equal(
+          await page
+            .getByRole("link", { name: "Events tab", exact: true })
+            .getAttribute("aria-current"),
+          "page",
+        );
+      }
+      assert.deepEqual(errors, []);
+      report.push({
+        page: "redesign-responsive-dark-mode-lazy-guide",
+        width,
+        status: "passed",
+      });
+      await context.close();
     }
     const { packPlayers } = await import(
       "data:text/javascript;base64," +

@@ -127,6 +127,7 @@ window.barfordReady = (async () => {
       .forEach((el) => (el.hidden = !state.admin));
     const nav = document.getElementById("accountNav");
     if (nav) nav.textContent = state.user ? "My account" : "Sign in";
+    document.body.classList.toggle("signed-in", !!state.user);
     return state;
   }
   async function service(action, values = {}) {
@@ -260,8 +261,15 @@ window.barfordReady = (async () => {
       }, 0);
   });
   const page = location.pathname.split("/").pop() || "index.html";
-  document.querySelectorAll(".site-nav a").forEach((a) => {
-    if (a.getAttribute("href") === page) a.setAttribute("aria-current", "page");
+  document.querySelectorAll(".site-nav a, .mobile-dock a").forEach((a) => {
+    if (
+      a.getAttribute("href") === page ||
+      (a.closest(".mobile-dock") &&
+        ((page === "event.html" && a.getAttribute("href") === "events.html") ||
+          (page === "signup.html" &&
+            a.getAttribute("href") === "account.html")))
+    )
+      a.setAttribute("aria-current", "page");
   });
   document.getElementById("menuToggle")?.addEventListener("click", (e) => {
     const open = document.getElementById("siteNav").classList.toggle("open");
