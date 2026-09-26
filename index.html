@@ -572,7 +572,7 @@ footer {
 
   <div class="hero-divider"></div>
 
-  <div class="hero-image-right" style="background-image: url('icon-logo.png'); background-size: contain; background-repeat: no-repeat;"></div>
+  <div class="hero-image-right" style="background-color: #064d2b; background-image: url('icon-logo.png'); background-size: contain; background-repeat: no-repeat;"></div>
 </div>
 
 
@@ -643,6 +643,7 @@ function showHeroImage() {
   const heroImage = document.querySelector(".hero-image-right");
   if (!heroImage || !gallery.length) return;
 
+  heroImage.style.backgroundSize = "cover";
   heroImage.style.backgroundImage = `url("${gallery[currentIndex]}")`;
 }
 
