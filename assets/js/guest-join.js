@@ -93,7 +93,7 @@ async function render() {
         booking = (mine.bookings || []).find(
           (x) => x.event_id === invite.event_id,
         );
-      area.innerHTML = `<h2>${booking?.reserve ? "You’re on the waiting list" : "You’re booked as a guest"}</h2><p>${booking?.reserve ? "No payment is due until your place is confirmed." : "Your account and RSVP are saved. View the bank details and payment reference on your round page."}${e(photoMessage)}</p><p>Your username is <strong>${e(b.state.profile?.full_name)}</strong>. This device remembers your sign-in.</p><a class="button" href="${eventURL}#rsvp">View round & payment details</a><a class="button secondary" href="index.html">Go to homepage</a>`;
+      area.innerHTML = `<h2>${booking?.reserve ? "You’re on the waiting list" : "You’re booked as a guest"}</h2><p>${booking?.reserve ? "No payment is due until your place is confirmed." : "Your account and RSVP are saved. View the bank details and payment reference on your round page."}${e(photoMessage)}</p><p>Your username is <strong>${e(b.state.profile?.full_name)}</strong>. This device remembers your sign-in.</p><a class="button" href="${eventURL}">View round & payment details</a><a class="button secondary" href="index.html">Go to homepage</a>`;
     });
   };
 }
