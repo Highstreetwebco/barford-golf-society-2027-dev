@@ -7,6 +7,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const out = path.join(root, "test-results");
 const backend = "https://xspzmthygrajzktydvvj.supabase.co";
+const deployedOrigin = "https://highstreetwebco.github.io/barford-golf-society-2027-dev/";
 const uid = "11111111-1111-4111-8111-111111111111";
 const now = "2027-06-24T23:30:00Z"; // Already 25 June in Britain.
 const user = { id: uid, aud: "authenticated", role: "authenticated", email: "hole-test@example.invalid", app_metadata: { provider: "email" }, user_metadata: { full_name: "Hole Test" } };
@@ -27,11 +28,21 @@ const server = http.createServer((req, res) => {
 async function fixture(browser, options = {}) {
   const context = await browser.newContext({ viewport: { width: options.width || 390, height: 844 }, serviceWorkers: "block", timezoneId: "America/Los_Angeles" });
   const model = { events: structuredClone(options.events || [eventFixture]), layout: options.layout === null ? null : structuredClone(options.layout || layoutFixture), requests: [], unexpected: [], errors: [], mapFailed: !!options.mapFailed, savedLayouts: [] };
-  await context.addInitScript(({ session, signedIn, instant, mapFailed }) => {
+  if (options.liveMap) {
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    model.events.forEach(event => { event.date = today; event.name = "Google Maps smoke test — fixture coordinates"; });
+    await context.route(deployedOrigin + "**", route => {
+      const relative = new URL(route.request().url()).pathname.slice(new URL(deployedOrigin).pathname.length);
+      const target = path.resolve(root, decodeURIComponent(relative));
+      if (!target.startsWith(root + path.sep) || !fs.existsSync(target) || !fs.statSync(target).isFile()) return route.fulfill({ status: 404, body: "Missing app asset" });
+      return route.fulfill({ path: target, contentType: { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml" }[path.extname(target)] || "application/octet-stream" });
+    });
+  }
+  await context.addInitScript(({ session, signedIn, instant, mapFailed, liveMap }) => {
     if (signedIn) localStorage.setItem("sb-xspzmthygrajzktydvvj-auth-token", JSON.stringify(session));
     const RealDate = Date;
     window.__now = new RealDate(instant).getTime();
-    window.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [window.__now])); } static now() { return window.__now; } };
+    if (!liveMap) window.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [window.__now])); } static now() { return window.__now; } };
     const watches = new Map();
     window.__gps = {
       calls: 0, cleared: [],
@@ -44,6 +55,7 @@ async function fixture(browser, options = {}) {
       clearWatch(id) { window.__gps.cleared.push(id); watches.delete(id); },
       getCurrentPosition(ok, fail, settings) { return this.watchPosition(ok, fail, settings); },
     } });
+    if (liveMap) return; // The production Google loader and provider responses are untouched.
     window.__maps = { instances: [], lines: [] };
     class LatLng { constructor(a, b) { this.point = typeof a === "object" ? a : { lat: a, lng: b }; } lat() { return typeof this.point.lat === "function" ? this.point.lat() : this.point.lat; } lng() { return typeof this.point.lng === "function" ? this.point.lng() : this.point.lng; } toJSON() { return { lat: this.lat(), lng: this.lng() }; } }
     class MapMock {
@@ -76,7 +88,7 @@ async function fixture(browser, options = {}) {
     const maps = { Map: MapMock, OverlayView, Polyline, LatLng, LatLngBounds, MapTypeId: { SATELLITE: "satellite" }, RenderingType: { VECTOR: "VECTOR", RASTER: "RASTER" }, event: { clearInstanceListeners() {}, removeListener(listener) { listener.remove?.(); }, trigger(obj, type, value) { obj.listeners?.[type]?.(value); } } };
     maps.importLibrary = async () => { if (mapFailed) throw new Error("Fixture map unavailable"); return maps; };
     window.google = { maps };
-  }, { session, signedIn: options.signedIn !== false, instant: options.now || now, mapFailed: model.mapFailed });
+  }, { session, signedIn: options.signedIn !== false, instant: options.now || now, mapFailed: model.mapFailed, liveMap: !!options.liveMap });
   await context.route(backend + "/**", async route => {
     const request = route.request(), url = new URL(request.url());
     const body = request.postData() ? request.postDataJSON() : {};
@@ -134,7 +146,7 @@ async function fixture(browser, options = {}) {
   const actualRequests = [];
   page.on("request", req => actualRequests.push({ url: req.url(), method: req.method(), body: req.postData() }));
   model.actualRequests = actualRequests;
-  await page.goto("http://127.0.0.1:8766/" + (options.admin ? "admin.html" : "index.html"));
+  await page.goto((options.liveMap ? deployedOrigin : "http://127.0.0.1:8766/") + (options.admin ? "admin.html" : "index.html"));
   if (options.admin) await page.locator("#adminContent").waitFor();
   else await page.waitForFunction(() => window.barford && !document.querySelector("#nextEvent")?.textContent.includes("Loading the next event"));
   return { context, page, model };
@@ -311,6 +323,7 @@ async function run() {
 
     await check("Admin maps and reviews a new layout, saves the next hole, and attaches it to an event", async () => {
       const f = await fixture(browser, { admin: true });
+      await f.page.locator('[data-tab="details"]').click();
       await f.page.locator("#adminEvent").selectOption("999");
       await f.page.waitForFunction(() => document.querySelector("[name=course_layout_id]").value === "22222222-2222-4222-8222-222222222222");
       await f.page.locator("[data-new-layout]").click();
@@ -344,6 +357,50 @@ async function run() {
       await f.page.waitForFunction(() => document.querySelector("#eventForm button:not([type])")?.textContent === "Save event");
       assert.equal(f.model.eventSave.course_layout_id, "33333333-3333-4333-8333-333333333333");
       await clean(f);
+    });
+
+    await check("Google satellite map renders real tiles under the 2027 site's actual origin", async () => {
+      const f = await fixture(browser, { liveMap: true });
+      const provider = { responses: [], failures: [], console: [], tileCount: 0 };
+      f.page.on("console", message => {
+        if (/Google Maps JavaScript API error|RefererNotAllowedMapError|InvalidKeyMapError|ApiNotActivatedMapError|BillingNotEnabledMapError|REQUEST_DENIED|This page can.t load Google Maps/i.test(message.text())) provider.console.push(message.text());
+      });
+      f.page.on("requestfailed", request => {
+        const url = new URL(request.url());
+        if (/\.(googleapis|gstatic|google)\.com$/.test(url.hostname)) provider.failures.push({ host: url.hostname, path: url.pathname, error: request.failure()?.errorText });
+      });
+      f.page.on("response", async response => {
+        const url = new URL(response.url());
+        if (!/\.(googleapis|gstatic|google)\.com$/.test(url.hostname)) return;
+        const contentType = response.headers()["content-type"] || "";
+        provider.responses.push({ host: url.hostname, path: url.pathname, status: response.status(), contentType });
+        if (response.ok() && /^image\//.test(contentType) && /\/(kh|vt|tile)(\/|$)/.test(url.pathname) && !(await response.finished())) provider.tileCount++;
+      });
+      try {
+        await openHole(f.page);
+        await f.page.waitForFunction(() => {
+          const canvas = document.querySelector("[data-hole-map] .gm-style canvas");
+          const error = document.querySelector(".gm-err-content,.gm-err-message");
+          return error || (canvas && canvas.width > 100 && canvas.height > 100);
+        }, null, { timeout: 40000 });
+        assert.equal(await f.page.locator(".gm-err-content,.gm-err-message").count(), 0, "Google must authorise the deployed hostname");
+        assert.deepEqual(provider.console, [], "Google must report no API key or billing error");
+        const deadline = Date.now() + 15000;
+        while (!provider.tileCount && Date.now() < deadline && !provider.console.length) await new Promise(resolve => setTimeout(resolve, 250));
+        assert.ok(provider.tileCount > 0, "Real Google satellite image tiles must return successfully");
+        assert.equal(await f.page.locator("[data-map-status]").isVisible(), false, "Map loader must complete without an error banner");
+        assert.equal(await f.page.evaluate(() => window.__gps.calls), 0, "Provider smoke must never request device location");
+        await noOverflow(f.page);
+        await f.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await f.page.screenshot({ path: path.join(out, "google-hole-map.png"), fullPage: false });
+        await clean(f);
+      } finally {
+        fs.writeFileSync(path.join(out, "google-map-provider.json"), JSON.stringify(provider, null, 2));
+        if (!f.page.isClosed()) {
+          await f.page.screenshot({ path: path.join(out, "google-hole-map.png"), fullPage: false });
+          await f.context.close();
+        }
+      }
     });
   } finally {
     fs.writeFileSync(path.join(out, "hole-view.json"), JSON.stringify({ passed: report.length, checks: report }, null, 2));
