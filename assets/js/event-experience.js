@@ -206,6 +206,8 @@ export async function mountExperience(area, ev, ownTime) {
         `Photo: ${(info.photo_authors || []).map((a) => `<a href="${b.safeUrl(a.uri) || "#"}" target="_blank" rel="noopener">${e(a.displayName)}</a>`).join(", ")} · <a href="${b.safeUrl(info.photo_source) || "#"}" target="_blank" rel="noopener">Google Maps</a>`,
       );
     if (info.address) {
+      Object.assign(cal, calendar({ ...ev, address: info.address }, ownTime));
+      area.querySelector("[data-google-calendar]").href = cal.google;
       area.querySelector(".address").textContent = info.address;
       area.querySelector("[data-directions]").innerHTML = directions({
         ...ev,

@@ -1,3 +1,4 @@
+import {packPlayers} from "./tee-groups.js?v=2027-experience-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),
@@ -282,29 +283,10 @@ async function generate() {
     gap = Number(document.getElementById("teeGap").value);
   if (!start || gap < 1 || gap > 60)
     return b.toast("Enter a start time and a gap from 1 to 60 minutes.");
-  const rank = { First: 0, Middle: 1, End: 2 };
-  players.sort(
-    (a, z) =>
-      (rank[a.preferred_time] ?? 1) - (rank[z.preferred_time] ?? 1) ||
-      Number(z.buggy) - Number(a.buggy) ||
-      a.name.localeCompare(z.name),
-  );
-  const [h, m] = start.split(":").map(Number);
-  groups = [];
-  for (let i = 0; i < players.length; i += 4) {
-    const mins = h * 60 + m + (i / 4) * gap;
-    if (mins >= 1440)
-      return b.toast(
-        "The tee times would run into the next day. Adjust the start time or gap.",
-      );
-    groups.push({
-      time:
-        String(Math.floor(mins / 60)).padStart(2, "0") +
-        ":" +
-        String(mins % 60).padStart(2, "0"),
-      players: players.slice(i, i + 4).map((p) => p.user_id),
-    });
-  }
+  const [h,m]=start.split(':').map(Number);
+  const packed=packPlayers(players);
+  if(h*60+m+Math.max(0,packed.length-1)*gap>=1440)return b.toast('The tee times would run into the next day. Adjust the start time or gap.');
+  groups=packed.map((people,i)=>{const mins=h*60+m+i*gap;return {time:String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'),players:people.map(p=>p.user_id)};});
   renderGroups();
   document.getElementById("teeMessage").textContent =
     "Draft groups generated. Review buggy pairs and preferences before publishing.";
@@ -353,7 +335,7 @@ function renderGroups() {
           .map((id) => {
             const r = rows.find((r) => r.user_id === id);
             if (!r) return "";
-            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"} · ${e(r.preferred_time)} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
+            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"} · ${e(r.preferred_time||"No tee time")} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
           })
           .join(
             "",
@@ -382,6 +364,8 @@ function renderGroups() {
 async function saveGroups() {
   if (!selected) return b.toast("Choose an event first.");
   if (!groups.length) return b.toast("Generate or load tee groups first.");
+  const odd=groups.filter(g=>g.players.filter(id=>rows.find(r=>r.user_id===id)?.buggy).length%2===1);
+  if(odd.length>1)return b.toast('There are unpaired buggy players in different groups. Move them into pairs before publishing.');
   const button = document.getElementById("saveTees");
   button.disabled = true;
   try {
@@ -426,40 +410,7 @@ async function loadEnquiries() {
           .eq("id", Number(button.dataset.enquiry));
         if (error) return b.toast(error.message);
         await loadEnquiries();
-        await loadMemberRecovery();
-        document.getElementById("findCourse").onclick = async () => {
-          const button = document.getElementById("findCourse"),
-            status = document.getElementById("courseLookupStatus");
-          button.disabled = true;
-          status.textContent = "Finding courses…";
-          try {
-            const result = await b.service("search_course", {
-              query: document.getElementById("courseQuery").value,
-            });
-            status.textContent = result.places.length
-              ? "Choose the correct course. Photo and review data are supplied live by Google Maps."
-              : "No matching courses found.";
-            const area = document.getElementById("courseResults");
-            area.innerHTML = result.places
-              .map(
-                (p, i) =>
-                  `<button class="secondary" type="button" data-course="${i}">${e(p.displayName?.text)}<br><small>${e(p.formattedAddress)}</small></button>`,
-              )
-              .join("");
-            area.querySelectorAll("[data-course]").forEach(
-              (btn) =>
-                (btn.onclick = () => {
-                  const p = result.places[Number(btn.dataset.course)];
-                  form.elements.place_id.value = p.id;
-                  form.elements.course_name.value = document
-                    .getElementById("courseQuery")
-                    .value.trim();
-                  status.textContent =
-                    "Matched " +
-                    p.displayName.text +
-                    ". Save the event to keep this course match.";
-                  area.innerHTML = "";
-                }),
+      }),
             );
           } catch (error) {
             status.textContent = error.message;
