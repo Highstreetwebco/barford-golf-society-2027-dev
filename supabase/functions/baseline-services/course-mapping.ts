@@ -146,7 +146,8 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   }
   const coverage = { mapped: holes.filter(h => h.tee && h.green).length, par: holes.filter(h => h.par).length, yards: holes.filter(h => h.yards).length, stroke_index: holes.filter(h => h.stroke_index).length };
   if (coverage.mapped < 18) warnings.push(`${coverage.mapped} of 18 hole routes found. Missing positions need manual setup.`);
-  if (coverage.yards < 18 || coverage.stroke_index < 18) warnings.push('Complete the missing yardages and stroke indexes from the chosen tee scorecard.');
+  const missingCardFields = [...(coverage.yards < 18 ? ['yardages'] : []), ...(coverage.stroke_index < 18 ? ['stroke indexes'] : [])];
+  if (missingCardFields.length) warnings.push(`Complete the missing ${missingCardFields.join(' and ')} from the chosen tee scorecard.`);
   warnings.push('All imported tee and green positions require an organiser check before members can use GPS.');
   return {
     name: course.name.trim().slice(0, 200), tee_name: (cardValid ? scorecard!.tee_name : course.tee_name || 'Yellow').slice(0, 80),
@@ -155,19 +156,69 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   };
 }
 
-async function boundedJson(response: Response) {
+async function boundedText(response: Response, maximum = MAX_BYTES) {
   if (!response.ok) throw new Error('Course mapping is temporarily unavailable. Try again or set up the holes manually.');
-  if (Number(response.headers.get('content-length') || 0) > MAX_BYTES || !response.body) throw new Error('The map response is too large. Set up this course manually.');
+  if (Number(response.headers.get('content-length') || 0) > maximum || !response.body) throw new Error('The map response is too large. Set up this course manually.');
   const reader = response.body.getReader(), chunks: Uint8Array[] = []; let total = 0;
   try {
-    while (true) { const { value, done } = await reader.read(); if (done) break; total += value.byteLength; if (total > MAX_BYTES) throw new Error('The map response is too large. Set up this course manually.'); chunks.push(value); }
+    while (true) { const { value, done } = await reader.read(); if (done) break; total += value.byteLength; if (total > maximum) throw new Error('The map response is too large. Set up this course manually.'); chunks.push(value); }
   } catch (error) { await reader.cancel().catch(() => {}); throw error; }
   const data = new Uint8Array(total); let offset = 0;
   for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
-  const parsed = JSON.parse(new TextDecoder().decode(data));
+  return new TextDecoder().decode(data);
+}
+async function boundedJson(response: Response) {
+  const parsed = JSON.parse(await boundedText(response));
   if (!Array.isArray(parsed.elements) || parsed.elements.length > 800) throw new Error('The course map response could not be read safely.');
   if (parsed.remark) throw new Error('The map provider could not finish this course lookup. Try again shortly.');
   return parsed.elements as Element[];
+}
+
+function xmlAttributes(input: string) {
+  const values: Record<string, string> = {};
+  for (const match of input.matchAll(/([A-Za-z_:][A-Za-z0-9_.:-]*)\s*=\s*(["'])(.*?)\2/g)) {
+    if (match[3].length > 2048) continue;
+    values[match[1]] = match[3].replace(/&(?:amp|lt|gt|quot|apos);/g, s => ({ '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" })[s]!);
+  }
+  return values;
+}
+// A small parser for the fixed OSM API response format. No DOM, DTD, external
+// entities or user-selected URLs are involved. Missing nodes invalidate a way.
+export function parseOsmXml(input: string): Element[] {
+  if (input.length > 8_000_000 || /<!DOCTYPE|<!ENTITY|<!\[CDATA\[/i.test(input) || !/<osm\b/.test(input) || !/<\/osm\s*>/.test(input)) throw new Error('The course map XML could not be read safely.');
+  const xml = input.replace(/<!--[\s\S]*?-->/g, '');
+  const nodes = new Map<string, Point>();
+  let nodeCount = 0, wayCount = 0;
+  for (const match of xml.matchAll(/<node\b([^>]*)\/?\s*>/g)) {
+    if (++nodeCount > 100000) throw new Error('The course map contains too many points.');
+    const a = xmlAttributes(match[1]);
+    if (!/^\d{1,20}$/.test(a.id || '') || !/^-?\d+(?:\.\d+)?$/.test(a.lat || '') || !/^-?\d+(?:\.\d+)?$/.test(a.lon || '')) continue;
+    const p = point({ lat: Number(a.lat), lng: Number(a.lon) });
+    if (p) nodes.set(a.id, p);
+  }
+  const elements: Element[] = [];
+  for (const match of xml.matchAll(/<way\b([^>]*)>([\s\S]*?)<\/way\s*>/g)) {
+    if (++wayCount > 30000) throw new Error('The course map contains too many routes.');
+    const tags: Record<string, string> = {};
+    let tagCount = 0;
+    for (const tag of match[2].matchAll(/<tag\b([^>]*)\/\s*>/g)) {
+      if (++tagCount > 100) break;
+      const a = xmlAttributes(tag[1]);
+      if (a.k && a.v !== undefined) tags[a.k] = a.v;
+    }
+    if (tags.golf !== 'hole' && tags.leisure !== 'golf_course') continue;
+    const g: Array<{ lat: number; lon: number }> = []; let complete = true;
+    for (const ref of match[2].matchAll(/<nd\b([^>]*)\/\s*>/g)) {
+      const node = nodes.get(xmlAttributes(ref[1]).ref);
+      if (!node || g.length >= 2000) { complete = false; break; }
+      g.push({ lat: node.lat, lon: node.lng });
+    }
+    if (!complete || g.length < 2) continue;
+    const id = Number(xmlAttributes(match[1]).id);
+    elements.push({ ...(Number.isSafeInteger(id) ? { id } : {}), type: 'way', tags, geometry: g });
+    if (elements.length > 800) throw new Error('The course map contains too many golf routes.');
+  }
+  return elements;
 }
 export async function prepareCourseMapping(course: CourseInput, options: MappingOptions = {}) {
   if (!point({ lat: course.latitude, lng: course.longitude }) || !course.place_id || course.place_id.length > 250 || !course.name?.trim()) throw new Error('Select a course with a valid map location.');
@@ -175,17 +226,22 @@ export async function prepareCourseMapping(course: CourseInput, options: Mapping
   let elements = cache.get(key)?.at && Date.now() - cache.get(key)!.at < 600000 ? cache.get(key)!.elements : null;
   if (!elements) {
     const query = `[out:json][timeout:12];(way(around:2500,${course.latitude},${course.longitude})["leisure"="golf_course"];way(around:2500,${course.latitude},${course.longitude})["golf"="hole"];);out tags geom;`;
-    const deadline = AbortSignal.any([AbortSignal.timeout(16000), ...(options.signal ? [options.signal] : [])]);
-    let lastError: unknown;
-    for (const endpoint of OVERPASS) {
-      if (deadline.aborted) break;
-      try {
-        const response = await (options.fetcher || fetch)(endpoint, { method: 'POST', redirect: 'error', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'User-Agent': 'BarfordGolf2027CourseSetup/1.0 (https://barfordgolf.co.uk)' }, body: new URLSearchParams({ data: query }), signal: AbortSignal.any([deadline, AbortSignal.timeout(8000)]) });
-        elements = await boundedJson(response);
-        break;
-      } catch (error) { lastError = error; }
-    }
-    if (!elements) throw lastError instanceof Error ? lastError : new Error('Course mapping timed out. Try again or set up the holes manually.');
+    const stop = new AbortController();
+    const deadline = AbortSignal.any([stop.signal, AbortSignal.timeout(18000), ...(options.signal ? [options.signal] : [])]);
+    const fetcher = options.fetcher || fetch;
+    const headers = { 'User-Agent': 'BarfordGolf2027CourseSetup/1.0 (https://barfordgolf.co.uk)' };
+    const overpass = async (endpoint: string, milliseconds: number) => boundedJson(await fetcher(endpoint, { method: 'POST', redirect: 'error', headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: new URLSearchParams({ data: query }), signal: AbortSignal.any([deadline, AbortSignal.timeout(milliseconds)]) }));
+    try {
+      try { elements = await overpass(OVERPASS[0], 5000); }
+      catch {
+        // Fetch the independent official OSM map API alongside the second Overpass
+        // instance. This keeps a working fallback inside the shared 18-second budget.
+        const bbox = [Math.max(-180, course.longitude - .03), Math.max(-90, course.latitude - .018), Math.min(180, course.longitude + .03), Math.min(90, course.latitude + .018)].join(',');
+        const xml = async () => parseOsmXml(await boundedText(await fetcher('https://api.openstreetmap.org/api/0.6/map?' + new URLSearchParams({ bbox }), { method: 'GET', redirect: 'error', headers, signal: AbortSignal.any([deadline, AbortSignal.timeout(13000)]) }), 8_000_000));
+        try { elements = await Promise.any([overpass(OVERPASS[1], 10000), xml()]); }
+        catch (error) { throw error instanceof AggregateError && error.errors[0] instanceof Error ? error.errors[0] : new Error('Course mapping timed out. Try again or set up the holes manually.'); }
+      }
+    } finally { stop.abort(); }
     if (cache.size >= 32) cache.delete(cache.keys().next().value!);
     cache.set(key, { at: Date.now(), elements });
   }

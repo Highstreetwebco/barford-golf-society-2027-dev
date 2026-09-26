@@ -18,8 +18,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node tests/baseline.cjs
       - run: node tests/hole-view.cjs
+        if: ${{ !cancelled() }}
       - run: node tests/course-mapping.mjs
+        if: ${{ !cancelled() }}
       - run: node tests/event-setup.cjs
+        if: ${{ !cancelled() }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

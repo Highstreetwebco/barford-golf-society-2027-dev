@@ -28,6 +28,7 @@ let events = [],
   groups = [];
 let holeSetup, coverUpload;
 let courseGeneration = 0, coursePending = false, savingEvent = false;
+let teeBusy = false;
 const form = document.getElementById("eventForm"),
   picker = document.getElementById("adminEvent");
 if (!b.state.admin) {
@@ -100,7 +101,7 @@ async function init() {
       `<label>Hole ${i + 1}<input name="hole${i + 1}" type="url" placeholder="YouTube URL"></label>`,
   ).join("");
   picker.onchange = async () => {
-    if (!canLeaveLeague()) {
+    if (teeBusy || !canLeaveLeague()) {
       picker.value = selected?.id || "";
       return;
     }
@@ -380,21 +381,24 @@ async function loadResponses() {
     rows = [];
     area.innerHTML =
       '<p class="muted">Choose an existing event to see responses.</p>';
-    return;
+    return false;
   }
+  const eventId = selected.id;
   const { data, error } = await c
     .from("rsvps")
     .select("*,baseline_rsvp_contacts(phone)")
-    .eq("event_id", selected.id)
+    .eq("event_id", eventId)
     .order("requested_at");
+  if (selected?.id !== eventId) return false;
   if (error) {
+    rows = [];
     area.textContent = error.message;
-    return;
+    return false;
   }
   rows = data || [];
   if (!rows.length) {
     area.innerHTML = '<p class="muted">No responses yet.</p>';
-    return;
+    return true;
   }
   area.innerHTML =
     `<p class="notice">${rows.filter((r) => r.attending && !r.reserve).length} playing · ${rows.filter((r) => r.reserve).length} waiting · ${rows.filter((r) => !r.attending && !r.reserve).length} not playing</p>` +
@@ -431,26 +435,43 @@ async function loadResponses() {
         });
       }),
   );
+  return true;
+}
+function setTeeBusy(value) {
+  teeBusy = value;
+  document.querySelectorAll("#adminTees button, #adminTees input, #adminTees select").forEach(control => { control.disabled = value; });
+  picker.disabled = value || savingEvent;
+}
+async function teeAction(work) {
+  if (teeBusy) return;
+  const eventId = selected?.id;
+  setTeeBusy(true);
+  try { await work(eventId); }
+  catch (error) { document.getElementById("teeMessage").textContent = error.message || "Tee groups could not load. Try again."; }
+  finally { setTeeBusy(false); }
 }
 async function generate() {
   if (!selected) return b.toast("Choose an event first.");
   if (selected.event_type === "social")
     return b.toast("Social events do not use tee groups.");
-  await loadResponses();
+  return teeAction(async eventId => {
+  document.getElementById("teeMessage").textContent = "Preparing tee groups…";
+  if (!(await loadResponses())) throw new Error("Member responses could not load. Please try again.");
   const players = rows.filter((r) => r.attending && !r.reserve);
-  if (!players.length) return b.toast("There are no confirmed players yet.");
+  if (!players.length) throw new Error("There are no confirmed players yet.");
   const start = document.getElementById("teeStart").value,
     gap = Number(document.getElementById("teeGap").value);
   if (!start || gap < 1 || gap > 60)
-    return b.toast("Enter a start time and a gap from 1 to 60 minutes.");
+    throw new Error("Enter a start time and a gap from 1 to 60 minutes.");
   const [h, m] = start.split(":").map(Number);
-  const pairData = await operation("admin", { event_id: selected.id });
+  const pairData = await operation("admin", { event_id: eventId });
+  if (selected?.id !== eventId) return;
   const packed = packPlayers(
     players,
     pairData.pairs.filter((p) => p.status === "confirmed"),
   );
   if (h * 60 + m + Math.max(0, packed.length - 1) * gap >= 1440)
-    return b.toast(
+    throw new Error(
       "The tee times would run into the next day. Adjust the start time or gap.",
     );
   groups = packed.map((people, i) => {
@@ -480,18 +501,22 @@ async function generate() {
       " Host pairing needs review: " +
       unpairedGuests.map((p) => p.name).join(", ") +
       ". Their host may not be booked or the group may be full.";
+  });
 }
 async function loadGroups() {
   if (!selected) return b.toast("Choose an event first.");
   if (selected.event_type === "social")
     return b.toast("Social events do not use tee groups.");
-  await loadResponses();
+  return teeAction(async eventId => {
+  document.getElementById("teeMessage").textContent = "Loading saved tee groups…";
+  if (!(await loadResponses())) throw new Error("Member responses could not load. Please try again.");
   const { data, error } = await c
     .from("tee_times")
     .select("*")
-    .eq("event_id", selected.id)
+    .eq("event_id", eventId)
     .order("group_number");
-  if (error) return b.toast(error.message);
+  if (selected?.id !== eventId) return;
+  if (error) throw error;
   groups = (data || []).map((g) => ({
     time: g.tee_time,
     players: g.players
@@ -501,7 +526,7 @@ async function loadGroups() {
       ),
   }));
   if (!groups.length)
-    return b.toast("No saved tee groups. Generate groups first.");
+    throw new Error("No saved tee groups. Generate groups first.");
   const assigned = new Set(groups.flatMap((g) => g.players)),
     extra = rows.filter(
       (r) => r.attending && !r.reserve && !assigned.has(r.user_id),
@@ -517,6 +542,7 @@ async function loadGroups() {
   renderGroups();
   document.getElementById("teeMessage").textContent =
     "Saved groups loaded. Review any player changes, then publish.";
+  });
 }
 function renderGroups() {
   const area = document.getElementById("teeEditor");
@@ -554,6 +580,7 @@ function renderGroups() {
   );
 }
 async function saveGroups() {
+  if (teeBusy) return;
   if (!selected) return b.toast("Choose an event first.");
   if (!groups.length) return b.toast("Generate or load tee groups first.");
   const odd = groups.filter(
@@ -567,13 +594,12 @@ async function saveGroups() {
     return b.toast(
       "There are unpaired buggy players in different groups. Move them into pairs before publishing.",
     );
-  const button = document.getElementById("saveTees");
-  button.disabled = true;
-  try {
+  return teeAction(async eventId => {
     const old = await c
       .from("tee_times")
       .select("*")
-      .eq("event_id", selected.id);
+      .eq("event_id", eventId);
+    if (selected?.id !== eventId) return;
     if (old.error) throw old.error;
     const moves = [];
     for (const g of groups)
@@ -592,19 +618,22 @@ async function saveGroups() {
           );
       }
     if (!(await reviewPublication(moves, groups))) return;
+    if (selected?.id !== eventId) return;
     const { error } = await c.rpc("save_tee_times", {
-      event: selected.id,
+      event: eventId,
       groups: groups.filter((g) => g.players.length),
     });
     if (error) throw error;
+    if (selected?.id !== eventId) return;
     document.getElementById("teeMessage").textContent =
       "Tee times published. Members can view them on the event.";
     b.toast("Tee times published.");
     const refreshed = await c
       .from("events")
       .select("*")
-      .eq("id", selected.id)
+      .eq("id", eventId)
       .single();
+    if (selected?.id !== eventId) return;
     if (!refreshed.error) selected = refreshed.data;
     let copy = document.getElementById("copyTeeUpdate");
     if (!copy) {
@@ -637,11 +666,7 @@ async function saveGroups() {
         document.getElementById("teeMessage").textContent = lines.join("\n");
       }
     };
-  } catch (error) {
-    document.getElementById("teeMessage").textContent = error.message;
-  } finally {
-    button.disabled = false;
-  }
+  });
 }
 async function loadEnquiries() {
   const area = document.getElementById("enquiries");

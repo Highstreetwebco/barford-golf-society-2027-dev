@@ -303,6 +303,11 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
     if (p.endsWith("/rpc/baseline_operations")) {
       model.operationCalls ||= [];
       model.operationCalls.push(body);
+      if (body.action === "admin" && model.teePairingGate) await model.teePairingGate;
+      if (body.action === "admin" && model.teePairingFailure) {
+        model.teePairingFailure = false;
+        return reply({ message: "Pairing data temporarily unavailable." }, 503);
+      }
       model.ops ||= {
         settings: {
           bank_instructions: "Transfer to the society account",
@@ -1733,9 +1738,23 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       false,
     );
     await page.getByRole("button", { name: "Tee groups", exact: true }).click();
+    let releasePairing;
+    model.teePairingGate = new Promise(resolve => { releasePairing = resolve; });
+    model.teePairingFailure = true;
+    const pairingRequested = page.waitForRequest(request => request.url().endsWith("/rpc/baseline_operations") && request.postDataJSON().action === "admin");
     await page
       .getByRole("button", { name: "Generate groups", exact: true })
       .click();
+    await pairingRequested;
+    for (const id of ["generateTees", "loadTees", "saveTees", "adminEvent", "teeStart", "teeGap"]) assert.equal(await page.locator("#" + id).isDisabled(), true, id + " must wait for tee generation");
+    assert.equal(await page.locator("#teeEditor .tee-group").count(), 0);
+    releasePairing();
+    model.teePairingGate = null;
+    await page.getByText("Pairing data temporarily unavailable.", { exact: true }).waitFor();
+    for (const id of ["generateTees", "loadTees", "saveTees", "adminEvent", "teeStart", "teeGap"]) assert.equal(await page.locator("#" + id).isDisabled(), false, id + " must recover after a failed request");
+    await page.getByRole("button", { name: "Generate groups", exact: true }).click();
+    await page.getByText("Draft groups generated. Review buggy pairs and preferences before publishing.", { exact: true }).waitFor();
+    await page.locator("#teeEditor").getByText("Test Member", { exact: true }).waitFor();
     await page
       .getByRole("button", { name: "Publish tee times", exact: true })
       .click();

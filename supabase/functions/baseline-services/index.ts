@@ -304,7 +304,7 @@ Deno.serve(async (req) => {
         return findCourseScorecards(course, { apiKey });
       })();
       const [mapping, cards] = await Promise.allSettled([
-        prepareCourseMapping(course, { scorecards: scorecards.then(value => value.cards) }), scorecards,
+        prepareCourseMapping(course, { scorecards: scorecards.then(value => value.cards, () => []) }), scorecards,
       ]);
       const draft = mapping.status === "fulfilled" ? mapping.value : buildCourseMapping(course, []);
       if (mapping.status === "rejected")
