@@ -377,9 +377,9 @@ await window.barfordReady;
     data.forEach(entry => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${entry.name}</td>
-        <td>${entry.email}</td>
-        <td>${entry.phone}</td>
+        <td>${window.barford.escape(entry.name)}</td>
+        <td>${window.barford.escape(entry.email)}</td>
+        <td>${window.barford.escape(entry.phone)}</td>
         <td>${new Date(entry.created_at).toLocaleDateString()}</td>
         <td><input type="checkbox" data-id="${entry.id}"></td>
       `;

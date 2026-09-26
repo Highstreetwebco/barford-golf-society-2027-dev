@@ -1993,7 +1993,7 @@ if (currentRsvpView === "playing") {
       </td>
 
       <td>
-        <input id="rsvp_phone_${r.id}" value="${r.baseline_rsvp_contacts?.phone || ""}" style="width:100%;">
+        <input id="rsvp_phone_${r.id}" value="${window.barford.escape(r.baseline_rsvp_contacts?.phone || "")}" style="width:100%;">
       </td>
 
       <td>

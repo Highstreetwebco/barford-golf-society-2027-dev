@@ -311,8 +311,8 @@ async function loadProducts(){
     grid.innerHTML+=`
       <div class="product-card">
         <img src="${p.image||'icon-logo.png'}">
-        <div class="product-name">${p.name}</div>
-        <div>${p.description||''}</div>
+        <div class="product-name">${window.barford.escape(p.name)}</div>
+        <div>${window.barford.escape(p.description||'')}</div>
         <div class="product-price">£${p.price}</div>
         <div>Stock: ${p.packs_left}</div>
         <button ${p.packs_left<=0?'disabled':''}
@@ -341,7 +341,7 @@ function updateBasket(){
   let html="<table>";
   basket.forEach(item=>{
     total+=item.price*item.qty;
-    html+=`<tr><td>${item.name} x${item.qty}</td><td>£${(item.price*item.qty).toFixed(2)}</td></tr>`;
+    html+=`<tr><td>${window.barford.escape(item.name)} x${item.qty}</td><td>£${(item.price*item.qty).toFixed(2)}</td></tr>`;
   });
   html+="</table>";
   document.getElementById("basketItems").innerHTML=html;
@@ -406,7 +406,7 @@ async function loadAdminProducts(){
 
   data.forEach(p=>{
     html+=`<tr>
-      <td><input id="name_${p.id}" value="${p.name}"></td>
+      <td><input id="name_${p.id}" value="${window.barford.escape(p.name)}"></td>
       <td><input type="number" id="price_${p.id}" value="${p.price}"></td>
       <td><input type="number" id="stock_${p.id}" value="${p.packs_left}"></td>
       <td>
@@ -461,10 +461,10 @@ async function loadOrders(){
 
   data.forEach(o=>{
     html+=`<tr>
-      <td>${o.customer_name}</td>
-      <td>${o.product_name}</td>
+      <td>${window.barford.escape(o.customer_name)}</td>
+      <td>${window.barford.escape(o.product_name)}</td>
       <td>${o.quantity}</td>
-      <td>${o.payment_method}</td>
+      <td>${window.barford.escape(o.payment_method)}</td>
       <td>${o.delivered ? "Delivered" : "Pending"}</td>
       <td>
         ${!o.delivered ? `<button onclick="markDelivered(${o.id})">Deliver</button>` : ""}

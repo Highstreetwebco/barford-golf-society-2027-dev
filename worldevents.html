@@ -296,7 +296,7 @@ container.innerHTML+=`
 
 <div class="event-card">
 
-<h3>${ev.name}</h3>
+<h3>${window.barford.escape(ev.name)}</h3>
 
 ${ev.video ? `
 <video controls playsinline preload="metadata">
@@ -449,9 +449,9 @@ voteSelect.innerHTML="<option value=''>Select Event</option>"
 }
 
 data?.forEach(ev=>{
-select.innerHTML+=`<option value="${ev.id}">${ev.name}</option>`
+select.innerHTML+=`<option value="${ev.id}">${window.barford.escape(ev.name)}</option>`
 if(voteSelect){
-voteSelect.innerHTML+=`<option value="${ev.id}">${ev.name}</option>`
+voteSelect.innerHTML+=`<option value="${ev.id}">${window.barford.escape(ev.name)}</option>`
 }
 })
 
@@ -486,7 +486,7 @@ html+="<tr><th>Name</th><th>Vote</th></tr>"
 
 data.forEach(v=>{
 html+=`<tr>
-<td>${v.name}</td>
+<td>${window.barford.escape(v.name)}</td>
 <td>${v.vote}</td>
 </tr>`
 })
