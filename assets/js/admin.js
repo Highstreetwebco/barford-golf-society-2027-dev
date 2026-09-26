@@ -307,7 +307,7 @@ function renderGroups() {
           })
           .join(
             "",
-          )}${g.players.length % 2 !== 0 && g.players.filter((id) => rows.find((r) => r.user_id === id)?.buggy).length % 2 !== 0 ? '<p class="muted">Check buggy pairing for this group.</p>' : ""}${g.players.length > 4 ? '<p class="error">Maximum four players per group.</p>' : ""}</section>`,
+          )}${g.players.filter((id) => rows.find((r) => r.user_id === id)?.buggy).length % 2 !== 0 ? '<p class="muted">Check buggy pairing for this group.</p>' : ""}${g.players.length > 4 ? '<p class="error">Maximum four players per group.</p>' : ""}</section>`,
     )
     .join("");
   area
