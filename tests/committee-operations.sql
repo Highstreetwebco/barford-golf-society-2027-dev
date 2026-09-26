@@ -81,5 +81,32 @@ do $$declare result jsonb;gid uuid;begin
  perform public.baseline_operations('item','{"kind":"expense","description":"QA golf prizes","owner":"QA organiser","amount":25,"quantity":1}');
 end $$;
 reset role;
+-- Claim an approved guest name through the real account trigger.
+insert into auth.users(id,email,raw_user_meta_data,aud,role,created_at,updated_at)
+select gen_random_uuid(),'qa-guest-'||g.id||'@example.invalid',jsonb_build_object('roster_id',g.member_id,'phone',g.phone,'name_confirmation',true),'authenticated','authenticated',now(),now() from baseline_private.guest_requests g where g.name='QA Guest Operations';
+do $$declare u uuid;begin
+ select a.user_id into u from public.baseline_member_accounts a join baseline_private.guest_requests g on g.member_id=a.member_id where g.name='QA Guest Operations';
+ if u is null or not exists(select 1 from public.profiles where id=u and handicap=24) then raise exception 'Guest claim did not apply approved handicap';end if;
+ if not exists(select 1 from baseline_private.member_types where user_id=u and category='guest') then raise exception 'Guest category lost';end if;
+ if exists(select 1 from baseline_private.charges where user_id=u and scope='membership:2027') then raise exception 'Guest charged annual membership';end if;
+end $$;
+-- Booking ownership, reservation confirmation, and release notices are separate.
+select set_config('request.jwt.claim.sub',(select id::text from public.profiles where is_admin limit 1),true);
+set local role authenticated;
+select public.baseline_submit_rsvp(jsonb_build_object('event_id',(select id from qa_ids where k='r1'),'user_id',(select id from qa_ops where n=1),'attending',true,'buggy',true));
+select public.baseline_submit_rsvp(jsonb_build_object('event_id',(select id from qa_ids where k='r1'),'user_id',(select id from qa_ops where n=5),'attending',false));
+select public.baseline_save_tee_times((select id from qa_ids where k='r1'),jsonb_build_array(jsonb_build_object('time','13:08','players',(select jsonb_agg(id order by n) from qa_ops where n<=4))));
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from qa_ops where n=1),true);
+set local role authenticated;
+select public.baseline_buggy_details((select id from qa_ids where k='r1'),true,false);
+select public.baseline_operations('confirm_buggy',jsonb_build_object('event_id',(select id from qa_ids where k='r1'),'confirmed',true));
+do $$declare r jsonb;begin
+ r:=public.baseline_buggy_details((select id from qa_ids where k='r1'),false,false);
+ if r->>'confirmed_at' is null then raise exception 'Course booking confirmation missing';end if;
+ perform public.baseline_buggy_details((select id from qa_ids where k='r1'),false,true);
+ if jsonb_array_length(public.baseline_reservation_notices((select id from qa_ids where k='r1')))=0 then raise exception 'Released booking lost reservation reminder';end if;
+end $$;
+reset role;
 rollback;
-select 'PASS: starting cap, private payments, stale write protection, paid withdrawal retention, waitlist promotion, tee change notices, future-only handicap overrides, unchanged earlier results, downstream scoring, member denials, cancellation acceptance, social fields, playing-pair acceptance and integrity, guest approval, checklist and expenses. All fixtures rolled back.' verification;
+select 'PASS: starting cap, private payments, stale write protection, paid withdrawal retention, waitlist promotion, tee change notices, future-only handicap overrides, unchanged earlier results, downstream scoring, member denials, cancellation acceptance, social fields, playing-pair acceptance and integrity, guest approval and signup, buggy confirmation and release alerts, checklist and expenses. All fixtures rolled back.' verification;
