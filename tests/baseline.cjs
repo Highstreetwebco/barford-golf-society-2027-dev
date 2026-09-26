@@ -24,6 +24,7 @@ const server=http.createServer((req,res)=>{
    page.on('request',r=>{if(r.url().includes('.supabase.co'))connections.push(r.url());});
    for(const name of ['index','events','worldevents','scores','shop','gallery','about','signup']){
     errors=[];
+    try {
     await page.goto(`http://127.0.0.1:8765/${name}.html`);
     await page.waitForFunction(()=>Boolean(window.barford));
     if(name==='events'||name==='worldevents')await page.getByText('No events yet.',{exact:true}).waitFor();
@@ -31,12 +32,14 @@ const server=http.createServer((req,res)=>{
     if(name==='gallery')await page.getByText('No photos yet',{exact:true}).waitFor();
     if(name==='shop')await page.getByText('No products available yet.',{exact:true}).waitFor();
     if(name==='signup')await page.getByText('Sign in to view enquiries.',{exact:true}).waitFor();
+    await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true});
     assert.equal(await page.locator('.site-nav a').count(),8,`${name} navigation`);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,`${name} overflows at ${width}px`);
     assert.deepEqual(errors,[],`${name}: ${errors.join('; ')}`);
     await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true});
     report.push({page:name,width,status:'passed'});
+    } catch(error) { report.push({page:name,width,status:'failed',error:error.message}); }
    }
    assert(connections.every(u=>new URL(u).hostname==='xspzmthygrajzktydvvj.supabase.co'),'Unexpected backend connection');
    await page.goto('http://127.0.0.1:8765/events.html');
@@ -65,6 +68,7 @@ const server=http.createServer((req,res)=>{
    await context.close();
   }
   fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify(report,null,2));
+  assert(!report.some(x=>x.status==='failed'),JSON.stringify(report.filter(x=>x.status==='failed')));
   console.log(`${report.length} page/viewport checks passed; admin authentication gate, RSVP form and isolated backend checked.`);
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1});

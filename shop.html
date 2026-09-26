@@ -183,6 +183,18 @@ footer{
   transform: translateY(0px);
   box-shadow: 0 4px 14px rgba(0,0,0,0.15);
 }
+
+/* Keep the copied shop usable on narrow screens. */
+* { box-sizing: border-box; }
+.site-nav ul { flex-wrap: wrap; justify-content: center; }
+#basketPanel { display: none; width: min(390px, 100vw); z-index: 1100; }
+#basketPanel.active { display: block; }
+.admin-panel { overflow-x: auto; }
+@media (max-width: 800px) {
+  .header-container { flex-direction: column; gap: 12px; }
+  .site-title { text-align: center; }
+  .shop-top { flex-wrap: wrap; gap: 12px; }
+}
 </style>
 </head>
 
@@ -222,7 +234,7 @@ footer{
 
 <!-- Basket -->
 <div id="basketPanel">
-  <h3>Your Basket</h3>
+  <button type="button" onclick="toggleBasket()" aria-label="Close basket" style="float:right">✕</button><h3>Your Basket</h3>
   <div id="basketItems"></div>
   <h4>Total: £<span id="basketTotal">0.00</span></h4>
 

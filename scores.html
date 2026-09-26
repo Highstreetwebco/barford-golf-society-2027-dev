@@ -258,7 +258,8 @@
   height: 2px;
   background: #c9aa4d;
 }
-  </style>
+  .dark-toggle { position: static; transform: none; justify-content: center; padding: 10px; }
+</style>
 </head>
 
 <body>
@@ -316,6 +317,7 @@
     <div class="progress-bar"><div id="progressFill"></div></div>
   </div>
 
+  <p id="emptyScores" style="display:none;text-align:center;padding:28px">No players added for 2027 yet.</p>
   <div id="tableContainer">
     <div id="secretNotice">Rounds 6 & 7 are locked — unlock to view/edit.</div>
     <table id="playersTableWrap">
@@ -475,6 +477,8 @@ players.forEach((_, i) => {
 
 
 // THEN RENDER
+document.getElementById('emptyScores').style.display=players.length ? 'none' : 'block';
+document.getElementById('tableContainer').style.display=players.length ? 'block' : 'none';
 renderLeaderboard();
 renderStatsGrid();
   document.body.style.cursor = "default";
@@ -888,7 +892,7 @@ function renderStatsGrid(){
     document.getElementById("darkSwitch").checked = true;
   }
 
-  loadData().then(() => { if(!players.length) document.getElementById("playersTable").innerHTML='<tr><td colspan="9" style="padding:28px;text-align:center">No players added for 2027 yet.</td></tr>'; });
+  loadData();
 
 window.showToast = showToast;
 window.toCSV = toCSV;
