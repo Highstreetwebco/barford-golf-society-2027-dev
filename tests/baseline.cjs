@@ -772,6 +772,8 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("heading", { name: "All accounts", exact: true })
         .waitFor();
+      await page.getByRole("button",{name:"Event details",exact:true}).click();
+      await page.getByRole("button",{name:"Accounts",exact:true}).click();
       await page.getByLabel("Find a member", { exact: true }).fill("Another");
       await page
         .getByRole("button", { name: "Edit account", exact: true })
