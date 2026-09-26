@@ -213,7 +213,7 @@ window.barfordReady = (async () => {
     const button = form.querySelector(
       'button[type="submit"],button:not([type])',
     );
-    const status = form.querySelector('[role="status"]');
+    const status = form.querySelector('.form-status[role="status"]') || form.querySelector('[role="status"]');
     if (button?.disabled) return;
     const oldText = button?.textContent;
     if (button) {

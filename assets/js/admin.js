@@ -1,5 +1,6 @@
 import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
-import { mountHoleSetup } from "./hole-admin.js?v=2027-holes-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-event-setup-1";
+import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import {
   operationTabs,
   showOperations,
@@ -9,7 +10,7 @@ import {
   mountEventFields,
   eventFields,
   updateEventType,
-} from "./event-fields.js?v=2027-results-1";
+} from "./event-fields.js?v=2027-event-setup-1";
 import {
   showLeagueTab,
   canLeaveLeague,
@@ -25,7 +26,8 @@ let events = [],
   selected = null,
   rows = [],
   groups = [];
-let holeSetup;
+let holeSetup, coverUpload;
+let courseGeneration = 0, coursePending = false, savingEvent = false;
 const form = document.getElementById("eventForm"),
   picker = document.getElementById("adminEvent");
 if (!b.state.admin) {
@@ -56,6 +58,7 @@ if (!b.state.admin) {
   setInterval(refreshIndicators, 30000);
   window.addEventListener("focus", refreshIndicators);
   mountEventFields(form);
+  coverUpload = mountCoverUpload(form, b);
   holeSetup = mountHoleSetup(form, b);
   const ready = await init();
   if (ready) {
@@ -154,6 +157,11 @@ async function init() {
   form.onsubmit = (ev) => {
     ev.preventDefault();
     b.submit(form, async () => {
+      if (coursePending) throw new Error("Your course details are still loading. Please save in a moment.");
+      savingEvent = true;
+      picker.disabled = true;
+      form.inert = true;
+      try {
       const f = new FormData(form),
         name = String(f.get("name")).trim();
       if (!name) throw new Error("Enter an event name.");
@@ -170,11 +178,11 @@ async function init() {
         latitude: f.get("latitude") !== "" ? Number(f.get("latitude")) : null,
         longitude:
           f.get("longitude") !== "" ? Number(f.get("longitude")) : null,
-        cover_url: f.get("cover_url") || null,
-        cover_credit: f.get("cover_credit") || null,
+        cover_url: await coverUpload.saveUrl(),
+        cover_credit: null,
         round_hours: Number(f.get("round_hours") || 5),
         date: f.get("date"),
-        location: String(f.get("location")).trim(),
+        location: String(f.get("course_name") || f.get("address") || f.get("location") || "").trim(),
         price: String(f.get("price")).trim() || null,
         first_time: f.get("first_time") || null,
         max_players: f.get("max_players") ? Number(f.get("max_players")) : null,
@@ -209,6 +217,11 @@ async function init() {
       await init();
       await fillEvent();
       b.toast("Event saved.");
+      } finally {
+        savingEvent = false;
+        picker.disabled = false;
+        form.inert = false;
+      }
     });
   };
   document.getElementById("cancelEvent").onclick = async () => {
@@ -251,16 +264,19 @@ async function init() {
   await loadMemberRecovery();
   await loadAccounts();
   document.getElementById("findCourse").onclick = async () => {
+    const token = ++courseGeneration;
     const button = document.getElementById("findCourse"),
       status = document.getElementById("courseLookupStatus");
+    coursePending = false;
     button.disabled = true;
     status.textContent = "Finding courses…";
     try {
       const result = await b.service("search_course", {
         query: document.getElementById("courseQuery").value,
       });
+      if (token !== courseGeneration) return;
       status.textContent = result.places.length
-        ? "Choose the correct course. Photo and review data are supplied live by Google Maps."
+        ? "Choose your course. Its contact details and saved hole layouts will be loaded."
         : "No matching courses found.";
       const area = document.getElementById("courseResults");
       area.innerHTML = result.places
@@ -271,31 +287,63 @@ async function init() {
         .join("");
       area.querySelectorAll("[data-course]").forEach(
         (btn) =>
-          (btn.onclick = () => {
-            const p = result.places[Number(btn.dataset.course)];
-            form.elements.place_id.value = p.id;
-            form.elements.course_name.value = p.displayName?.text || document.getElementById("courseQuery").value.trim();
-            if (p.formattedAddress) form.elements.address.value = p.formattedAddress;
-            if (p.location?.latitude != null && p.location?.longitude != null) {
-              form.elements.latitude.value = p.location.latitude;
-              form.elements.longitude.value = p.location.longitude;
-            }
-            status.textContent =
-              "Matched " +
-              p.displayName.text +
-              ". Save the event to keep this course match.";
-            area.innerHTML = "";
-          }),
+          (btn.onclick = () => chooseCourse(result.places[Number(btn.dataset.course)])),
       );
     } catch (error) {
-      status.textContent = error.message;
+      if (token === courseGeneration) status.textContent = error.message;
     } finally {
-      button.disabled = false;
+      if (token === courseGeneration) button.disabled = false;
     }
   };
   return true;
 }
+async function chooseCourse(match) {
+  if (savingEvent) return;
+  const token = ++courseGeneration;
+  const status = document.getElementById("courseLookupStatus");
+  coursePending = true;
+  document.getElementById("findCourse").disabled = false;
+  document.getElementById("courseResults").innerHTML = "";
+  function fill(p) {
+    form.elements.place_id.value = p.id || "";
+    form.elements.course_name.value = p.displayName?.text || "";
+    form.elements.address.value = p.formattedAddress || "";
+    form.elements.location.value = p.displayName?.text || p.formattedAddress || "";
+    form.elements.latitude.value = p.location?.latitude ?? "";
+    form.elements.longitude.value = p.location?.longitude ?? "";
+    form.elements.course_link.value = p.websiteUri || "";
+    form.elements.course_phone.value = p.nationalPhoneNumber || p.internationalPhoneNumber || "";
+  }
+  fill(match);
+  status.textContent = "Loading course address, website and phone number…";
+  let course = match, detailError = null;
+  try {
+    const result = await b.service("course_details", { place_id: match.id });
+    if (token !== courseGeneration) return;
+    course = result.place;
+    fill(course);
+  } catch (error) {
+    if (token !== courseGeneration) return;
+    detailError = error;
+  } finally {
+    if (token === courseGeneration) coursePending = false;
+  }
+  if (token !== courseGeneration) return;
+  const missing = [];
+  if (!form.elements.course_link.value) missing.push("website");
+  if (!form.elements.course_phone.value) missing.push("phone number");
+  status.textContent = detailError
+    ? `Course selected. Contact details could not be loaded: ${detailError.message}`
+    : `Matched ${course.displayName?.text || "your course"}. ${missing.length ? `No ${missing.join(" or ")} was supplied; add it if you know it. ` : "Address and contact details filled in. "}Save the event to keep this course.`;
+  try { await holeSetup.setCourse(course); }
+  catch (error) { if (token === courseGeneration) b.toast(error.message); }
+}
 async function fillEvent() {
+  courseGeneration++;
+  coursePending = false;
+  document.getElementById("findCourse").disabled = false;
+  document.getElementById("courseResults").innerHTML = "";
+  document.getElementById("courseLookupStatus").textContent = "";
   form.reset();
   for (const [key, value] of Object.entries(selected || {})) {
     if (form.elements[key]) form.elements[key].value = value ?? "";
@@ -314,6 +362,7 @@ async function fillEvent() {
     document.getElementById("teeStart").value = selected.first_time;
   document.getElementById("teeGap").value = selected?.tee_interval || 8;
   updateEventType(form);
+  coverUpload?.reset(selected);
   await holeSetup?.setEvent(selected);
   await loadResponses();
   await showOperations(

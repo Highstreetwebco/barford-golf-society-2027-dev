@@ -140,6 +140,7 @@ async function fixture(browser, options = {}) {
     model.unexpected.push(request.method() + " " + url.pathname + " " + JSON.stringify(body));
     return route.fulfill({ status: 500, json: { message: "Unexpected test request" } });
   });
+  await options.prepare?.(context, model);
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
   page.on("pageerror", err => model.errors.push(err.message));
@@ -326,6 +327,7 @@ async function run() {
       await f.page.locator('[data-tab="details"]').click();
       await f.page.locator("#adminEvent").selectOption("999");
       await f.page.waitForFunction(() => document.querySelector("[name=course_layout_id]").value === "22222222-2222-4222-8222-222222222222");
+      await f.page.getByText("Set up a different layout", { exact: true }).click();
       await f.page.locator("[data-new-layout]").click();
       const editor = f.page.locator(".hole-admin-dialog");
       await editor.locator("[name=layout_name]").fill("Checked course layout");
@@ -333,8 +335,11 @@ async function run() {
       await editor.locator("[name=par]").fill("4");
       await editor.locator("[name=yards]").fill("365");
       await editor.locator("[name=stroke_index]").fill("1");
-      await editor.getByText("Coordinates & optional points", { exact: true }).click();
-      for (const [name, value] of Object.entries({ tee_lat: "52.0001", tee_lng: "-1.5", green_lat: "52.0031", green_lng: "-1.5" })) await editor.locator(`[name=${name}]`).fill(value);
+      await f.page.waitForFunction(() => window.__maps.instances.length > 0);
+      await editor.locator('[name="map_point"]').selectOption("tee");
+      await f.page.evaluate(() => window.google.maps.event.trigger(window.__maps.instances.at(-1), "click", { latLng: new window.google.maps.LatLng(52.0001, -1.5) }));
+      await editor.locator('[name="map_point"]').selectOption("green");
+      await f.page.evaluate(() => window.google.maps.event.trigger(window.__maps.instances.at(-1), "click", { latLng: new window.google.maps.LatLng(52.0031, -1.5) }));
       await editor.locator("[name=reviewed]").check();
       await editor.locator("[data-save-next]").click();
       await f.page.waitForFunction(() => document.querySelector(".hole-admin-dialog [data-hole-title]").textContent === "Hole 2");
@@ -408,4 +413,5 @@ async function run() {
     server.close();
   }
 }
-run().catch(error => { console.error(error); process.exitCode = 1; server.close(); });
+module.exports = { fixture, server, root, out, backend, eventFixture, layoutFixture, uid };
+if (require.main === module) run().catch(error => { console.error(error); process.exitCode = 1; server.close(); });

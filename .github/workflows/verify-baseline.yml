@@ -1,7 +1,7 @@
 name: Verify 2027 member site
 on:
   push:
-    branches: [main, restart/live-replica, feature/member-accounts, feature/member-experience]
+    branches: [main, restart/live-replica, feature/member-accounts, feature/member-experience, feature/event-course-setup]
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,6 +18,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node tests/baseline.cjs
       - run: node tests/hole-view.cjs
+      - run: node tests/course-mapping.mjs
+      - run: node tests/event-setup.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

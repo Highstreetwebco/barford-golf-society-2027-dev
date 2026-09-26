@@ -1,5 +1,7 @@
 // Isolated 2027 services. Public requests validate the project API key;
 // organiser operations additionally validate a current GoTrue user and database role.
+import { prepareCourseMapping, buildCourseMapping } from "./course-mapping.ts";
+import { findCourseScorecards } from "./course-scorecard.ts";
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -62,6 +64,19 @@ async function admin(req: Request) {
   const u = await r.json();
   const p = await db("profiles?select=is_admin&id=eq." + u.id);
   if (!p[0]?.is_admin) throw new Error("Organiser access required.");
+  const account = await db("baseline_member_accounts?select=disabled&user_id=eq." + u.id);
+  if (!account[0] || account[0].disabled) throw new Error("Active organiser account required.");
+}
+async function courseDetails(id: unknown) {
+  if (typeof id !== "string" || !/^[A-Za-z0-9_-]{5,256}$/.test(id))
+    throw new Error("Choose a course from the search results.");
+  if (!GOOGLE) throw new Error("Course lookup is temporarily unavailable.");
+  return get("https://places.googleapis.com/v1/places/" + encodeURIComponent(id), {
+    headers: {
+      "X-Goog-Api-Key": GOOGLE,
+      "X-Goog-FieldMask": "id,displayName,formattedAddress,location,websiteUri,nationalPhoneNumber,internationalPhoneNumber,googleMapsUri",
+    },
+  });
 }
 async function place(id: string) {
   if (!GOOGLE) return null;
@@ -247,7 +262,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": GOOGLE,
             "X-Goog-FieldMask":
-              "places.id,places.displayName,places.formattedAddress",
+              "places.id,places.displayName,places.formattedAddress,places.location",
           },
           body: JSON.stringify({
             textQuery: query + " golf course",
@@ -257,6 +272,48 @@ Deno.serve(async (req) => {
         },
       );
       return reply({ places: data.places || [] });
+    }
+    if (body.action === "course_details") {
+      await admin(req);
+      if (!(await budget("course-setup-details", 86400, 150)))
+        return reply({ error: "Course lookup daily limit reached. Please try again tomorrow." }, 429);
+      return reply({ place: await courseDetails(body.place_id) });
+    }
+    if (body.action === "prepare_course") {
+      await admin(req);
+      if (!(await budget("course-preparation", 86400, 40)))
+        return reply({ error: "Course preparation daily limit reached. Saved layouts are still available." }, 429);
+      const p = await courseDetails(body.place_id);
+      const course = {
+        place_id: p.id,
+        name: p.displayName?.text || "Golf course",
+        address: p.formattedAddress || "",
+        latitude: p.location?.latitude,
+        longitude: p.location?.longitude,
+        tee_name: String(body.tee_name || "Yellow").trim().slice(0, 80),
+      };
+      if (!Number.isFinite(course.latitude) || !Number.isFinite(course.longitude))
+        return reply({ error: "This course did not supply a map location. Choose another course match." }, 422);
+      // These credentials stay inside this Edge Function; they never enter its response.
+      const scorecards = (async () => {
+        let apiKey = Deno.env.get("UK_GOLF_API_KEY");
+        if (!apiKey) {
+          try { apiKey = (await db("integration_secrets?select=secret_value&name=eq.UK_GOLF_API_KEY&limit=1"))[0]?.secret_value; }
+          catch { /* The public scorecard provider remains available. */ }
+        }
+        return findCourseScorecards(course, { apiKey });
+      })();
+      const [mapping, cards] = await Promise.allSettled([
+        prepareCourseMapping(course, { scorecards: scorecards.then(value => value.cards) }), scorecards,
+      ]);
+      const draft = mapping.status === "fulfilled" ? mapping.value : buildCourseMapping(course, []);
+      if (mapping.status === "rejected")
+        draft.source.warnings.unshift("The automatic map provider could not be reached. Retry Find & prepare holes, or place the missing positions on the satellite map.");
+      return reply({
+        draft,
+        scorecards: cards.status === "fulfilled" ? cards.value.cards : [],
+        warnings: cards.status === "fulfilled" ? cards.value.warnings : ["Scorecard details could not be found. You can add them while reviewing the holes."],
+      });
     }
     const eventId = Number(body.event_id);
     if (!Number.isSafeInteger(eventId) || eventId <= 0)
