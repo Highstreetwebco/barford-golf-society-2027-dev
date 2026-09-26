@@ -1,74 +1,598 @@
-const {chromium}=require('playwright');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
-const http=require('node:http');
-const root=path.resolve(__dirname,'..');
-const out=path.join(root,'test-results');fs.mkdirSync(out,{recursive:true});
-const server=http.createServer((req,res)=>{
- const target=path.resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname));
- if(!target.startsWith(root+path.sep)||!fs.existsSync(target)||!fs.statSync(target).isFile()){res.writeHead(404);return res.end();}
- const type={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png'}[path.extname(target)]||'application/octet-stream';
- res.setHeader('Content-Type',type);fs.createReadStream(target).pipe(res);
-});
-(async()=>{
- await new Promise(r=>server.listen(8765,'127.0.0.1',r));
- const browser=await chromium.launch();
- const report=[];
- try{
-  for(const width of [390,1365]){
-   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
-   const page=await context.newPage();
-   let errors=[];page.on('pageerror',e=>errors.push(e.message));
-   const connections=[];
-   page.on('request',r=>{if(r.url().includes('.supabase.co'))connections.push(r.url());});
-   for(const name of ['index','events','worldevents','scores','shop','gallery','about','signup']){
-    errors=[];
-    try {
-    await page.goto(`http://127.0.0.1:8765/${name}.html`);
-    await page.waitForFunction(()=>Boolean(window.barford));
-    if(name==='events'||name==='worldevents')await page.getByText('No events yet.',{exact:true}).waitFor();
-    if(name==='scores')await page.getByText('No players added for 2027 yet.',{exact:true}).waitFor();
-    if(name==='gallery')await page.getByText('No photos yet',{exact:true}).waitFor();
-    if(name==='shop')await page.getByText('No products available yet.',{exact:true}).waitFor();
-    if(name==='signup')await page.getByText('Sign in to view enquiries.',{exact:true}).waitFor();
-    await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true});
-    assert.equal(await page.locator('.site-nav a').count(),8,`${name} navigation`);
-    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
-    assert.equal(overflow,false,`${name} overflows at ${width}px`);
-    assert.deepEqual(errors,[],`${name}: ${errors.join('; ')}`);
-    await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true});
-    report.push({page:name,width,status:'passed'});
-    } catch(error) { report.push({page:name,width,status:'failed',error:error.message}); }
-   }
-   assert(connections.every(u=>new URL(u).hostname==='xspzmthygrajzktydvvj.supabase.co'),'Unexpected backend connection');
-   await page.goto('http://127.0.0.1:8765/events.html');
-   await page.getByText('No events yet.',{exact:true}).waitFor();
-   await page.getByRole('button',{name:'🔐 Admin Access',exact:true}).click();
-   await page.getByRole('dialog').waitFor();
-   assert(await page.getByLabel('Email',{exact:true}).isVisible());
-   assert(await page.getByLabel('Password',{exact:true}).isVisible());
-   await page.getByRole('button',{name:'Cancel',exact:true}).click();
-   // Exercise the copied RSVP form without creating any backend records.
-   const event={id:999,name:'Replica QA event',date:'2027-06-01',location:'QA course',price:'£45',description:'A test event',max_players:24,first_time:'10:00',cancelled:false};
-   await page.route('**/rest/v1/baseline_events?**',r=>r.fulfill({json:r.request().url().includes('id=eq.')?event:[event]}));
-   await page.route('**/rest/v1/baseline_rsvps?**',r=>r.fulfill({json:[]}));
-   await page.route('**/rest/v1/baseline_tee_times?**',r=>r.fulfill({json:[]}));
-   let payload;
-   await page.route('**/rest/v1/rpc/baseline_submit_rsvp',r=>{payload=r.request().postDataJSON();return r.fulfill({json:{id:999,reserve:false}})});
-   await page.reload();
-   await page.getByRole('button',{name:'📝 RSVP to this event'}).click();
-   await page.locator('#name_999').fill('QA player');
-   await page.locator('#playing_999').selectOption('yes');
-   await page.locator('#buggy_999').selectOption('no');
-   await page.locator('#phone_999').fill('07000000000');
-   await page.getByRole('button',{name:'Submit RSVP',exact:true}).click();
-   await page.getByText('✅ RSVP saved.',{exact:true}).waitFor();
-   assert.equal(payload.payload.event_id,999);assert.equal(payload.payload.name,'QA player');
-   await context.close();
+const { chromium } = require("playwright");
+const assert = require("node:assert/strict"),
+  fs = require("node:fs"),
+  path = require("node:path"),
+  http = require("node:http");
+const root = path.resolve(__dirname, ".."),
+  out = path.join(root, "test-results");
+fs.mkdirSync(out, { recursive: true });
+const server = http.createServer((req, res) => {
+  const target = path.resolve(
+    root,
+    "." + decodeURIComponent(new URL(req.url, "http://localhost").pathname),
+  );
+  if (
+    !target.startsWith(root + path.sep) ||
+    !fs.existsSync(target) ||
+    !fs.statSync(target).isFile()
+  ) {
+    res.writeHead(404);
+    return res.end();
   }
-  fs.writeFileSync(path.join(out,'checks.json'),JSON.stringify(report,null,2));
-  assert(!report.some(x=>x.status==='failed'),JSON.stringify(report.filter(x=>x.status==='failed')));
-  console.log(`${report.length} page/viewport checks passed; admin authentication gate, RSVP form and isolated backend checked.`);
- }finally{await browser.close();server.close();}
-})().catch(e=>{console.error(e);server.close();process.exitCode=1});
+  res.setHeader(
+    "Content-Type",
+    {
+      ".html": "text/html",
+      ".js": "text/javascript",
+      ".css": "text/css",
+      ".json": "application/json",
+      ".png": "image/png",
+    }[path.extname(target)] || "application/octet-stream",
+  );
+  fs.createReadStream(target).pipe(res);
+});
+const base = "http://127.0.0.1:8765/",
+  backend = "https://xspzmthygrajzktydvvj.supabase.co";
+const uid = "11111111-1111-4111-8111-111111111111",
+  user = {
+    id: uid,
+    aud: "authenticated",
+    role: "authenticated",
+    email: "member@example.invalid",
+    user_metadata: { full_name: "Test Member" },
+    app_metadata: { provider: "email" },
+    created_at: "2026-01-01T00:00:00Z",
+  };
+const jwt =
+  Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
+    "base64url",
+  ) +
+  "." +
+  Buffer.from(
+    JSON.stringify({ sub: uid, exp: 4102444800, role: "authenticated" }),
+  ).toString("base64url") +
+  ".test";
+const session = {
+  access_token: jwt,
+  refresh_token: "mock-refresh-token",
+  expires_in: 3600,
+  expires_at: 4102444800,
+  token_type: "bearer",
+  user,
+};
+const fixture = {
+  id: 999,
+  name: "The Warwickshire Golf Day",
+  date: "2027-06-25",
+  location: "The Warwickshire · Kings Course",
+  price: "£45 per person",
+  description:
+    "Join us for coffee and bacon rolls before 18 holes.\nMeet at the clubhouse 45 minutes before your tee time.",
+  max_players: 24,
+  first_time: "10:00",
+  cancelled: false,
+  tee_times_dirty: false,
+};
+async function mocks(context, { signedIn = false, admin = false } = {}) {
+  const model = {
+    responses: [],
+    payloads: [],
+    wait: false,
+    signup: [],
+    events: [
+      fixture,
+      { ...fixture, id: 998, name: "Cancelled golf day", cancelled: true },
+      { ...fixture, id: 997, name: "Past golf day", date: "2025-06-25" },
+    ],
+    profile: {
+      id: uid,
+      full_name: "Test Member",
+      email: user.email,
+      phone: "07000000000",
+    },
+    groups: [],
+    orders: [],
+    products: [
+      {
+        id: 1,
+        name: "Society golf balls",
+        description: "A dozen balls for your next round.",
+        price: 18,
+        packs_left: 4,
+        image: "",
+        active: true,
+      },
+    ],
+  };
+  if (signedIn)
+    await context.addInitScript(
+      ({ session }) =>
+        localStorage.setItem(
+          "sb-xspzmthygrajzktydvvj-auth-token",
+          JSON.stringify(session),
+        ),
+      { session },
+    );
+  await context.route(backend + "/**", async (route) => {
+    const req = route.request(),
+      u = new URL(req.url()),
+      p = u.pathname,
+      method = req.method();
+    const body = req.postData()
+      ? (() => {
+          try {
+            return req.postDataJSON();
+          } catch {
+            return {};
+          }
+        })()
+      : {};
+    const reply = (json, status = 200) => route.fulfill({ status, json });
+    if (p === "/auth/v1/token")
+      return body.password === "wrong-password"
+        ? reply(
+            {
+              error: "invalid_grant",
+              error_description: "Invalid login credentials",
+            },
+            400,
+          )
+        : reply(session);
+    if (p === "/auth/v1/user") return reply(user);
+    if (p === "/auth/v1/logout" || p === "/auth/v1/recover") return reply({});
+    if (p === "/auth/v1/signup") {
+      model.signup.push(body);
+      return reply({ ...session });
+    }
+    if (p === "/rest/v1/profiles") {
+      if (method === "PATCH") Object.assign(model.profile, body);
+      return reply(model.profile);
+    }
+    if (p.endsWith("/rpc/is_admin")) return reply(admin);
+    if (p.endsWith("/baseline_events")) {
+      if (method === "POST") {
+        const obj = { ...fixture, ...body, id: 1001 };
+        model.events.push(obj);
+        return reply(obj);
+      }
+      if (method === "PATCH") {
+        Object.assign(
+          model.events.find((ev) => "eq." + ev.id === u.searchParams.get("id")),
+          body,
+        );
+        return reply(
+          model.events.find((ev) => "eq." + ev.id === u.searchParams.get("id")),
+        );
+      }
+      const result = model.events.filter(
+        (ev) =>
+          !u.searchParams.get("id") ||
+          "eq." + ev.id === u.searchParams.get("id"),
+      );
+      return reply(result);
+    }
+    if (p.endsWith("/rpc/baseline_event_counts"))
+      return reply(
+        model.events.map((ev) => ({
+          event_id: ev.id,
+          playing: model.responses.filter(
+            (r) => r.event_id === ev.id && r.attending,
+          ).length,
+          waiting: model.responses.filter(
+            (r) => r.event_id === ev.id && r.reserve,
+          ).length,
+        })),
+      );
+    if (p.endsWith("/baseline_rsvps")) {
+      return reply(
+        model.responses.map((r) =>
+          u.searchParams.get("select")?.includes("baseline_events")
+            ? {
+                ...r,
+                baseline_events: model.events.find(
+                  (ev) => ev.id === r.event_id,
+                ),
+              }
+            : r,
+        ),
+      );
+    }
+    if (p.endsWith("/baseline_tee_times")) return reply(model.groups);
+    if (p.endsWith("/rpc/baseline_submit_rsvp")) {
+      model.payloads.push(body.payload);
+      let r = model.responses.find((r) => r.event_id === body.payload.event_id);
+      if (!r) {
+        r = {
+          id: 111,
+          user_id: uid,
+          name: "Test Member",
+          created_at: "2026-09-26",
+          requested_at: "2026-09-26",
+        };
+        model.responses.push(r);
+      }
+      Object.assign(r, body.payload, {
+        attending: body.payload.attending && !model.wait,
+        reserve: body.payload.attending && model.wait,
+      });
+      if (!body.payload.attending) {
+        r.buggy = false;
+        r.preferred_time = null;
+      }
+      return reply(r);
+    }
+    if (p.endsWith("/rpc/baseline_save_tee_times")) {
+      model.groups = body.groups.map((g, i) => ({
+        event_id: 999,
+        group_number: i + 1,
+        tee_time: g.time,
+        players: g.players.map((id) => ({
+          user_id: id,
+          name: "Test Member",
+          type: "walker",
+        })),
+      }));
+      return reply(null);
+    }
+    if (p.endsWith("/baseline_products")) return reply(model.products);
+    if (p.endsWith("/baseline_shop_orders")) return reply(model.orders);
+    if (p.endsWith("/rpc/baseline_reserve_basket")) {
+      model.orders.push({
+        id: 1,
+        product_id: 1,
+        product_name: "Society golf balls",
+        quantity: body.items[0].qty,
+        price: 18,
+        customer_name: body.customer,
+        payment_method: body.payment,
+        user_id: uid,
+        delivered: false,
+      });
+      return reply(null);
+    }
+    if (
+      p.endsWith("/baseline_players") ||
+      p.endsWith("/baseline_scores") ||
+      p.endsWith("/baseline_trip_events") ||
+      p.endsWith("/baseline_trip_votes") ||
+      p.endsWith("/baseline_signups")
+    )
+      return reply([]);
+    if (p.includes("/storage/")) return reply([]);
+    throw new Error("Unexpected mocked request: " + method + " " + u.pathname);
+  });
+  return model;
+}
+(async () => {
+  await new Promise((r) => server.listen(8765, "127.0.0.1", r));
+  const browser = await chromium.launch();
+  const report = [];
+  try {
+    for (const width of [390, 1365]) {
+      const context = await browser.newContext({
+          viewport: { width, height: 960 },
+          serviceWorkers: "block",
+        }),
+        page = await context.newPage();
+      let errors = [];
+      const connections = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      page.on("request", (r) => {
+        if (r.url().includes(".supabase.co")) connections.push(r.url());
+      });
+      for (const name of [
+        "index",
+        "events",
+        "worldevents",
+        "scores",
+        "shop",
+        "gallery",
+        "about",
+        "signup",
+        "account",
+        "admin",
+      ]) {
+        errors = [];
+        try {
+          await page.goto(base + name + ".html");
+          await page.waitForFunction(() => Boolean(window.barford));
+          await page.evaluate(() => window.barfordReady);
+          await page.waitForLoadState("networkidle");
+          assert.equal(await page.locator("h1").count(), 1, name + " heading");
+          assert.equal(
+            await page.locator(".site-nav a").count(),
+            8,
+            name + " navigation",
+          );
+          assert.equal(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth > innerWidth + 2,
+            ),
+            false,
+            name + " horizontal overflow",
+          );
+          assert.deepEqual(errors, [], name + " browser errors");
+          await page.screenshot({
+            path: path.join(out, `${name}-${width}.png`),
+            fullPage: true,
+          });
+          report.push({ page: name, width, status: "passed" });
+        } catch (error) {
+          report.push({
+            page: name,
+            width,
+            status: "failed",
+            error: error.message,
+          });
+          await page.screenshot({
+            path: path.join(out, `${name}-${width}-failed.png`),
+            fullPage: true,
+          });
+        }
+      }
+      assert(
+        connections.every(
+          (u) => new URL(u).hostname === "xspzmthygrajzktydvvj.supabase.co",
+        ),
+        "Unexpected backend connection",
+      );
+      if (width === 390) {
+        await page.getByRole("button", { name: "Menu", exact: true }).click();
+        await page.getByRole("link", { name: "Events", exact: true }).click();
+        await page
+          .getByRole("heading", { name: "Your next golf day." })
+          .waitFor();
+      }
+      await context.close();
+    }
+    // Member journey uses mocked HTTP responses; no emails or real accounts are created.
+    for (const width of [390, 1365]) {
+      const context = await browser.newContext({
+          viewport: { width, height: 960 },
+          serviceWorkers: "block",
+        }),
+        model = await mocks(context),
+        page = await context.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.goto(base + "events.html");
+      await page
+        .getByRole("button", { name: "Sign in to RSVP", exact: true })
+        .click();
+      await page.getByRole("dialog").waitFor();
+      await page.getByLabel("Email address", { exact: true }).fill(user.email);
+      await page.getByLabel("Password", { exact: true }).fill("wrong-password");
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      await page
+        .getByText("Invalid login credentials", { exact: true })
+        .waitFor();
+      await page.getByLabel("Password", { exact: true }).fill("test-password");
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
+      const form = page.locator("#form-999 form");
+      await form.waitFor();
+      assert.equal(await form.locator("fieldset").count(), 3);
+      assert.equal(await form.locator("input:not([type=radio])").count(), 0);
+      await form.getByText("Yes, I’m playing", { exact: true }).click();
+      await form.getByText("No, I’ll walk", { exact: true }).click();
+      await form.getByText("First", { exact: true }).click();
+      await page.screenshot({
+        path: path.join(out, `rsvp-form-${width}.png`),
+        fullPage: true,
+      });
+      await form
+        .getByRole("button", { name: "Save RSVP", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .waitFor();
+      assert.equal(model.payloads.length, 1);
+      assert(!("name" in model.payloads[0]));
+      assert(!("user_id" in model.payloads[0]));
+      assert.equal(model.responses.length, 1);
+      await page
+        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .click();
+      await form.getByText("Yes, please", { exact: true }).click();
+      await form.getByText("End", { exact: true }).click();
+      await form
+        .getByRole("button", { name: "Save changes", exact: true })
+        .click();
+      await page
+        .getByText("Buggy requested · End tee time preference", { exact: true })
+        .waitFor();
+      assert.equal(model.responses.length, 1);
+      assert.equal(model.payloads[1].preferred_time, "End");
+      await page
+        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .click();
+      await form.getByText("Not this time", { exact: true }).click();
+      assert.equal(await form.locator("[data-playing]").isVisible(), false);
+      await form
+        .getByRole("button", { name: "Save changes", exact: true })
+        .click();
+      await page
+        .getByRole("heading", { name: "Not playing", exact: true })
+        .waitFor();
+      assert.equal(model.payloads[2].attending, false);
+      model.wait = true;
+      await page
+        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .click();
+      await form.getByText("Yes, I’m playing", { exact: true }).click();
+      await form.getByText("No, I’ll walk", { exact: true }).click();
+      await form.getByText("Middle", { exact: true }).click();
+      await form
+        .getByRole("button", { name: "Save changes", exact: true })
+        .click();
+      await page
+        .getByRole("heading", { name: "On the waiting list", exact: true })
+        .waitFor();
+      assert.equal(
+        await page.locator("#event-998 button[data-rsvp]").count(),
+        0,
+      );
+      await page.locator("#event-999 summary").click();
+      await page.screenshot({
+        path: path.join(out, `event-saved-${width}.png`),
+        fullPage: true,
+      });
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+        "Populated event overflows",
+      );
+      await page.goto(base + "account.html");
+      await page.getByLabel("Full name", { exact: true }).waitFor();
+      await page
+        .getByLabel("Full name", { exact: true })
+        .fill("Updated Member");
+      await page
+        .getByRole("button", { name: "Save details", exact: true })
+        .click();
+      await page
+        .getByText("Your details are saved.", { exact: true })
+        .waitFor();
+      assert.equal(model.profile.full_name, "Updated Member");
+      await page.screenshot({
+        path: path.join(out, `account-member-${width}.png`),
+        fullPage: true,
+      });
+      await page.goto(base + "shop.html");
+      await page
+        .getByRole("button", { name: "Add to basket", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Basket 1", exact: true }).click();
+      await page
+        .getByLabel("How would you like to pay?")
+        .selectOption("Cash at Event");
+      await page
+        .getByRole("button", { name: "Reserve items", exact: true })
+        .click();
+      await page
+        .getByText(
+          "Reservation confirmed. Payment is still due by your chosen method.",
+          { exact: true },
+        )
+        .waitFor();
+      assert.equal(model.orders.length, 1);
+      assert.equal(model.orders[0].customer_name, "Updated Member");
+      await page.goto(base + "account.html");
+      await page.getByRole("button", { name: "Sign out", exact: true }).click();
+      await page
+        .getByRole("heading", { name: "Sign in", exact: true })
+        .waitFor();
+      await page.goto(base + "signup.html?next=events.html");
+      await page.getByLabel("Full name", { exact: true }).fill("New Member");
+      await page
+        .getByLabel("Email address", { exact: true })
+        .fill("new@example.invalid");
+      await page.getByLabel("Password", { exact: true }).fill("new-password");
+      await page
+        .getByRole("button", { name: "Create account", exact: true })
+        .click();
+      await page.waitForURL("**/events.html");
+      assert.equal(model.signup.length, 1);
+      assert.equal(model.signup[0].data.full_name, "New Member");
+      assert.deepEqual(errors, []);
+      report.push({
+        page: "member-account-rsvp-shop-flow",
+        width,
+        status: "passed",
+      });
+      await context.close();
+    }
+    // Organiser can create events and publish every confirmed member once.
+    const context = await browser.newContext({
+        viewport: { width: 390, height: 960 },
+        serviceWorkers: "block",
+      }),
+      model = await mocks(context, { signedIn: true, admin: true }),
+      page = await context.newPage();
+    model.responses = [
+      {
+        id: 111,
+        event_id: 999,
+        user_id: uid,
+        name: "Test Member",
+        attending: true,
+        reserve: false,
+        buggy: false,
+        preferred_time: "First",
+        created_at: "2026-09-26",
+        requested_at: "2026-09-26",
+      },
+    ];
+    await page.goto(base + "admin.html");
+    await page.getByLabel("Choose an event").selectOption("999");
+    await page.getByRole("button", { name: "RSVPs", exact: true }).click();
+    await page.getByText("Test Member", { exact: true }).waitFor();
+    await page.screenshot({
+      path: path.join(out, "admin-rsvps-390.png"),
+      fullPage: true,
+    });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth + 2,
+      ),
+      false,
+    );
+    await page.getByRole("button", { name: "Tee groups", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Generate groups", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Publish tee times", exact: true })
+      .click();
+    await page
+      .getByText("Tee times published. Members can view them on the event.", {
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(model.groups.length, 1);
+    await page.screenshot({
+      path: path.join(out, "admin-tees-390.png"),
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Event details", exact: true })
+      .click();
+    await page.getByLabel("Choose an event").selectOption("");
+    await page
+      .getByLabel("Event name", { exact: true })
+      .fill("Another Golf Day");
+    await page.getByLabel("Date", { exact: true }).fill("2027-07-30");
+    await page.getByRole("button", { name: "Save event", exact: true }).click();
+    await page.getByText("Event saved.", { exact: true }).waitFor();
+    assert(model.events.some((ev) => ev.name === "Another Golf Day"));
+    report.push({
+      page: "organiser-events-and-tee-times",
+      width: 390,
+      status: "passed",
+    });
+    await context.close();
+    fs.writeFileSync(
+      path.join(out, "checks.json"),
+      JSON.stringify(report, null, 2),
+    );
+    assert(
+      !report.some((r) => r.status === "failed"),
+      JSON.stringify(report.filter((r) => r.status === "failed")),
+    );
+    console.log(
+      `${report.length} checks passed: mobile/desktop pages, account signup/sign-in/out, RSVP editing/waiting list, reservations and organiser tee publication.`,
+    );
+  } finally {
+    fs.writeFileSync(
+      path.join(out, "checks.json"),
+      JSON.stringify(report, null, 2),
+    );
+    await browser.close();
+    server.close();
+  }
+})().catch((error) => {
+  console.error(error);
+  server.close();
+  process.exitCode = 1;
+});

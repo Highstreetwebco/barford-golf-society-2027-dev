@@ -1,3 +1,201 @@
-<!doctype html><html lang="en"><head>
-<link rel="icon" href="icon-logo.png" type="image/png">
-<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=events.html"><title>Barford Golf Society 2027</title></head><body><a href="events.html">Continue to Barford Golf Society 2027</a></body></html>
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183f34" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
+    />
+    <title>Organiser tools | Barford Golf Society</title>
+    <link rel="icon" href="icon-logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+    <script src="assets/js/baseline.js" defer></script>
+    <script type="module" src="assets/js/admin.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a
+          href="index.html"
+          class="brand"
+          aria-label="Barford Golf Society home"
+          ><span class="brand-mark">B<span>G S</span></span
+          ><span>Barford<small>GOLF SOCIETY</small></span></a
+        ><button
+          class="menu-toggle secondary"
+          id="menuToggle"
+          aria-expanded="false"
+          aria-controls="siteNav"
+        >
+          Menu
+        </button>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+          <a href="index.html">Home</a><a href="events.html">Events</a
+          ><a href="scores.html">Scores</a>
+          <details class="more-nav">
+            <summary>More</summary>
+            <div>
+              <a href="worldevents.html">World events</a
+              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
+              ><a href="about.html">About us</a>
+            </div>
+          </details>
+          <a class="account-link" href="account.html" id="accountNav"
+            >Sign in</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="eyebrow">ORGANISER AREA</p>
+        <h1>Keep the day running smoothly.</h1>
+        <p class="lede">Manage events, member responses and tee groups.</p>
+      </div>
+      <div id="adminGate" class="panel">Checking organiser access…</div>
+      <div id="adminContent" hidden>
+        <div class="toolbar">
+          <label for="adminEvent">Choose an event</label
+          ><select id="adminEvent">
+            <option value="">New event</option></select
+          ><a class="button secondary" href="events.html">View member page</a>
+        </div>
+        <div class="segmented admin-tabs">
+          <button data-tab="details" class="active">Event details</button
+          ><button data-tab="responses">RSVPs</button
+          ><button data-tab="tees">Tee groups</button>
+        </div>
+        <section id="adminDetails" class="panel">
+          <form id="eventForm" class="form-grid">
+            <label
+              >Event name<input name="name" required maxlength="200" /></label
+            ><label>Date<input name="date" type="date" required /></label
+            ><label
+              >Course / location<input name="location" maxlength="300" /></label
+            ><label
+              >Price description<input
+                name="price"
+                placeholder="e.g. £45 per person" /></label
+            ><label>First tee time<input name="first_time" type="time" /></label
+            ><label
+              >Maximum players<input
+                name="max_players"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Leave blank for no limit" /></label
+            ><label class="full"
+              >Description<textarea name="description" rows="4"></textarea>
+            </label>
+            <details class="full">
+              <summary>Course links &amp; videos</summary>
+              <div class="form-grid">
+                <label
+                  >Course website<input name="course_link" type="url" /></label
+                ><label
+                  >Weather link<input name="weather_link" type="url" /></label
+                ><label
+                  >Video type<select name="video_type" id="videoType">
+                    <option value="">None</option>
+                    <option value="whole">Whole course</option>
+                    <option value="per-hole">By hole</option>
+                  </select></label
+                ><label
+                  >Course video (YouTube URL)<input
+                    name="video_link"
+                    type="url"
+                /></label>
+              </div>
+              <div id="holeVideoInputs" class="form-grid" hidden></div>
+            </details>
+            <div class="actions full">
+              <button>Save event</button
+              ><button type="button" class="secondary" id="cancelEvent" hidden>
+                Cancel event</button
+              ><button type="button" class="danger" id="deleteEvent" hidden>
+                Delete event
+              </button>
+            </div>
+            <p class="full form-status" role="status"></p>
+          </form>
+        </section>
+        <section id="adminResponses" class="panel" hidden>
+          <h2>Member responses</h2>
+          <p class="muted">
+            One response per member. Moving a player out automatically gives the
+            next waiting member a space.
+          </p>
+          <div id="adminRsvps" class="stack"></div>
+        </section>
+        <section id="adminTees" class="panel" hidden>
+          <h2>Tee groups</h2>
+          <p class="muted">
+            Generate groups from confirmed players, then adjust the groups and
+            times before publishing.
+          </p>
+          <div class="form-grid">
+            <label
+              >Start time<input
+                id="teeStart"
+                type="time"
+                value="09:00" /></label
+            ><label
+              >Gap in minutes<input
+                id="teeGap"
+                type="number"
+                min="1"
+                max="60"
+                value="8"
+            /></label>
+          </div>
+          <div class="actions">
+            <button id="generateTees">Generate groups</button
+            ><button class="secondary" id="loadTees">Load saved groups</button
+            ><button id="saveTees">Publish tee times</button>
+          </div>
+          <p id="teeMessage" role="status"></p>
+          <div id="teeEditor" class="stack"></div>
+        </section>
+        <details class="panel section">
+          <summary>Other organiser tools</summary>
+          <div class="actions">
+            <a href="scores.html">Scores</a
+            ><a href="shop.html">Shop &amp; orders</a
+            ><a href="worldevents.html">World events</a
+            ><a href="gallery.html">Gallery</a>
+          </div>
+          <p class="muted">
+            WhatsApp delivery is not connected on the development site.
+          </p>
+          <h3>Membership enquiries</h3>
+          <div id="enquiries"></div>
+        </details>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href="index.html">Barford Golf Society</a
+        ><span>2027 season · Development site</span>
+      </div>
+      <div class="footer-actions">
+        <a href="admin.html" data-admin hidden>Organiser tools</a
+        ><button id="themeToggle" class="text-button" aria-pressed="false">
+          Dark mode</button
+        ><button id="installButton" class="text-button" hidden>
+          Install app
+        </button>
+      </div>
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <noscript
+      ><p class="notice">
+        Please enable JavaScript to sign in and use the member features.
+      </p></noscript
+    >
+  </body>
+</html>

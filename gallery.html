@@ -1,586 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<link rel="icon" href="icon-logo.png" type="image/png">
-<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;">
-  <script src="assets/js/baseline.js" defer></script>
-  <meta name="robots" content="noindex, nofollow">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gallery | Barford Golf Society</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --green: #005a2b;
-      --gold: #d4af37;
-      --ink: #1b1b1b;
-      --bg: #f7f7f5;
-      --btn-radius: 6px;
-      --tile-radius: 12px;
-      --shadow: 0 4px 10px rgba(0,0,0,.1);
-    }
-    body {
-      margin: 0;
-      font-family: "Inter", sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-    }
-  .site-header {
-  background: #ffffff;
-  padding: 12px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  border-bottom: 2px solid #c9aa4d;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-.header-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.site-title {
-  font-family: "Playfair Display", serif;
-  font-weight: 700;
-  font-size: 2rem;
-  color: #064d2b;
-  text-align: center;
-  line-height: 1.2;
-}
-.site-title span:last-child {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 1.2rem;
-  letter-spacing: 0.04rem;
-}
-
-.site-nav ul {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 0;
-  margin: 0;
-  justify-content: center;
-}
-
-.site-nav a {
-  color: #222;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.95rem;
-  position: relative;
-}
-
-.site-nav a.active {
-  font-weight: 700;
-  color: #064d2b;
-}
-
-.site-nav a.active::after {
-  content: "";
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: #c9aa4d;
-}
-
-    /* Banner slideshow */
-    .banner {
-      position: relative;
-      width: 100%;
-      height: 60vh;
-      min-height: 340px;
-      background: #000;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .banner img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background: #000;
-      opacity: 0;
-      transition: opacity 1s ease-in-out;
-      cursor: pointer;
-    }
-    .banner img.active {
-      opacity: 1;
-    }
-    .arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #fff;
-      font-size: 2.2rem;
-      background: rgba(0,0,0,0.45);
-      border-radius: 50%;
-      padding: 8px 14px;
-      cursor: pointer;
-      user-select: none;
-      z-index: 10;
-      transition: background .2s;
-    }
-    .arrow.left { left: 20px; }
-    .arrow.right { right: 20px; }
-    .arrow:hover { background: rgba(0,0,0,0.75); }
-
-    /* Page layout */
-    .container {
-      max-width: 1100px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
-    .upload-box {
-      background: #fff;
-      padding: 20px;
-      border-radius: var(--tile-radius);
-      box-shadow: var(--shadow);
-      text-align: center;
-    }
-    .upload-box h2 {
-      color: var(--green);
-      margin: 0 0 10px;
-    }
-    .preview {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 12px;
-    }
-    .preview-item {
-      position: relative;
-      width: 150px;
-      height: 100px;
-      overflow: hidden;
-      border-radius: calc(var(--tile-radius)/2);
-      box-shadow: 0 2px 6px rgba(0,0,0,.08);
-    }
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .preview-item button {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      background: rgba(0,0,0,0.5);
-      border: none;
-      color: #fff;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-    }
-    .btn {
-      background: var(--green);
-      color: #fff;
-      border: none;
-      border-radius: var(--btn-radius);
-      padding: 10px 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: filter .2s;
-      margin-top: 12px;
-    }
-    .btn:hover { filter: brightness(1.05); }
-    .btn.red { background: #b22222; }
-
-    .gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
-      gap: 16px;
-      margin-top: 28px;
-    }
-    .tile {
-      background: #fff;
-      border-radius: var(--tile-radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .tile img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      cursor: pointer;
-    }
-    .tile .tile-actions {
-      padding: 10px;
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      border-top: 1px solid #eee;
-    }
-
-    /* Lightbox */
-    .lightbox {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.9);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    .lightbox img {
-      max-width: 90%;
-      max-height: 85%;
-      object-fit: contain;
-      border-radius: 10px;
-    }
-    .lightbox .close {
-      position: absolute;
-      top: 18px;
-      right: 30px;
-      color: #fff;
-      font-size: 2rem;
-      cursor: pointer;
-    }
-    .lightbox .lb-arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #fff;
-      font-size: 2.2rem;
-      background: rgba(255,255,255,.15);
-      border-radius: 50%;
-      padding: 8px 14px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .lightbox .lb-left { left: 30px; }
-    .lightbox .lb-right { right: 30px; }
-    .lightbox .lb-arrow:hover { background: rgba(255,255,255,.3); }
-
-    footer {
-      text-align: center;
-      color: var(--gold);
-      border-top: 4px solid var(--gold);
-      margin-top: 40px;
-      padding: 20px;
-    }
-
-    @media (max-width: 600px) {
-      .banner { height: 40vh; }
-      .site-title { font-size: 1.2rem; }
-    }
-  </style>
-</head>
-<body>
-<header class="site-header">
-  <div class="header-container">
-    <h1 class="site-title">
-      <span class="shimmer-text">Barford</span>
-      <span class="shimmer-text">GOLF SOCIETY</span>
-    </h1>
-<nav class="site-nav">
-      <ul>
-        <li><a href="index.html" class="active">Home</a></li>
-        <li><a href="events.html">Events</a></li>
-        <li><a href="worldevents.html">World Events</a></li>
-        <li><a href="scores.html">Scores</a></li>
-        <li><a href="shop.html">Shop</a></li> <!-- NEW -->
-        <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="about.html">About Us</a></li>
-        <li><a href="signup.html">Sign Up</a></li>
-      </ul>
-    </nav>
-  </div>
-</header></nav>
-
-    <!-- 🌙 Dark Mode Toggle -->
-    <div class="dark-toggle">
-      <label for="darkSwitch">🌙 Dark Mode</label>
-      <input type="checkbox" id="darkSwitch">
-    </div>
-  </div>
-</header>
-
-  <div class="banner" id="banner">
-    <div class="arrow left" onclick="prevSlide()">&#10094;</div>
-    <div class="arrow right" onclick="nextSlide()">&#10095;</div>
-  </div>
-
-  <div class="container">
-    <div class="upload-box">
-      <h2>Upload Your Golf Photos</h2>
-      <input type="file" id="fileInput" accept="image/*" multiple>
-      <div class="preview" id="preview"></div>
-      <button id="approveBtn" class="btn" style="display:none">Approve Uploads</button>
-    </div>
-
-    <h3 style="color: var(--green); text-align:center; margin-top:32px;">Gallery</h3>
-    <div class="gallery-grid" id="galleryGrid"></div>
-  </div>
-
-  <!-- Lightbox -->
-  <div class="lightbox" id="lightbox">
-    <span class="close" onclick="closeLightbox()">×</span>
-    <div class="lb-arrow lb-left" onclick="lbPrev()">&#10094;</div>
-    <img id="lightboxImg" src="">
-    <div class="lb-arrow lb-right" onclick="lbNext()">&#10095;</div>
-  </div>
-
-  <footer><p>© 2027 Barford Golf Society · Development</p></footer>
-
-<script type="module">
-await window.barfordReady;
-
-  const createClient = () => window.barford.client;;
-
-  const SUPABASE_URL = 'https://xspzmthygrajzktydvvj.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c';
-  const BUCKET = 'gallery-images';
-  const UPLOAD_PATH = 'uploads/';
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    let gallery = [];
-    let currentIndex = 0;
-    let previewFiles = [];
-
-    const banner = document.getElementById('banner');
-    const previewEl = document.getElementById('preview');
-    const approveBtn = document.getElementById('approveBtn');
-    const galleryGrid = document.getElementById('galleryGrid');
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightboxImg');
-
-    async function loadGallery() {
-      const { data: objects, error } = await supabase.storage.from(BUCKET).list(UPLOAD_PATH, { limit:1000 });
-      if (error) {
-        console.error('Error listing storage objects:', error);
-        return;
-      }
-    gallery = objects
-  .filter(obj =>
-    !obj.name.endsWith('/') &&
-    !obj.name.startsWith('.')
-  )
-  .sort((a, b) => {
-    const aTime = parseInt(a.name.split('_')[0]);
-    const bTime = parseInt(b.name.split('_')[0]);
-    return bTime - aTime; // newest first
-  })
-  .map(obj => ({
-    path: obj.name,
-    url: supabase.storage.from(BUCKET).getPublicUrl(UPLOAD_PATH + obj.name).data.publicUrl
-  }));
-
-renderBanner();
-renderGrid();
-    }
-
-    function renderBanner() {
-      banner.querySelectorAll('img').forEach(el => el.remove());
-      if (!gallery.length) {
-        const p = document.createElement('p');
-        p.textContent = 'No photos yet';
-        p.style.color = '#fff';
-        p.style.textAlign = 'center';
-        banner.appendChild(p);
-        return;
-      }
-      gallery.forEach((item,i) => {
-        const img = document.createElement('img');
-        img.src = item.url;
-        img.classList.toggle('active', i === currentIndex);
-        img.addEventListener('click', () => openLightbox(i));
-        banner.appendChild(img);
-      });
-    }
-
-    function nextSlide() {
-      if (!gallery.length) return;
-      currentIndex = (currentIndex + 1) % gallery.length;
-      updateBannerActive();
-    }
-    function prevSlide() {
-      if (!gallery.length) return;
-      currentIndex = (currentIndex - 1 + gallery.length) % gallery.length;
-      updateBannerActive();
-    }
-    function updateBannerActive() {
-      const imgs = banner.querySelectorAll('img');
-      imgs.forEach((img,i) => {
-        img.classList.toggle('active', i === currentIndex);
-      });
-    }
-    setInterval(nextSlide,5000);
-
-    function renderGrid() {
-      galleryGrid.innerHTML = '';
-      gallery.forEach((item,i) => {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-
-        const img = document.createElement('img');
-        img.src = item.url;
-        img.loading = 'lazy';
-        img.alt = `Photo ${i+1}`;
-        img.addEventListener('click', () => openLightbox(i));
-
-        const actions = document.createElement('div');
-        actions.className = 'tile-actions';
-        const del = document.createElement('button');
-        del.className = 'btn red';
-        del.textContent = 'Delete';
-        del.addEventListener('click', async e => {
-          e.stopPropagation();
-          await requestDelete(i);
-        });
-
-        actions.appendChild(del);
-        tile.append(img);
-        tile.append(actions);
-        galleryGrid.append(tile);
-      });
-    }
-
-    async function requestDelete(index) {
-      const item = gallery[index];
-      const confirmDelete = confirm('Delete this photo?');
-      if (!confirmDelete) return;
-
-      if (!await window.barford.requireAdmin()) return;
-
-      const { data, error } = await supabase.storage.from(BUCKET).remove([ UPLOAD_PATH + item.path ]);
-      if (error) {
-        alert('Delete failed: ' + error.message);
-        console.error(error);
-        return;
-      }
-
-      gallery.splice(index,1);
-      if (currentIndex >= gallery.length) currentIndex = 0;
-      renderBanner();
-      renderGrid();
-    }
-
-    document.getElementById('fileInput').addEventListener('change', e => {
-      previewEl.innerHTML = '';
-      previewFiles = Array.from(e.target.files);
-      previewFiles.forEach((file,idx) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'preview-item';
-
-          const img = document.createElement('img');
-          img.src = reader.result;
-          wrapper.append(img);
-
-          const btn = document.createElement('button');
-          btn.textContent = '×';
-          btn.title = 'Remove this photo';
-          btn.addEventListener('click', () => {
-            previewFiles.splice(idx,1);
-            wrapper.remove();
-            if (!previewFiles.length) approveBtn.style.display = 'none';
-          });
-          wrapper.append(btn);
-          previewEl.append(wrapper);
-        };
-        reader.readAsDataURL(file);
-      });
-      approveBtn.style.display = previewFiles.length ? 'inline-block' : 'none';
-    });
-
-    approveBtn.addEventListener('click', async () => {
-      if (!previewFiles.length) {
-        alert('No photos selected.');
-        return;
-      }
-      if (!await window.barford.requireMember()) return;
-      for (const file of previewFiles) {
-        const filepath = UPLOAD_PATH + Date.now() + '_' + crypto.randomUUID() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const { data, error } = await supabase.storage.from(BUCKET).upload(filepath, file, { contentType: file.type });
-        if (error) {
-          alert('Upload failed: ' + error.message);
-          console.error(error);
-          return;
-        }
-      }
-      previewFiles = [];
-      previewEl.innerHTML = '';
-      approveBtn.style.display = 'none';
-      await loadGallery();
-      alert('✅ Photos uploaded!');
-    });
-
-    // Lightbox controls
-    function openLightbox(i) {
-      lightbox.style.display = 'flex';
-      lightboxImg.src = gallery[i].url;
-      window.lightboxIndex = i;
-    }
-    function closeLightbox() {
-      lightbox.style.display = 'none';
-    }
-    function lbNext() {
-      const i = (window.lightboxIndex + 1) % gallery.length;
-      window.lightboxIndex = i;
-      lightboxImg.src = gallery[i].url;
-    }
-    function lbPrev() {
-      const i = (window.lightboxIndex - 1 + gallery.length) % gallery.length;
-      window.lightboxIndex = i;
-      lightboxImg.src = gallery[i].url;
-    }
-
-    loadGallery();
-    window.nextSlide = nextSlide;
-    window.prevSlide = prevSlide;
-    window.lbNext = lbNext;
-    window.lbPrev = lbPrev;
-    window.closeLightbox = closeLightbox;
-
-    window.closeLightbox = closeLightbox;
-
-window.loadGallery = loadGallery;
-window.renderBanner = renderBanner;
-window.nextSlide = nextSlide;
-window.prevSlide = prevSlide;
-window.updateBannerActive = updateBannerActive;
-window.renderGrid = renderGrid;
-window.requestDelete = requestDelete;
-window.openLightbox = openLightbox;
-window.closeLightbox = closeLightbox;
-window.lbNext = lbNext;
-window.lbPrev = lbPrev;
-</script> <!-- ✅ closes the type="module" script -->
-
-<!-- ✅ separate dark mode script -->
-<script type="module">
-await window.barfordReady;
-
-  const darkSwitch = document.getElementById("darkSwitch");
-  if (darkSwitch) {
-    darkSwitch.addEventListener("change", function () {
-      document.body.classList.toggle("dark-mode", this.checked);
-      localStorage.setItem("darkMode", this.checked ? "on" : "off");
-    });
-    if (localStorage.getItem("darkMode") === "on") {
-      document.body.classList.add("dark-mode");
-      darkSwitch.checked = true;
-    }
-  }
-
-</script>
-
-</body>
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183f34" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
+    />
+    <title>Gallery | Barford Golf Society</title>
+    <link rel="icon" href="icon-logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+    <script src="assets/js/baseline.js" defer></script>
+    <script type="module" src="assets/js/gallery.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a
+          href="index.html"
+          class="brand"
+          aria-label="Barford Golf Society home"
+          ><span class="brand-mark">B<span>G S</span></span
+          ><span>Barford<small>GOLF SOCIETY</small></span></a
+        ><button
+          class="menu-toggle secondary"
+          id="menuToggle"
+          aria-expanded="false"
+          aria-controls="siteNav"
+        >
+          Menu
+        </button>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+          <a href="index.html">Home</a><a href="events.html">Events</a
+          ><a href="scores.html">Scores</a>
+          <details class="more-nav">
+            <summary>More</summary>
+            <div>
+              <a href="worldevents.html">World events</a
+              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
+              ><a href="about.html">About us</a>
+            </div>
+          </details>
+          <a class="account-link" href="account.html" id="accountNav"
+            >Sign in</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="eyebrow">SOCIETY MOMENTS</p>
+        <h1>Out on the course.</h1>
+        <p class="lede">
+          The shots, the views and the people who make our golf days.
+        </p>
+      </div>
+      <section class="panel upload-panel">
+        <div>
+          <h2>Share your photos</h2>
+          <p class="muted">
+            Choose photos to preview before uploading. Up to 15 MB each.
+          </p>
+        </div>
+        <div id="uploadGate">
+          <a class="button secondary" href="account.html?next=gallery.html"
+            >Sign in to upload</a
+          >
+        </div>
+        <form id="uploadForm" hidden>
+          <label class="visually-hidden" for="photos">Choose photos</label
+          ><input
+            type="file"
+            id="photos"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            multiple
+          />
+          <div id="photoPreviews" class="photo-previews"></div>
+          <button id="uploadSubmit" hidden>Upload photos</button>
+          <p role="status"></p>
+        </form>
+      </section>
+      <div id="galleryGrid" class="gallery-grid">Loading photos…</div>
+      <dialog id="lightbox" class="lightbox">
+        <div class="lightbox-bar">
+          <button
+            class="secondary"
+            id="previousPhoto"
+            aria-label="Previous photo"
+          >
+            ←</button
+          ><span id="photoNumber"></span
+          ><button class="secondary" id="nextPhoto" aria-label="Next photo">
+            →</button
+          ><button class="secondary" id="closePhoto">Close</button>
+        </div>
+        <img id="lightboxImage" alt="Society golf day" />
+      </dialog>
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href="index.html">Barford Golf Society</a
+        ><span>2027 season · Development site</span>
+      </div>
+      <div class="footer-actions">
+        <a href="admin.html" data-admin hidden>Organiser tools</a
+        ><button id="themeToggle" class="text-button" aria-pressed="false">
+          Dark mode</button
+        ><button id="installButton" class="text-button" hidden>
+          Install app
+        </button>
+      </div>
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <noscript
+      ><p class="notice">
+        Please enable JavaScript to sign in and use the member features.
+      </p></noscript
+    >
+  </body>
 </html>

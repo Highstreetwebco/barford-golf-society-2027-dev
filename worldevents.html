@@ -1,510 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<link rel="icon" href="icon-logo.png" type="image/png">
-<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;">
-  <script src="assets/js/baseline.js" defer></script>
-  <meta name="robots" content="noindex, nofollow">
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>World Events | Barford Golf Society</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-
-
-<style>
-
-:root {
---green:#005a2b;
---gold:#d4af37;
---light-bg:#f7f7f5;
---shadow:rgba(0,0,0,0.1);
-}
-
-/* HEADER */
-
-.site-header{
-background:#ffffff;
-padding:12px 16px;
-position:sticky;
-top:0;
-z-index:1000;
-border-bottom:2px solid #c9aa4d;
-box-shadow:0 2px 8px rgba(0,0,0,0.06);
-}
-
-.header-container{
-max-width:1200px;
-margin:0 auto;
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:8px;
-}
-
-.site-title{
-font-family:"Playfair Display",serif;
-font-weight:700;
-font-size:2rem;
-color:#064d2b;
-text-align:center;
-line-height:1.2;
-}
-
-.site-title span:last-child{
-font-family:"Inter",sans-serif;
-font-weight:600;
-font-size:1.2rem;
-letter-spacing:0.04rem;
-}
-
-.site-nav ul{
-list-style:none;
-display:flex;
-flex-wrap:wrap;
-gap:12px;
-padding:0;
-margin:0;
-justify-content:center;
-}
-
-.site-nav a{
-color:#222;
-text-decoration:none;
-font-weight:600;
-font-size:0.95rem;
-position:relative;
-}
-
-.site-nav a.active{
-font-weight:700;
-color:#064d2b;
-}
-
-.site-nav a.active::after{
-content:"";
-position:absolute;
-bottom:-4px;
-left:0;
-width:100%;
-height:2px;
-background:#c9aa4d;
-}
-
-/* PAGE */
-
-body{
-font-family:"Inter",sans-serif;
-margin:0;
-background:var(--light-bg);
-}
-
-.container{
-max-width:900px;
-margin:2rem auto;
-padding:0 1rem;
-}
-
-.event-card{
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 3px 8px var(--shadow);
-margin-bottom:25px;
-}
-
-.vote-count{
-display:flex;
-gap:20px;
-font-weight:700;
-margin-top:10px;
-}
-
-.yes{color:#006d2c;}
-.no{color:#b30000;}
-
-input,select{
-width:100%;
-padding:10px;
-margin-top:6px;
-border-radius:6px;
-border:1px solid #ccc;
-}
-
-button{
-background:var(--green);
-color:white;
-border:none;
-padding:10px 16px;
-border-radius:8px;
-cursor:pointer;
-margin-top:10px;
-}
-
-button:hover{
-background:#00753f;
-}
-
-.admin-btn{
-background:var(--gold);
-color:black;
-margin-bottom:15px;
-}
-
-.admin-panel{
-border:2px solid var(--gold);
-padding:20px;
-border-radius:10px;
-background:white;
-display:none;
-margin-bottom:25px;
-}
-
-video{
-width:100%;
-margin-top:10px;
-border-radius:6px;
-}
-
-</style>
-</head>
-
-<body>
-
-<header class="site-header">
-<div class="header-container">
-
-<h1 class="site-title">
-<span>Barford</span>
-<span>GOLF SOCIETY</span>
-</h1>
-
-<nav class="site-nav">
-      <ul>
-        <li><a href="index.html" class="active">Home</a></li>
-        <li><a href="events.html">Events</a></li>
-        <li><a href="worldevents.html">World Events</a></li>
-        <li><a href="scores.html">Scores</a></li>
-        <li><a href="shop.html">Shop</a></li> <!-- NEW -->
-        <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="about.html">About Us</a></li>
-        <li><a href="signup.html">Sign Up</a></li>
-      </ul>
-    </nav>
-
-</div>
-</header>
-
-<div class="container">
-
-<h2>🌍 World Golf Events</h2>
-
-<button class="admin-btn" onclick="toggleAdmin()">🔐 Admin Access</button>
-
-<div id="adminPanel" class="admin-panel">
-
-<h3>Create New Trip Event</h3>
-
-<label>Event Name</label>
-<input id="eventName">
-
-<label>Upload Video</label>
-<input type="file" id="videoFile" accept="video/*">
-
-<button onclick="createTripEvent()">Create Event</button>
-  <hr style="margin:25px 0">
-
-<h3>Delete Event</h3>
-
-<select id="deleteEventSelect"></select>
-
-<button onclick="deleteTripEvent()" style="background:#b30000">
-Delete Event
-</button>
-  <hr style="margin:25px 0">
-
-<h3>View Votes</h3>
-
-<label>Select Event</label>
-<select id="adminVoteEventSelect" onchange="loadAdminVotes()"></select>
-
-<div id="adminVotesList"></div>
-
-</div>
-
-<div id="eventList"></div>
-
-</div>
-
-<script type="module">
-await window.barfordReady;
-
-const supa_URL="https://xspzmthygrajzktydvvj.supabase.co"
-const supa_KEY="sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c"
-
-const createClient = () => window.barford.client;
-const supa=createClient(supa_URL,supa_KEY)
-
-queueMicrotask(() => {
-loadEvents()
-loadDeleteDropdown()
-})
-
-async function loadEvents(){
-
-const { data: events, error } = await supa
-.from("trip_events")
-.select("*")
-.order("created_at",{ascending:false})
-
-if(error){
-console.error("Supabase error:",error)
-return
-}
-
-if(!events || events.length===0){
-document.getElementById("eventList").innerHTML="<p>No events yet.</p>"
-return
-}
-
-const container=document.getElementById("eventList")
-container.innerHTML=""
-
-for(const ev of events){
-
-const { data: votes, error } = await supa
-.from("trip_votes")
-.select("*")
-.eq("event_id", Number(ev.id))
-
-if(error){
-console.error(error)
-continue
-}
-
-let yes=0
-let no=0
-
-votes?.forEach(v=>{
-if(v.vote==="yes") yes++
-if(v.vote==="no") no++
-})
-
-container.innerHTML+=`
-
-<div class="event-card">
-
-<h3>${window.barford.escape(ev.name)}</h3>
-
-${ev.video ? `
-<video controls playsinline preload="metadata">
-<source src="${ev.video}" type="video/mp4">
-Your browser does not support the video tag.
-</video>` : ""}
-
-<div class="vote-count">
-<span class="yes">👍 Interested: ${yes}</span>
-<span class="no">👎 Not Interested: ${no}</span>
-</div>
-
-<form onsubmit="submitVote(event,${ev.id})">
-
-<label>Your Name</label>
-<input id="name_${ev.id}" required>
-
-<label>Interested?</label>
-<select id="vote_${ev.id}" required>
-<option value="">Select</option>
-<option value="yes">Yes</option>
-<option value="no">No</option>
-</select>
-
-<button type="submit">Submit Vote</button>
-
-</form>
-
-</div>
-`
-
-}
-
-}
-
-async function submitVote(e,eventId){
-    e.preventDefault(); const button=e.target.querySelector('button'); button.disabled=true;
-    const {error}=await supa.from('trip_votes').insert({event_id:eventId,name:document.getElementById('name_'+eventId).value.trim(),vote:document.getElementById('vote_'+eventId).value});
-    button.disabled=false;
-    if(error) return alert(error.code==='23505'?'A vote has already been recorded under this name.':error.message);
-    await loadEvents();
-  }
-
-async function toggleAdmin(){
-    const panel=document.getElementById('adminPanel');
-    if(panel.style.display==='block') {panel.style.display='none';return;}
-    if(!await window.barford.requireAdmin()) return;
-    panel.style.display='block'; await loadDeleteDropdown();
-  }
-
-async function createTripEvent(){
-
-const name = document.getElementById("eventName").value.trim()
-const file = document.getElementById("videoFile").files[0]
-
-if(!name || !file){
-alert("Enter name and upload video")
-return
-}
-
-const fileName = Date.now()+"_"+file.name
-
-// Upload video
-const { data:uploadData, error:uploadError } = await supa.storage
-.from("trip-videos")
-.upload(fileName,file)
-
-if(uploadError){
-console.error(uploadError)
-alert("Upload failed: "+uploadError.message)
-return
-}
-
-// Get public URL
-const { data:urlData } = supa.storage
-.from("trip-videos")
-.getPublicUrl(fileName)
-
-const videoUrl = urlData.publicUrl
-
-// Insert event
-const { error:insertError } = await supa
-.from("trip_events")
-.insert([{
-name:name,
-video:videoUrl
-}])
-
-if(insertError){
-console.error(insertError)
-alert("Database insert failed")
-return
-}
-
-// Reset form
-document.getElementById("eventName").value=""
-document.getElementById("videoFile").value=""
-
-alert("Event created!")
-
-loadEvents()
-
-}
-
-/* PASTE NEW CODE BELOW THIS LINE */
-
-async function deleteTripEvent(){
-
-const eventId=document.getElementById("deleteEventSelect").value
-
-if(!eventId){
-alert("Select an event first")
-return
-}
-
-if(!confirm("Delete this event?")) return
-
-await supa
-.from("trip_votes")
-.delete()
-.eq("event_id",eventId)
-
-await supa
-.from("trip_events")
-.delete()
-.eq("id",eventId)
-
-alert("Event deleted")
-
-loadEvents()
-loadDeleteDropdown()
-
-}
-
-async function loadDeleteDropdown(){
-
-const {data}=await supa
-.from("trip_events")
-.select("*")
-.order("created_at",{ascending:false})
-
-const select=document.getElementById("deleteEventSelect")
-if(!select) return
-
-select.innerHTML="<option value=''>Select Event</option>"
-
-const voteSelect=document.getElementById("adminVoteEventSelect")
-if(voteSelect){
-voteSelect.innerHTML="<option value=''>Select Event</option>"
-}
-
-data?.forEach(ev=>{
-select.innerHTML+=`<option value="${ev.id}">${window.barford.escape(ev.name)}</option>`
-if(voteSelect){
-voteSelect.innerHTML+=`<option value="${ev.id}">${window.barford.escape(ev.name)}</option>`
-}
-})
-
-}
-
-
-async function loadAdminVotes(){
-
-const eventId=document.getElementById("adminVoteEventSelect").value
-if(!eventId) return
-
-const { data, error } = await supa
-.from("trip_votes")
-.select("*")
-.eq("event_id", Number(eventId))
-.order("created_at",{ascending:true})
-
-if(error){
-console.error(error)
-return
-}
-
-const container=document.getElementById("adminVotesList")
-
-if(!data || data.length===0){
-container.innerHTML="<p>No votes yet.</p>"
-return
-}
-
-let html="<table style='width:100%;margin-top:10px'>"
-html+="<tr><th>Name</th><th>Vote</th></tr>"
-
-data.forEach(v=>{
-html+=`<tr>
-<td>${window.barford.escape(v.name)}</td>
-<td>${v.vote}</td>
-</tr>`
-})
-
-html+="</table>"
-
-container.innerHTML=html
-}
-
-
-window.loadEvents = loadEvents;
-window.submitVote = submitVote;
-window.toggleAdmin = toggleAdmin;
-window.createTripEvent = createTripEvent;
-window.deleteTripEvent = deleteTripEvent;
-window.loadDeleteDropdown = loadDeleteDropdown;
-window.loadAdminVotes = loadAdminVotes;
-</script>
-
-</body>
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183f34" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
+    />
+    <title>World events | Barford Golf Society</title>
+    <link rel="icon" href="icon-logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+    <script src="assets/js/baseline.js" defer></script>
+    <script type="module" src="assets/js/trips.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a
+          href="index.html"
+          class="brand"
+          aria-label="Barford Golf Society home"
+          ><span class="brand-mark">B<span>G S</span></span
+          ><span>Barford<small>GOLF SOCIETY</small></span></a
+        ><button
+          class="menu-toggle secondary"
+          id="menuToggle"
+          aria-expanded="false"
+          aria-controls="siteNav"
+        >
+          Menu
+        </button>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+          <a href="index.html">Home</a><a href="events.html">Events</a
+          ><a href="scores.html">Scores</a>
+          <details class="more-nav">
+            <summary>More</summary>
+            <div>
+              <a href="worldevents.html">World events</a
+              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
+              ><a href="about.html">About us</a>
+            </div>
+          </details>
+          <a class="account-link" href="account.html" id="accountNav"
+            >Sign in</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="eyebrow">FURTHER AFIELD</p>
+        <h1>A little further from home.</h1>
+        <p class="lede">
+          Explore society trips and let the organisers know if you’re
+          interested.
+        </p>
+      </div>
+      <details class="panel" data-admin hidden>
+        <summary>Add a trip</summary>
+        <form id="tripForm" class="form-stack">
+          <label for="tripName">Trip name</label
+          ><input id="tripName" required maxlength="200" /><label
+            for="tripVideo"
+            >Preview video
+            <span class="muted">(optional, up to 50 MB)</span></label
+          ><input
+            id="tripVideo"
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime"
+          /><button>Create trip</button>
+          <p role="status"></p>
+        </form>
+      </details>
+      <div id="tripList" class="stack">Loading trips…</div>
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href="index.html">Barford Golf Society</a
+        ><span>2027 season · Development site</span>
+      </div>
+      <div class="footer-actions">
+        <a href="admin.html" data-admin hidden>Organiser tools</a
+        ><button id="themeToggle" class="text-button" aria-pressed="false">
+          Dark mode</button
+        ><button id="installButton" class="text-button" hidden>
+          Install app
+        </button>
+      </div>
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <noscript
+      ><p class="notice">
+        Please enable JavaScript to sign in and use the member features.
+      </p></noscript
+    >
+  </body>
 </html>

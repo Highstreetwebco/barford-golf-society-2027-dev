@@ -1,79 +1,314 @@
-/* The 2027 replica has one database target and its own tables and storage. */
+/* One isolated 2027 backend. Browser permissions are enforced by Supabase RLS and RPCs. */
 window.barfordReady = (async () => {
-  const sdk = document.createElement('script');
-  sdk.src = 'assets/vendor/supabase-2.116.0.js';
-  await new Promise((resolve, reject) => { sdk.onload = resolve; sdk.onerror = reject; document.head.append(sdk); });
-  const url = 'https://xspzmthygrajzktydvvj.supabase.co';
-  const key = 'sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c';
-  const raw = window.supabase.createClient(url, key);
-  const tables = new Set(['events', 'rsvps', 'tee_times', 'players', 'scores', 'products', 'shop_orders', 'trip_events', 'trip_votes', 'signups']);
+  const sdk = document.createElement("script");
+  sdk.src = "assets/vendor/supabase-2.116.0.js";
+  await new Promise((resolve, reject) => {
+    sdk.onload = resolve;
+    sdk.onerror = () =>
+      reject(new Error("Could not load the account service. Please refresh."));
+    document.head.append(sdk);
+  });
+  const raw = window.supabase.createClient(
+    "https://xspzmthygrajzktydvvj.supabase.co",
+    "sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c",
+  );
+  const tables = new Set([
+    "events",
+    "rsvps",
+    "tee_times",
+    "players",
+    "scores",
+    "products",
+    "shop_orders",
+    "trip_events",
+    "trip_votes",
+    "signups",
+  ]);
   const client = {
     auth: raw.auth,
     from(name) {
-      if (!tables.has(name)) throw new Error('Unknown 2027 table: ' + name);
-      return raw.from('baseline_' + name);
+      if (!tables.has(name)) throw new Error("Unknown table");
+      return raw.from("baseline_" + name);
     },
-    rpc(name, args) { return raw.rpc('baseline_' + name, args); },
-    storage: { from(name) {
-      if (!['gallery-images', 'trip-videos'].includes(name)) throw new Error('Unknown 2027 bucket');
-      return raw.storage.from('baseline-' + name);
-    } }
+    rpc(name, args) {
+      return raw.rpc("baseline_" + name, args);
+    },
+    storage: {
+      from(name) {
+        if (!["gallery-images", "trip-videos"].includes(name))
+          throw new Error("Unknown bucket");
+        return raw.storage.from("baseline-" + name);
+      },
+    },
   };
-  const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let dialog;
-  function signIn() {
-    if (dialog) return dialog.pending;
-    const el = document.createElement('dialog');
-    el.style.cssText = 'width:min(420px,calc(100% - 32px));margin:auto;padding:28px;border:1px solid #d4af37;border-radius:14px;background:#fff;color:#222;box-shadow:0 20px 80px #0006;font:16px Inter,Arial,sans-serif;';
-    el.innerHTML = '<form><h2 style="margin-bottom:16px">2027 account</h2><p style="margin-bottom:18px">Sign in with your 2027 account.</p><label>Email<input name="email" type="email" autocomplete="username" required style="display:block;width:100%;padding:12px;margin:6px 0 14px;color:#222;background:white;border:1px solid #aaa"></label><label>Password<input name="password" type="password" autocomplete="current-password" required minlength="6" style="display:block;width:100%;padding:12px;margin:6px 0 14px;color:#222;background:white;border:1px solid #aaa"></label><p role="status" style="color:#9b2727;min-height:24px;margin-bottom:12px"></p><div style="display:flex;gap:10px;flex-wrap:wrap"><button type="submit" style="padding:12px 20px;background:#173e2e;color:white;border:0;border-radius:6px">Sign in</button><button type="button" data-cancel style="padding:12px;border:1px solid #aaa;background:white;color:#222;border-radius:6px">Cancel</button></div></form>';
+  const escape = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
+  const safeUrl = (value) => {
+    try {
+      const u = new URL(value);
+      return ["https:", "http:"].includes(u.protocol) ? escape(u.href) : "";
+    } catch {
+      return "";
+    }
+  };
+  const nextPath = () => {
+    const value =
+      new URLSearchParams(location.search).get("next") || "events.html";
+    return /^(index|events|scores|gallery|shop|worldevents|admin|account)\.html(?:#[\w-]+)?$/.test(
+      value,
+    )
+      ? value
+      : "events.html";
+  };
+  const date = (value) =>
+    new Date(value + "T12:00:00").toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  const money = (value) =>
+    new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+    }).format(Number(value));
+  const empty = (title, body) =>
+    `<div class="empty-state"><div class="empty-icon" aria-hidden="true">✦</div><h3>${escape(title)}</h3><p>${escape(body)}</p></div>`;
+  const state = {
+    user: null,
+    profile: null,
+    admin: false,
+    recovery:
+      location.hash.includes("type=recovery") ||
+      sessionStorage.getItem("barford-password-recovery") === "true",
+  };
+  async function refresh() {
+    const {
+      data: { session },
+    } = await raw.auth.getSession();
+    state.user = session?.user || null;
+    state.profile = null;
+    state.admin = false;
+    if (state.user) {
+      const [p, a] = await Promise.all([
+        raw
+          .from("profiles")
+          .select("id,full_name,email,phone")
+          .eq("id", state.user.id)
+          .maybeSingle(),
+        raw.rpc("is_admin"),
+      ]);
+      state.profile = p.data;
+      state.admin = !a.error && a.data === true;
+    }
+    document
+      .querySelectorAll("[data-admin]")
+      .forEach((el) => (el.hidden = !state.admin));
+    const nav = document.getElementById("accountNav");
+    if (nav) nav.textContent = state.user ? "My account" : "Sign in";
+    return state;
+  }
+  let pendingSignIn;
+  async function signIn() {
+    if (pendingSignIn) return pendingSignIn;
+    const el = document.createElement("dialog");
+    el.setAttribute("aria-labelledby", "signInTitle");
+    const current = location.pathname.split("/").pop() + location.hash;
+    el.innerHTML = `<form class="form-stack"><h2 id="signInTitle">Member sign in</h2><p class="muted">Sign in to save your response.</p><label for="dialogEmail">Email address</label><input id="dialogEmail" name="email" type="email" autocomplete="username" required><label for="dialogPassword">Password</label><input id="dialogPassword" name="password" type="password" autocomplete="current-password" required><p class="form-status" role="status"></p><div class="dialog-actions"><button>Sign in</button><button type="button" class="secondary" data-cancel>Cancel</button></div></form><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(current)}">Create an account</a><a href="account.html?mode=reset">Forgot password?</a></div>`;
     document.body.append(el);
-    const pending = new Promise(resolve => {
-      const close = value => { el.close(); el.remove(); dialog = null; resolve(value); };
-      el.querySelector('[data-cancel]').onclick = () => close(false);
-      el.addEventListener('cancel', e => { e.preventDefault(); close(false); });
-      el.querySelector('form').onsubmit = async e => {
+    pendingSignIn = new Promise((resolve) => {
+      const finish = (value) => {
+        el.close();
+        el.remove();
+        pendingSignIn = null;
+        resolve(value);
+      };
+      el.querySelector("[data-cancel]").onclick = () => finish(false);
+      el.oncancel = (e) => {
         e.preventDefault();
-        const button = el.querySelector('[type="submit"]'); button.disabled = true;
-        const fields = new FormData(e.target);
-        const {error} = await raw.auth.signInWithPassword({email:String(fields.get('email')).trim(),password:String(fields.get('password'))});
-        button.disabled = false;
-        if (error) { el.querySelector('[role="status"]').textContent = error.message; return; }
-        close(true);
+        finish(false);
+      };
+      el.querySelector("form").onsubmit = async (e) => {
+        e.preventDefault();
+        await submit(e.target, async () => {
+          const data = new FormData(e.target);
+          const { error } = await raw.auth.signInWithPassword({
+            email: String(data.get("email")).trim(),
+            password: String(data.get("password")),
+          });
+          if (error) throw error;
+          await refresh();
+          finish(true);
+        });
       };
     });
-    dialog = {pending}; el.showModal(); return pending;
+    el.showModal();
+    return pendingSignIn;
   }
   async function requireMember() {
-    const {data:{session}} = await raw.auth.getSession();
-    return !!session || await signIn();
+    await refresh();
+    return !!state.user || (await signIn());
   }
   async function isAdmin() {
-    const {data,error} = await raw.rpc('is_admin');
-    return !error && data === true;
+    await refresh();
+    return state.admin;
   }
   async function requireAdmin() {
     if (await isAdmin()) return true;
-    if (!await signIn()) return false;
+    if (!state.user && !(await signIn())) return false;
     if (await isAdmin()) return true;
-    alert('This account does not have administrator access.');
+    toast("This account does not have organiser access.");
     return false;
   }
-  window.barford = {client, raw, requireAdmin, requireMember, isAdmin, escape};
-  // Highlight the current page, retaining the navigation and styling from live.
-  const page = location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.site-nav a').forEach(a => {
-    a.classList.toggle('active', a.getAttribute('href') === page);
-    if (a.getAttribute('href') === page) a.setAttribute('aria-current', 'page');
+  async function submit(form, fn) {
+    const button = form.querySelector(
+      'button[type="submit"],button:not([type])',
+    );
+    const status = form.querySelector('[role="status"]');
+    if (button?.disabled) return;
+    const oldText = button?.textContent;
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Saving…";
+    }
+    if (status) {
+      status.textContent = "";
+      status.classList.remove("success");
+    }
+    try {
+      await fn();
+    } catch (error) {
+      if (status)
+        status.textContent =
+          error.message || "Something went wrong. Please try again.";
+      else toast(error.message);
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = oldText;
+      }
+    }
+  }
+  let toastTimer;
+  function toast(message) {
+    const el = document.getElementById("toast");
+    if (!el) return;
+    el.textContent = message;
+    el.style.opacity = "1";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (el.style.opacity = "0"), 4500);
+  }
+  raw.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      state.recovery = true;
+      sessionStorage.setItem("barford-password-recovery", "true");
+      window.dispatchEvent(new Event("barford-recovery"));
+    }
+    if (event === "SIGNED_OUT")
+      setTimeout(() => {
+        refresh().then(() =>
+          window.dispatchEvent(new Event("barford-signout")),
+        );
+      }, 0);
   });
-  if ('serviceWorker' in navigator) {
-    const scope = new URL('./', location.href).href;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!sessionStorage.getItem('barford-baseline-reloaded')) {
-        sessionStorage.setItem('barford-baseline-reloaded', 'true');
-        location.reload();
+  const page = location.pathname.split("/").pop() || "index.html";
+  document.querySelectorAll(".site-nav a").forEach((a) => {
+    if (a.getAttribute("href") === page) a.setAttribute("aria-current", "page");
+  });
+  document.getElementById("menuToggle")?.addEventListener("click", (e) => {
+    const open = document.getElementById("siteNav").classList.toggle("open");
+    e.currentTarget.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll(".more-nav[open]").forEach((d) => {
+      if (!d.contains(e.target)) d.open = false;
+    });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape")
+      document.querySelectorAll(".more-nav").forEach((d) => (d.open = false));
+  });
+  const themeButton = document.getElementById("themeToggle");
+  let dark = localStorage.getItem("darkMode") === "on";
+  function applyTheme() {
+    document.body.classList.toggle("dark-mode", dark);
+    themeButton?.setAttribute("aria-pressed", String(dark));
+    if (themeButton)
+      themeButton.textContent = dark ? "Light mode" : "Dark mode";
+  }
+  applyTheme();
+  themeButton?.addEventListener("click", () => {
+    dark = !dark;
+    localStorage.setItem("darkMode", dark ? "on" : "off");
+    applyTheme();
+  });
+  let installPrompt;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    document.getElementById("installButton").hidden = false;
+  });
+  document
+    .getElementById("installButton")
+    ?.addEventListener("click", async () => {
+      if (installPrompt) {
+        await installPrompt.prompt();
+        installPrompt = null;
+        document.getElementById("installButton").hidden = true;
       }
     });
-    navigator.serviceWorker.register('sw.js', {scope, updateViaCache:'none'}).then(r => r.update()).catch(console.warn);
+  if ("serviceWorker" in navigator)
+    navigator.serviceWorker
+      .register("sw.js", {
+        scope: new URL("./", location.href).href,
+        updateViaCache: "none",
+      })
+      .then((r) => r.update())
+      .catch(() => {});
+  window.barford = {
+    raw,
+    client,
+    state,
+    escape,
+    safeUrl,
+    nextPath,
+    date,
+    money,
+    empty,
+    refresh,
+    signIn,
+    requireMember,
+    requireAdmin,
+    isAdmin,
+    submit,
+    toast,
+  };
+  await refresh();
+  if (state.recovery && state.user && page !== "account.html") {
+    sessionStorage.setItem("barford-password-recovery", "true");
+    location.href = "account.html?mode=recovery";
   }
   return window.barford;
 })();
+window.addEventListener("unhandledrejection", (e) => {
+  if (!window.barford) {
+    const main = document.getElementById("main");
+    if (main) {
+      const p = document.createElement("p");
+      p.className = "notice";
+      p.textContent =
+        "The account service could not load. Please refresh or try again shortly.";
+      main.prepend(p);
+    }
+  }
+});

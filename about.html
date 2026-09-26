@@ -1,287 +1,115 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<link rel="icon" href="icon-logo.png" type="image/png">
-<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;">
-  <script src="assets/js/baseline.js" defer></script>
-  <meta name="robots" content="noindex, nofollow">
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>About Us | Barford Golf Society</title>
-
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --accent: #d4af37;
-      --accent-light: #f5e29d;
-      --dark: #1a1a1a;
-      --white: #ffffff;
-      --gray: #666666;
-      --background: #f5f9fc;
-      --radius: 14px;
-      --bigShadow: 0 12px 40px rgba(0,0,0,0.1);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: "Inter", sans-serif;
-      background: var(--background);
-      color: var(--dark);
-    }
-
-    /* HEADER */
-    .site-header {
-      background: var(--white);
-      padding: 18px 24px;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      border-bottom: 1px solid #ddd;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-
-    .header-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .site-title {
-      display: flex;
-      gap: .3rem;
-      align-items: baseline;
-    }
-
-    .site-title span:first-child {
-      font-family: 'Playfair Display', serif;
-      font-size: 2.4rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .site-title span:last-child {
-      font-size: 1.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .site-nav ul {
-      list-style: none;
-      display: flex;
-      gap: 16px;
-    }
-
-    .site-nav a {
-      text-decoration: none;
-      font-weight: 600;
-      color: var(--dark);
-    }
-
-    .site-nav a:hover,
-    .site-nav a.active {
-      color: var(--accent);
-    }
-
-    /* MAIN CONTENT */
-    .container {
-      max-width: 900px;
-      margin: 60px auto;
-      padding: 0 20px;
-    }
-
-    .section-title {
-      font-size: 2.4rem;
-      color: var(--accent);
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    .about-card {
-      background: var(--white);
-      padding: 3rem;
-      border-radius: var(--radius);
-      box-shadow: var(--bigShadow);
-      line-height: 1.8;
-      font-size: 1.05rem;
-    }
-
-    .about-card p {
-      margin-bottom: 1.5rem;
-      color: var(--gray);
-    }
-
-    /* SIGN-UP CTA */
-    .signup-cta-box {
-      margin-top: 60px;
-      padding: 2.5rem;
-      background: var(--accent-light);
-      border-radius: var(--radius);
-      text-align: center;
-      box-shadow: var(--bigShadow);
-    }
-
-    .signup-cta-box h3 {
-      font-size: 2rem;
-      margin-bottom: 0.6rem;
-      color: var(--dark);
-    }
-
-    .signup-cta-box p {
-      font-size: 1.1rem;
-      color: var(--gray);
-      margin-bottom: 1.4rem;
-    }
-
-    .btn-gold-shimmer {
-      background: linear-gradient(
-        90deg,
-        var(--accent),
-        var(--accent-light),
-        var(--accent)
-      );
-      background-size: 300% 100%;
-      color: #111;
-      font-weight: 700;
-      border-radius: var(--radius);
-      padding: 1rem 2rem;
-      box-shadow: var(--bigShadow);
-      text-transform: uppercase;
-      animation: shimmer 4s linear infinite;
-      transition: transform .3s, box-shadow .3s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn-gold-shimmer:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 54px rgba(0,0,0,0.45);
-    }
-
-    @keyframes shimmer {
-      0% { background-position: -500px 0; }
-      100% { background-position: 500px 0; }
-    }
-
-    /* FOOTER */
-    footer {
-      text-align: center;
-      padding: 30px 0;
-      color: var(--gray);
-      font-size: .95rem;
-    }
-
-    .site-nav ul { flex-wrap: wrap; justify-content: center; }
-    /* MOBILE */
-    @media (max-width: 768px) {
-      .header-container { justify-content: center; }
-      .site-title { flex-wrap: wrap; justify-content: center; }
-      .site-title span:first-child { font-size: 2rem; }
-      .site-title span:last-child { font-size: 1.2rem; }
-
-      .about-card {
-        padding: 2rem;
-      }
-
-      .section-title {
-        font-size: 2rem;
-      }
-    }
-  </style>
-</head>
-
-<body>
-
-<header class="site-header">
-  <div class="header-container">
-    <h1 class="site-title">
-      <span>Barford</span>
-      <span>Golf Society</span>
-    </h1>
-
-   <nav class="site-nav">
-      <ul>
-        <li><a href="index.html" class="active">Home</a></li>
-        <li><a href="events.html">Events</a></li>
-        <li><a href="worldevents.html">World Events</a></li>
-        <li><a href="scores.html">Scores</a></li>
-        <li><a href="shop.html">Shop</a></li> <!-- NEW -->
-        <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="about.html">About Us</a></li>
-        <li><a href="signup.html">Sign Up</a></li>
-      </ul>
-    </nav>
-  </div>
-</header>
-
-<main class="container">
-  <h2 class="section-title">About Us</h2>
-
-  <div class="about-card">
-    <p>
-      Barford Golf Society was founded over 11 years ago in the Warwickshire
-      village of Barford by a group of local friends who shared a simple idea:
-      to enjoy great golf in a relaxed, friendly and social environment.
-    </p>
-
-    <p>
-      Since then, the Society has grown into a welcoming community of over
-      30 members, made up of men and women of all ages and abilities.
-      Whether you’re a regular golfer or someone who simply enjoys getting
-      out on the course, you’ll find a supportive and inclusive atmosphere
-      where everyone is made to feel at home.
-    </p>
-
-    <p>
-      We play on the <strong>last Friday of each month</strong> from
-      <strong>March through to October</strong>, visiting eight different
-      courses across Warwickshire and occasionally venturing into the
-      beautiful Cotswolds. After the golf, it’s tradition to relax together
-      over a drink or two at The Granville Arms.
-    </p>
-
-    <p>
-      We don’t take things too seriously. Our priority is enjoyment, good
-      company and a bit of healthy exercise. There’s friendly competition
-      for those who want it, but above all we play for the love of the game.
-    </p>
-
-    <p>
-      Membership is simple and affordable. We charge a small annual fee,
-      and each golf day typically costs around <strong>£40</strong>, which
-      includes 18 holes of golf plus coffee and bacon rolls beforehand.
-    </p>
-
-    <p>
-      If you’re thinking about joining, simply register your interest and
-      leave the rest to us. We’d be delighted to welcome you to Barford Golf
-      Society.
-    </p>
-  </div>
-
-  <!-- SIGN-UP CTA -->
-  <div class="signup-cta-box">
-    <h3>Ready to Join the Fun?</h3>
-    <p>Sign up today and be part of something special. We can’t wait to welcome you.</p>
-    <a href="signup.html" class="btn-gold-shimmer">Sign Up Now</a>
-  </div>
-</main>
-
-<footer>
-  <p>© 2027 Barford Golf Society · Development</p>
-</footer>
-
-</body>
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183f34" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
+    />
+    <title>About us | Barford Golf Society</title>
+    <link rel="icon" href="icon-logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+    <script src="assets/js/baseline.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a
+          href="index.html"
+          class="brand"
+          aria-label="Barford Golf Society home"
+          ><span class="brand-mark">B<span>G S</span></span
+          ><span>Barford<small>GOLF SOCIETY</small></span></a
+        ><button
+          class="menu-toggle secondary"
+          id="menuToggle"
+          aria-expanded="false"
+          aria-controls="siteNav"
+        >
+          Menu
+        </button>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+          <a href="index.html">Home</a><a href="events.html">Events</a
+          ><a href="scores.html">Scores</a>
+          <details class="more-nav">
+            <summary>More</summary>
+            <div>
+              <a href="worldevents.html">World events</a
+              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
+              ><a href="about.html">About us</a>
+            </div>
+          </details>
+          <a class="account-link" href="account.html" id="accountNav"
+            >Sign in</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="eyebrow">BARFORD, WARWICKSHIRE</p>
+        <h1>Golf, with good company.</h1>
+        <p class="lede">A friendly society for golfers of all abilities.</p>
+      </div>
+      <div class="about-layout">
+        <article class="panel prose">
+          <h2>A society built on friendship</h2>
+          <p>
+            Barford Golf Society began with a group of local friends and a
+            simple idea: enjoy great golf in a relaxed, friendly and social
+            environment.
+          </p>
+          <p>
+            We welcome men and women of all ages and abilities. There’s friendly
+            competition for those who want it, and good company for everyone.
+          </p>
+          <h2>Our golf days</h2>
+          <p>
+            We visit courses across Warwickshire and the Cotswolds, with a
+            tradition of catching up over a drink at The Granville Arms
+            afterwards.
+          </p>
+          <p>
+            You’ll find dates, venues, prices and everything you need for each
+            golf day on the events page.
+          </p>
+          <a class="button" href="events.html">Explore our events</a>
+        </article>
+        <aside class="account-aside">
+          <p class="eyebrow">COME AND JOIN US</p>
+          <h2>Make yourself<br />at home.</h2>
+          <p>
+            Create an account to RSVP to events, register interest in trips and
+            share your photos.
+          </p>
+          <a class="button" href="signup.html">Create an account</a>
+        </aside>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href="index.html">Barford Golf Society</a
+        ><span>2027 season · Development site</span>
+      </div>
+      <div class="footer-actions">
+        <a href="admin.html" data-admin hidden>Organiser tools</a
+        ><button id="themeToggle" class="text-button" aria-pressed="false">
+          Dark mode</button
+        ><button id="installButton" class="text-button" hidden>
+          Install app
+        </button>
+      </div>
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <noscript
+      ><p class="notice">
+        Please enable JavaScript to sign in and use the member features.
+      </p></noscript
+    >
+  </body>
 </html>

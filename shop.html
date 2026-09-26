@@ -1,529 +1,148 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<link rel="icon" href="icon-logo.png" type="image/png">
-<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;">
-  <script src="assets/js/baseline.js" defer></script>
-  <meta name="robots" content="noindex, nofollow">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shop | Barford Golf Society</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-
-<style>
-:root{
-  --green:#005a2b;
-  --gold:#d4af37;
-  --light:#f4f4f4;
-}
-body{
-  font-family:"Inter",sans-serif;
-  margin:0;
-  background:var(--light);
-}
-.site-header{
-  background:#fff;
-  border-bottom:3px solid var(--gold);
-  padding:12px 0;
-}
-.header-container{
-  max-width:1200px;
-  margin:auto;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:0 20px;
-}
-.site-title{
-  font-weight:700;
-  font-size:1.8rem;
-  color:var(--green);
-}
-.site-nav ul{
-  list-style:none;
-  display:flex;
-  gap:18px;
-  margin:0;
-  padding:0;
-}
-.site-nav a{
-  text-decoration:none;
-  font-weight:600;
-  color:#333;
-}
-.site-nav a.active{
-  color:var(--green);
-  border-bottom:2px solid var(--gold);
-}
-.container{
-  max-width:1200px;
-  margin:40px auto;
-  padding:0 20px;
-}
-.shop-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.admin-btn{
-  background:var(--gold);
-  border:none;
-  padding:8px 14px;
-  border-radius:6px;
-  font-weight:600;
-  cursor:pointer;
-}
-.product-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
-  gap:25px;
-  margin-top:30px;
-}
-.product-card{
-  background:#fff;
-  padding:15px;
-  border-radius:10px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
-  text-align:center;
-}
-.product-card img{
-  width:100%;
-  height:170px;
-  object-fit:contain;
-}
-.product-name{
-  font-weight:600;
-  margin:10px 0 4px;
-}
-.product-price{
-  font-weight:700;
-  color:var(--green);
-}
-.product-card button{
-  margin-top:8px;
-  background:var(--green);
-  color:#fff;
-  border:none;
-  padding:6px 10px;
-  border-radius:5px;
-  cursor:pointer;
-}
-#basketPanel{
-  position:fixed;
-  right:0;
-  top:0;
-  height:100%;
-  width:350px;
-  background:#fff;
-  box-shadow:-4px 0 10px rgba(0,0,0,0.1);
-  padding:20px;
-  overflow-y:auto;
-  transform:translateX(100%);
-  transition:0.3s;
-}
-#basketPanel.active{
-  transform:translateX(0);
-}
-.admin-panel{
-  margin-top:50px;
-  background:#fff;
-  padding:20px;
-  border:2px solid var(--gold);
-  border-radius:10px;
-  display:none;
-}
-.admin-panel input{
-  width:100%;
-  padding:8px;
-  margin-bottom:10px;
-}
-.admin-panel button{
-  background:var(--green);
-  color:#fff;
-  border:none;
-  padding:8px 12px;
-  border-radius:5px;
-  cursor:pointer;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th,td{
-  padding:6px;
-  border-bottom:1px solid #ddd;
-}
-footer{
-  text-align:center;
-  padding:30px;
-  margin-top:60px;
-  border-top:3px solid var(--gold);
-}
-  .basket-btn{
-  background: var(--green);
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: 700;
-  padding: 14px 22px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-  transition: all 0.2s ease;
-}
-
-.basket-btn:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.2);
-}
-
-.basket-btn:active{
-  transform: translateY(0px);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-}
-
-/* Keep the copied shop usable on narrow screens. */
-* { box-sizing: border-box; }
-.site-nav ul { flex-wrap: wrap; justify-content: center; }
-#basketPanel { display: none; width: min(390px, 100vw); z-index: 1100; }
-#basketPanel.active { display: block; }
-.admin-panel { overflow-x: auto; }
-@media (max-width: 800px) {
-  .header-container { flex-direction: column; gap: 12px; }
-  .site-title { text-align: center; }
-  .shop-top { flex-wrap: wrap; gap: 12px; }
-}
-</style>
-</head>
-
-<body>
-
-<header class="site-header">
-  <div class="header-container">
-    <div class="site-title">Barford Golf Society</div>
-    <nav class="site-nav">
-      <ul>
-        <li><a href="index.html" class="active">Home</a></li>
-        <li><a href="events.html">Events</a></li>
-        <li><a href="worldevents.html">World Events</a></li>
-        <li><a href="scores.html">Scores</a></li>
-        <li><a href="shop.html">Shop</a></li> <!-- NEW -->
-        <li><a href="gallery.html">Gallery</a></li>
-        <li><a href="about.html">About Us</a></li>
-        <li><a href="signup.html">Sign Up</a></li>
-      </ul>
-    </nav>
-  </div>
-</header>
-
-<div class="container">
-
-<div class="shop-top">
-  <h1>Golf Balls</h1>
-  <div>
-    <button class="basket-btn" onclick="toggleBasket()">
-  🛒 Basket (<span id="basketCount">0</span>)
-</button>
-    <button class="admin-btn" onclick="toggleAdmin()">Admin</button>
-  </div>
-</div>
-
-<div id="productGrid" class="product-grid"></div>
-
-<!-- Basket -->
-<div id="basketPanel">
-  <button type="button" onclick="toggleBasket()" aria-label="Close basket" style="float:right">✕</button><h3>Your Basket</h3>
-  <div id="basketItems"></div>
-  <h4>Total: £<span id="basketTotal">0.00</span></h4>
-
-  <input id="customerName" placeholder="Your Name">
-  <select id="paymentMethod">
-    <option value="">Select Payment Method</option>
-    <option value="Bank Transfer">Bank Transfer</option>
-    <option value="Cash at Event">Cash at Next Event</option>
-  </select>
-
-  <button onclick="checkout()">Reserve Items</button>
-</div>
-
-<!-- Admin -->
-<div id="adminPanel" class="admin-panel">
-  <h3>Add Product</h3>
-  <input id="name" placeholder="Product Name">
-  <input id="description" placeholder="Description">
-  <input id="price" type="number" step="0.01" placeholder="Price">
-  <input id="stock" type="number" placeholder="Stock">
-  <input id="image" placeholder="Image URL">
-  <button onclick="addProduct()">Add Product</button>
-
-  <h3>Manage Products</h3>
-<div id="adminProducts"></div>
-
-<hr>
-
-<div id="ordersContainer"></div>
-</div>
-
-</div>
-
-<footer>
-© 2027 Barford Golf Society · Development
-</footer>
-
-<script type="module">
-await window.barfordReady;
-const SUPA_URL="https://xspzmthygrajzktydvvj.supabase.co";
-const SUPA_KEY="sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c";
-
-const createClient = () => window.barford.client;
-const supa = createClient(SUPA_URL,SUPA_KEY);
-
-let basket=[];
-let productsCache=[];
-
-queueMicrotask(loadProducts);
-
-function toggleBasket(){
-  document.getElementById("basketPanel").classList.toggle("active");
-}
-
-async function toggleAdmin(){
-    if(!await window.barford.requireAdmin()) return;
-    document.getElementById('adminPanel').style.display='block';
-    await loadAdminProducts(); await loadOrders();
-  }
-
-async function loadProducts(){
-  const {data,error}=await supa.from("products")
-    .select("*")
-    .eq("active",true);
-
-  if(error){ alert(error.message); return; }
-
-  productsCache=data;
-
-  const grid=document.getElementById("productGrid");
-  grid.innerHTML=data.length ? "" : "<p>No products available yet.</p>";
-
-  data.forEach(p=>{
-    grid.innerHTML+=`
-      <div class="product-card">
-        <img src="${p.image||'icon-logo.png'}">
-        <div class="product-name">${window.barford.escape(p.name)}</div>
-        <div>${window.barford.escape(p.description||'')}</div>
-        <div class="product-price">£${p.price}</div>
-        <div>Stock: ${p.packs_left}</div>
-        <button ${p.packs_left<=0?'disabled':''}
-          onclick="addToBasket(${p.id})">
-          ${p.packs_left<=0?'Out of Stock':'Add Pack'}
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183f34" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
+    />
+    <title>Shop | Barford Golf Society</title>
+    <link rel="icon" href="icon-logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/site.css" />
+    <script src="assets/js/baseline.js" defer></script>
+    <script type="module" src="assets/js/shop.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a
+          href="index.html"
+          class="brand"
+          aria-label="Barford Golf Society home"
+          ><span class="brand-mark">B<span>G S</span></span
+          ><span>Barford<small>GOLF SOCIETY</small></span></a
+        ><button
+          class="menu-toggle secondary"
+          id="menuToggle"
+          aria-expanded="false"
+          aria-controls="siteNav"
+        >
+          Menu
+        </button>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+          <a href="index.html">Home</a><a href="events.html">Events</a
+          ><a href="scores.html">Scores</a>
+          <details class="more-nav">
+            <summary>More</summary>
+            <div>
+              <a href="worldevents.html">World events</a
+              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
+              ><a href="about.html">About us</a>
+            </div>
+          </details>
+          <a class="account-link" href="account.html" id="accountNav"
+            >Sign in</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="eyebrow">SOCIETY SHOP</p>
+        <h1>Ready for your next round.</h1>
+        <p class="lede">
+          Reserve your items online and pay by bank transfer or at an event.
+        </p>
+      </div>
+      <div class="toolbar">
+        <p class="muted">Payment is arranged with the society.</p>
+        <button id="basketButton">
+          Basket <span id="basketCount">0</span>
         </button>
       </div>
-    `;
-  });
-}
-
-function addToBasket(id){
-  const {name,price}=productsCache.find(p=>p.id===id);
-  const existing=basket.find(x=>x.id===id);
-  if(existing){
-    existing.qty++;
-  }else{
-    basket.push({id,name,price,qty:1});
-  }
-  updateBasket();
-}
-
-function updateBasket(){
-  document.getElementById("basketCount").innerText=basket.reduce((a,b)=>a+b.qty,0);
-  let total=0;
-  let html="<table>";
-  basket.forEach(item=>{
-    total+=item.price*item.qty;
-    html+=`<tr><td>${window.barford.escape(item.name)} x${item.qty}</td><td>£${(item.price*item.qty).toFixed(2)}</td></tr>`;
-  });
-  html+="</table>";
-  document.getElementById("basketItems").innerHTML=html;
-  document.getElementById("basketTotal").innerText=total.toFixed(2);
-}
-
-async function checkout(){
-    const name=document.getElementById('customerName').value.trim();
-    const payment=document.getElementById('paymentMethod').value;
-    if(!name || !payment) return alert('Enter your name and payment preference.');
-    if(!basket.length) return alert('Your basket is empty.');
-    if(!await window.barford.requireMember()) return;
-    const {error}=await supa.rpc('reserve_basket',{items:basket.map(({id,qty})=>({id,qty})),customer:name,payment});
-    if(error) return alert(error.message);
-    alert('Reservation confirmed. Payment is still due.');
-    basket=[]; updateBasket(); toggleBasket(); await loadProducts();
-  }
-
-async function addProduct(){
-
-  const nameInput = document.getElementById("name").value;
-  const descInput = document.getElementById("description").value;
-  const priceInput = parseFloat(document.getElementById("price").value);
-  const stockInput = parseInt(document.getElementById("stock").value);
-  const imageInput = document.getElementById("image").value;
-
-  if(!nameInput || isNaN(priceInput) || isNaN(stockInput)){
-    alert("Please complete all required fields");
-    return;
-  }
-
-  const { error } = await supa.from("products").insert([{
-    category:"balls",
-    name:nameInput,
-    description:descInput,
-    price:priceInput,
-    packs_left:stockInput,
-    image:imageInput,
-    active:true
-  }]);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  loadProducts();
-  loadAdminProducts();
-}
-
-async function loadAdminProducts(){
-  const {data,error}=await supa.from("products")
-    .select("*")
-    .eq("active", true);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  let html="<table><tr><th>Name</th><th>Price</th><th>Stock</th><th>Actions</th></tr>";
-
-  data.forEach(p=>{
-    html+=`<tr>
-      <td><input id="name_${p.id}" value="${window.barford.escape(p.name)}"></td>
-      <td><input type="number" id="price_${p.id}" value="${p.price}"></td>
-      <td><input type="number" id="stock_${p.id}" value="${p.packs_left}"></td>
-      <td>
-        <button onclick="saveProduct(${p.id})">Save</button>
-        <button onclick="deleteProduct(${p.id})" style="background:#c0392b;">Delete</button>
-      </td>
-    </tr>`;
-  });
-
-  html+="</table>";
-
-  document.getElementById("adminProducts").innerHTML=html;
-}
-  async function saveProduct(id){
-
-  const name=document.getElementById(`name_${id}`).value;
-  const price=document.getElementById(`price_${id}`).value;
-  const stock=document.getElementById(`stock_${id}`).value;
-
-  await supa.from("products")
-    .update({
-      name:name,
-      price:price,
-      packs_left:stock
-    })
-    .eq("id",id);
-
-  loadProducts();
-  loadAdminProducts();
-}
-
-async function deleteProduct(id){
-  await supa.from("products")
-    .update({active:false})
-    .eq("id",id);
-
-  loadProducts();
-  loadAdminProducts();
-}
-
-/* ======================
-   NEW: ORDER MANAGEMENT
-====================== */
-
-async function loadOrders(){
-  const {data}=await supa.from("shop_orders")
-    .select("*")
-    .order("id",{ascending:false});
-
-  let html="<h3>Orders</h3>";
-  html+="<table><tr><th>Name</th><th>Product</th><th>Qty</th><th>Payment</th><th>Status</th><th>Actions</th></tr>";
-
-  data.forEach(o=>{
-    html+=`<tr>
-      <td>${window.barford.escape(o.customer_name)}</td>
-      <td>${window.barford.escape(o.product_name)}</td>
-      <td>${o.quantity}</td>
-      <td>${window.barford.escape(o.payment_method)}</td>
-      <td>${o.delivered ? "Delivered" : "Pending"}</td>
-      <td>
-        ${!o.delivered ? `<button onclick="markDelivered(${o.id})">Deliver</button>` : ""}
-        <button onclick="cancelOrder(${o.id},${o.product_id},${o.quantity})" style="background:#c0392b;margin-left:5px;">Cancel</button>
-      </td>
-    </tr>`;
-  });
-
-  html+="</table>";
-
-  document.getElementById("ordersContainer").innerHTML=html;
-}
-
-async function markDelivered(id){
-  await supa.from("shop_orders")
-    .update({delivered:true})
-    .eq("id",id);
-
-  loadOrders();
-}
-  async function cancelOrder(orderId, productId, quantity){
-
-  if(!confirm("Cancel this order?")) return;
-
-  // Get current stock
-  const {data:product}=await supa
-    .from("products")
-    .select("packs_left")
-    .eq("id",productId)
-    .single();
-
-  // Restore stock
-  await supa.from("products")
-    .update({packs_left: product.packs_left + quantity})
-    .eq("id",productId);
-
-  // Delete order
-  await supa.from("shop_orders")
-    .delete()
-    .eq("id",orderId);
-
-  loadProducts();
-  loadOrders();
-}
-
-window.toggleBasket = toggleBasket;
-window.toggleAdmin = toggleAdmin;
-window.loadProducts = loadProducts;
-window.addToBasket = addToBasket;
-window.updateBasket = updateBasket;
-window.checkout = checkout;
-window.addProduct = addProduct;
-window.loadAdminProducts = loadAdminProducts;
-window.saveProduct = saveProduct;
-window.deleteProduct = deleteProduct;
-window.loadOrders = loadOrders;
-window.markDelivered = markDelivered;
-window.cancelOrder = cancelOrder;
-</script>
-
-</body>
+      <div id="shopStatus" role="status"></div>
+      <div id="productGrid" class="product-grid">Loading products…</div>
+      <section id="myOrders" class="section" hidden>
+        <h2>Your reservations</h2>
+        <div id="myOrderList"></div>
+      </section>
+      <details id="shopAdmin" class="panel section" data-admin hidden>
+        <summary>Manage shop</summary>
+        <form id="productForm" class="form-grid">
+          <label
+            >Product name<input name="name" required maxlength="200" /></label
+          ><label
+            >Price (£)<input
+              name="price"
+              type="number"
+              min="0"
+              step="0.01"
+              required /></label
+          ><label
+            >Stock<input
+              name="packs_left"
+              type="number"
+              min="0"
+              step="1"
+              required /></label
+          ><label>Image URL (optional)<input name="image" type="url" /></label
+          ><label class="full"
+            >Description<textarea name="description"></textarea></label
+          ><button>Add product</button>
+          <p role="status"></p>
+        </form>
+        <div id="adminProducts" class="stack"></div>
+        <h3>Orders</h3>
+        <div id="adminOrders" class="table-scroll"></div>
+      </details>
+      <dialog id="basketDialog">
+        <div class="section-heading">
+          <h2>Your basket</h2>
+          <button class="secondary" id="closeBasket">Close</button>
+        </div>
+        <div id="basketItems"></div>
+        <p class="basket-total">
+          Total <strong id="basketTotal">£0.00</strong>
+        </p>
+        <form id="checkoutForm" class="form-stack">
+          <label for="paymentMethod">How would you like to pay?</label
+          ><select id="paymentMethod" required>
+            <option value="">Choose payment method</option>
+            <option>Bank Transfer</option>
+            <option>Cash at Event</option>
+          </select>
+          <p class="muted">
+            This reserves your items. Payment will still be due.
+          </p>
+          <button>Reserve items</button>
+          <p role="status"></p>
+        </form>
+      </dialog>
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href="index.html">Barford Golf Society</a
+        ><span>2027 season · Development site</span>
+      </div>
+      <div class="footer-actions">
+        <a href="admin.html" data-admin hidden>Organiser tools</a
+        ><button id="themeToggle" class="text-button" aria-pressed="false">
+          Dark mode</button
+        ><button id="installButton" class="text-button" hidden>
+          Install app
+        </button>
+      </div>
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <noscript
+      ><p class="notice">
+        Please enable JavaScript to sign in and use the member features.
+      </p></noscript
+    >
+  </body>
 </html>
