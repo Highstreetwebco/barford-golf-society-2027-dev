@@ -1,4 +1,5 @@
 import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-holes-1";
 import {
   operationTabs,
   showOperations,
@@ -24,6 +25,7 @@ let events = [],
   selected = null,
   rows = [],
   groups = [];
+let holeSetup;
 const form = document.getElementById("eventForm"),
   picker = document.getElementById("adminEvent");
 if (!b.state.admin) {
@@ -54,6 +56,7 @@ if (!b.state.admin) {
   setInterval(refreshIndicators, 30000);
   window.addEventListener("focus", refreshIndicators);
   mountEventFields(form);
+  holeSetup = mountHoleSetup(form, b);
   const ready = await init();
   if (ready) {
     gate.hidden = true;
@@ -156,6 +159,7 @@ async function init() {
       if (!name) throw new Error("Enter an event name.");
       const updates = {
         ...eventFields(form),
+        course_layout_id: f.get('event_type') === 'social' ? null : holeSetup.layoutId(),
         name,
         round_number: f.get("round_number")
           ? Number(f.get("round_number"))
@@ -270,9 +274,12 @@ async function init() {
           (btn.onclick = () => {
             const p = result.places[Number(btn.dataset.course)];
             form.elements.place_id.value = p.id;
-            form.elements.course_name.value = document
-              .getElementById("courseQuery")
-              .value.trim();
+            form.elements.course_name.value = p.displayName?.text || document.getElementById("courseQuery").value.trim();
+            if (p.formattedAddress) form.elements.address.value = p.formattedAddress;
+            if (p.location?.latitude != null && p.location?.longitude != null) {
+              form.elements.latitude.value = p.location.latitude;
+              form.elements.longitude.value = p.location.longitude;
+            }
             status.textContent =
               "Matched " +
               p.displayName.text +
@@ -307,6 +314,7 @@ async function fillEvent() {
     document.getElementById("teeStart").value = selected.first_time;
   document.getElementById("teeGap").value = selected?.tee_interval || 8;
   updateEventType(form);
+  await holeSetup?.setEvent(selected);
   await loadResponses();
   await showOperations(
     document.querySelector("[data-tab].active")?.dataset.tab,

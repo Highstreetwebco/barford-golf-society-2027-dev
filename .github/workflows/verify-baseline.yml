@@ -17,6 +17,7 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.57.0
       - run: npx playwright install --with-deps chromium
       - run: node tests/baseline.cjs
+      - run: node tests/hole-view.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

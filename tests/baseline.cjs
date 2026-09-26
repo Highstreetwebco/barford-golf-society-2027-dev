@@ -254,6 +254,8 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       model.league.revision++;
       return reply(model.league);
     }
+    if (p.endsWith("/rpc/baseline_course_layout") && body.action === "list")
+      return reply({ layouts: [], legacy: [] });
     if (p.endsWith("/rpc/baseline_finance")) {
       model.expenses ||= [];
       const q = body.payload || {};

@@ -56,6 +56,24 @@ else {
   const ev = data[0];
   area.classList.add("has-event");
   area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow">${b.escape(b.date(ev.date))}</p><h2>${b.escape(ev.name)}</h2></div><a class="button" href="event.html?id=${ev.id}#rsvp">RSVP & event details</a></div><div class="next-event-facts"><span><small>FIRST TEE</small><strong>${b.escape(ev.first_time || "To be announced")}</strong></span><span><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong></span><span><small>THE COURSE</small><strong>${b.escape(ev.location || ev.name)}</strong></span></div><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><details class="home-guide"><summary>Course guide, directions & forecast <span aria-hidden="true">↗</span></summary><div id="homeExperience"></div></details>`;
+  const holeArea = document.createElement('div');
+  holeArea.className = 'home-hole-action';
+  area.querySelector('.next-event-heading').after(holeArea);
+  function refreshHoleAction() {
+    holeArea.hidden = !b.state.user || ev.cancelled || ev.event_type === 'social' || ev.date !== londonToday();
+    if (holeArea.hidden || holeArea.childElementCount) return;
+    holeArea.innerHTML = '<div><strong>On the course today</strong><p>Choose your hole for the course map and GPS distances.</p></div><button type="button" data-view-hole>View hole</button>';
+    holeArea.querySelector('button').onclick = async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const { openHolePicker } = await import('./hole-view.js?v=2027-holes-1');
+        await openHolePicker(ev, b);
+      } catch (error) { b.toast(error.message); }
+      finally { button.disabled = false; }
+    };
+  }
+  refreshHoleAction();
   let ownTime = null;
   const groupArea = document.getElementById("homeTeeGroup");
   await mountEventOperations(document.getElementById("homeOperations"), ev, {
@@ -103,6 +121,7 @@ else {
         }
         if (experienceLoaded) await mountExperience(detail, ev, ownTime);
       }
+      refreshHoleAction();
       await updateSlots(ev, area);
       if (
         b.state.user &&
