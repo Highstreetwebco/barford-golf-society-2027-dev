@@ -114,6 +114,7 @@ else {
       }
       if (background && document.querySelector("dialog[open]")) return;
       renderActions();
+      groupArea.hidden = !b.state.user || ev.event_type === "social";
       await Promise.all([
         operationArea.contains(document.activeElement) ? Promise.resolve() : mountEventOperations(operationArea, ev, options),
         refreshInvites(),

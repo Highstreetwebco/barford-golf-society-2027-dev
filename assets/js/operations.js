@@ -127,6 +127,7 @@ export async function mountEventOperations(area, ev, { compact = false, showBook
     area.hidden = true;
     return;
   }
+  area.hidden = false;
   try {
     const data = await operation("member", { event_id: ev.id });
     const { data: r, error } = await b.client
