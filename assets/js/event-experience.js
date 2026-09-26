@@ -170,6 +170,21 @@ export async function mountExperience(area, ev, ownTime) {
   };
   if (id)
     renderVideo(id, "Explore " + (ev.course_name || ev.location || ev.name));
+  const holes = Object.entries(ev.per_hole_videos || {}).filter(([, url]) =>
+    videoId(url),
+  );
+  if (ev.video_type === "per-hole" && holes.length) {
+    const box = document.createElement("div");
+    box.className = "section";
+    box.innerHTML = `<label for="courseHole">Preview a hole</label><select id="courseHole"><option value="">Choose a hole</option>${holes.map(([name, url]) => `<option value="${videoId(url)}">${e(name.replace("hole", "Hole "))}</option>`).join("")}</select><div class="hole-preview"></div>`;
+    area.querySelector("[data-video]").append(box);
+    box.querySelector("select").onchange = (event) => {
+      const id = event.target.value;
+      const target = box.querySelector(".hole-preview");
+      target.innerHTML = id ? videoHTML(id, "Hole preview") : "";
+      bindVideo(target);
+    };
+  }
   const weatherPromise = b
     .service("weather", { event_id: ev.id })
     .then((w) =>
@@ -216,6 +231,7 @@ export async function mountExperience(area, ev, ownTime) {
   await weatherPromise;
 }
 function conditions(code) {
+  if (code == null) return "conditions not yet available";
   return code === 0
     ? "clear skies"
     : code <= 3

@@ -103,8 +103,26 @@ Deno.serve(async (req) => {
         } catch {}
       }
       let course = false;
-      if(GOOGLE && await budget('google-capability-check',86400,3)){
-        try{const data=await get('https://places.googleapis.com/v1/places:searchText',{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':GOOGLE,'X-Goog-FieldMask':'places.id'},body:JSON.stringify({textQuery:'The Warwickshire golf course',maxResultCount:1,regionCode:'GB'})});course=!!data.places?.length;}catch{}
+      if (GOOGLE && (await budget("google-capability-check", 86400, 3))) {
+        try {
+          const data = await get(
+            "https://places.googleapis.com/v1/places:searchText",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": GOOGLE,
+                "X-Goog-FieldMask": "places.id",
+              },
+              body: JSON.stringify({
+                textQuery: "The Warwickshire golf course",
+                maxResultCount: 1,
+                regionCode: "GB",
+              }),
+            },
+          );
+          course = !!data.places?.length;
+        } catch {}
       }
       return reply({
         course_lookup: course,
@@ -219,15 +237,13 @@ Deno.serve(async (req) => {
         result.review_count = p.userRatingCount;
         result.latitude = p.location?.latitude;
         result.longitude = p.location?.longitude;
-        result.reviews = (p.reviews || [])
-          .slice(0, 2)
-          .map((r: any) => ({
-            text: (r.text?.text || "").split(/\s+/).slice(0, 20).join(" "),
-            author: r.authorAttribution?.displayName,
-            author_url: r.authorAttribution?.uri,
-            url: r.googleMapsUri,
-            rating: r.rating,
-          }));
+        result.reviews = (p.reviews || []).slice(0, 2).map((r: any) => ({
+          text: (r.text?.text || "").split(/\s+/).slice(0, 20).join(" "),
+          author: r.authorAttribution?.displayName,
+          author_url: r.authorAttribution?.uri,
+          url: r.googleMapsUri,
+          rating: r.rating,
+        }));
         const photo = p.photos?.[0];
         if (photo) {
           const media = await get(
@@ -285,7 +301,8 @@ Deno.serve(async (req) => {
           status: "too_early",
           message: "Forecasts become available within 16 days of the event.",
         });
-      const cached = (await db("baseline_weather?event_id=eq." + eventId))[0];
+      const saved = (await db("baseline_weather?event_id=eq." + eventId))[0];
+      const cached = saved?.forecast?.event_date === ev.date ? saved : null;
       if (
         cached &&
         Date.now() - Date.parse(cached.updated_at) < 20 * 3600000 &&

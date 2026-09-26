@@ -16,6 +16,7 @@ const today = londonToday;
 const dedicated = location.pathname.endsWith("event.html");
 const eventId = Number(new URLSearchParams(location.search).get("id"));
 let experienceMounted = false;
+let experienceKey = "";
 const own = (id) =>
   responses.find((r) => r.event_id === id && r.user_id === state.user?.id);
 const status = (r) =>
@@ -138,6 +139,9 @@ async function render() {
       };
       document.querySelector(".page-heading").append(action);
     }
+    document.querySelector("[data-filter]").parentElement.hidden = true;
+    document.querySelector(".page-heading .lede").textContent =
+      "Your RSVP, course information and plans for the day.";
     document
       .querySelectorAll("[data-filter]")
       .forEach((x) => (x.hidden = true));
@@ -157,7 +161,9 @@ async function render() {
           t.event_id === ev.id &&
           t.players.some((p) => p.user_id === state.user?.id),
       )?.tee_time;
-    if (!experienceMounted) {
+    const nextKey = JSON.stringify([ev, ownTime, state.user?.id]);
+    if (!experienceMounted || nextKey !== experienceKey) {
+      experienceKey = nextKey;
       experienceMounted = true;
       mountExperience(
         document.getElementById("eventExperience"),
@@ -165,6 +171,7 @@ async function render() {
         ownTime,
       ).then(() => updateSlots(ev, document.getElementById("eventExperience")));
     }
+    await updateSlots(ev, document.getElementById("eventExperience"));
     await mountBuggy(document.getElementById("buggyPanel"), ev);
   }
   list
@@ -181,29 +188,6 @@ async function render() {
           : "";
       }),
   );
-}
-function calendar(ev) {
-  const date = ev.date.replaceAll("-", ""),
-    time = (ev.first_time || "").match(/^(\d{2}):(\d{2})$/);
-  const start = time ? date + "T" + time[1] + time[2] + "00" : date;
-  const endDate = new Date(ev.date + "T12:00:00");
-  endDate.setDate(endDate.getDate() + 1);
-  const end = time
-    ? date +
-      "T" +
-      String(Math.min(23, Number(time[1]) + 5)).padStart(2, "0") +
-      time[2] +
-      "00"
-    : endDate.toLocaleDateString("en-CA").replaceAll("-", "");
-  const p = new URLSearchParams({
-    action: "TEMPLATE",
-    text: ev.name,
-    dates: start + "/" + end,
-    ctz: "Europe/London",
-    location: ev.location || "",
-    details: ev.description || "",
-  });
-  return e("https://calendar.google.com/calendar/render?" + p);
 }
 function roster(ev) {
   if (!state.user)
@@ -339,9 +323,7 @@ document.querySelectorAll("[data-filter]").forEach(
       render();
     }),
 );
-window.addEventListener("barford-signout", () =>
-  load().catch((error) => b.toast(error.message)),
-);
+window.addEventListener("barford-signout", () => location.reload());
 try {
   await load();
   const hash = location.hash;
@@ -363,8 +345,29 @@ setInterval(async () => {
   const ev = events.find((x) => x.id === eventId);
   if (dedicated && ev) {
     await updateSlots(ev, document.getElementById("eventExperience"));
-    if (!document.querySelector(".rsvp-form"))
-      await mountBuggy(document.getElementById("buggyPanel"), ev);
+    if (!document.querySelector(".rsvp-form")) {
+      const latest = await c
+        .from("events")
+        .select("*")
+        .eq("id", ev.id)
+        .maybeSingle();
+      const latestTees = state.user
+        ? await c
+            .from("tee_times")
+            .select("*")
+            .eq("event_id", ev.id)
+            .order("group_number")
+        : { data: [] };
+      if (
+        !latest.error &&
+        !latestTees.error &&
+        (JSON.stringify(latest.data) !== JSON.stringify(ev) ||
+          JSON.stringify(latestTees.data) !==
+            JSON.stringify(tees.filter((t) => t.event_id === ev.id)))
+      )
+        await load();
+      else await mountBuggy(document.getElementById("buggyPanel"), ev);
+    }
   }
 }, 25000);
 window.addEventListener("focus", () => {

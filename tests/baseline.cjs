@@ -133,16 +133,26 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         return body.password === "wrong-password"
           ? reply({ error: "Check your username and password." }, 400)
           : reply({ session });
-      if (body.action === "course") return reply({});
-      if (body.action === "weather") return reply({ status: "too_early" });
+      if (body.action === "course") return reply(model.course || {});
+      if (body.action === "weather")
+        return reply(model.weather || { status: "too_early" });
       if (body.action === "search_course") return reply({ places: [] });
     }
     if (p.endsWith("/baseline_member_accounts"))
       return reply({ member_id: uid, disabled: false });
     if (p.endsWith("/rpc/baseline_member_roster"))
       return reply([{ id: uid, name: "New Member", claimed: false }]);
-    if (p.endsWith("/rpc/baseline_buggy_details"))
-      return reply({ status: "unpaired" });
+    if (p.endsWith("/rpc/baseline_buggy_details")) {
+      if (body.claim)
+        model.buggy = {
+          ...model.buggy,
+          booking_me: true,
+          booking_name: "Test Member",
+        };
+      if (body.release)
+        model.buggy = { ...model.buggy, booking_me: false, booking_name: null };
+      return reply(model.buggy || { status: "unpaired" });
+    }
     if (p === "/auth/v1/token")
       return body.password === "wrong-password"
         ? reply(
@@ -595,6 +605,107 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       report.push({
         page: "member-account-rsvp-shop-flow",
         width,
+        status: "passed",
+      });
+      await context.close();
+    }
+    // Exercise the populated event details, individual forecast, private buggy state and calendar file.
+    {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 960 },
+        serviceWorkers: "block",
+      });
+      const model = await mocks(context, { signedIn: true });
+      const page = await context.newPage();
+      model.responses = [
+        {
+          id: 111,
+          event_id: 999,
+          user_id: uid,
+          name: "Test Member",
+          attending: true,
+          reserve: false,
+          buggy: true,
+          preferred_time: null,
+        },
+      ];
+      model.groups = [
+        {
+          event_id: 999,
+          group_number: 1,
+          tee_time: "09:32",
+          players: [{ user_id: uid, name: "Test Member", type: "buggy" }],
+        },
+      ];
+      model.buggy = {
+        status: "paired",
+        partner_name: "Partner Member",
+        partner_phone: "07000000002",
+        booking_me: false,
+        booking_name: null,
+      };
+      model.weather = {
+        status: "ready",
+        updated_at: "2027-06-24T06:00:00Z",
+        hours: Array.from({ length: 7 }, (_, i) => ({
+          time: "2027-06-25T" + String(i + 9).padStart(2, "0") + ":00",
+          temperature: 20,
+          rain: i === 3 ? 40 : 10,
+          code: 0,
+          wind: 12,
+        })),
+      };
+      await page.goto(base + "event.html?id=999");
+      await page.getByText("Your partner is", { exact: false }).waitFor();
+      await page
+        .getByRole("button", { name: "I’ll book the buggy", exact: true })
+        .click();
+      await page
+        .getByText("You’re booking the buggy. Your partner can see this.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(await page.locator('a[href="tel:07000000002"]').count(), 1);
+      assert.match(await page.locator("[data-weather]").innerText(), /40%/);
+      assert.match(await page.locator("[data-weather]").innerText(), /09:32/);
+      const downloadPromise = page.waitForEvent("download");
+      await page
+        .getByRole("button", { name: "Add to phone calendar", exact: true })
+        .click();
+      const download = await downloadPromise;
+      const calendarPath = path.join(out, "member-calendar.ics");
+      await download.saveAs(calendarPath);
+      const ics = fs.readFileSync(calendarPath, "utf8");
+      assert.match(ics, /DTSTART:20270625T083200Z/);
+      assert.match(ics, /DTEND:20270625T133200Z/);
+      assert.match(
+        await page
+          .getByRole("link", { name: "Google Maps ↗", exact: true })
+          .getAttribute("href"),
+        /destination=/,
+      );
+      await page.screenshot({
+        path: path.join(out, "buggy-weather-390.png"),
+        fullPage: true,
+      });
+      await page
+        .getByRole("button", {
+          name: "Release booking responsibility",
+          exact: true,
+        })
+        .click();
+      await page
+        .getByRole("button", { name: "I’ll book the buggy", exact: true })
+        .waitFor();
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      report.push({
+        page: "private-buggy-hourly-weather-calendar",
+        width: 390,
         status: "passed",
       });
       await context.close();

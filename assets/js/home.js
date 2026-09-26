@@ -52,3 +52,5 @@ else {
   }, 25000);
   window.addEventListener("focus", () => updateSlots(ev, detail));
 }
+
+window.addEventListener("barford-signout", () => location.reload());

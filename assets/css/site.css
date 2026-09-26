@@ -1733,3 +1733,7 @@ td button {
     flex-direction: column;
   }
 }
+
+.cover-placeholder .eyebrow {
+  color: #e5eddf;
+}
