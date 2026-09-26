@@ -96,3 +96,13 @@ Tee publication includes a review of affected players, timestamp/version, privat
 The event checklist assigns owners to seven preparation tasks. Expenses and prize stock have private organiser records. Setup instructions for iPhone/Android appear on the entry/account pages. Operational data uses guarded RPCs and private-schema tables with RLS and no direct member grants.
 
 Database coverage: `tests/committee-operations.sql` and existing scoring/member tests use rolled-back fixtures. Browser coverage includes social RSVP, pending transfer/receipt, future-round overrides, and event checklist at mobile and desktop widths. Browser fixtures never create real members or financial entries.
+
+## Shared guest invitations
+
+Home and event pages now offer **Invite a guest** once the organiser sets the event’s guest price. A generated message has **Send invite** (native device sharing), WhatsApp fallback and copy controls. No message is sent automatically. Each link admits one guest, belongs to one host and event, can be revoked before use, and closes with bookings. The opaque token stays in the URL fragment.
+
+`guest.html` collects name, mobile, password, stated handicap, optional portrait, buggy preference and cancellation acceptance. The validated account trigger creates the guest account and RSVP in one transaction. Existing accounts can sign in and accept without creating another account. Capacity and waiting-list order are enforced; waiting guests are charged only on promotion. New guest accounts do not receive annual membership charges. The guest rate, private transfer instructions and reference are shown with their booking; the guest homepage follows their invited round.
+
+A new guest’s stated handicap is held for committee review under **Guests & playing partners**. Existing society handicaps continue to apply. The host relationship survives RSVP changes. Generated groups try to place hosts and guests together while preserving confirmed playing pairs and the four-player limit; unmatched hosts/guests are flagged for review. Guest names are marked `(guest)` on RSVPs, tee groups and scorecard preparation.
+
+Verification: `tests/guest-invitations.sql` checks real transactional signup/booking, pricing, capacity, privacy and committee approval with all fixtures rolled back. Browser checks exercise mobile/desktop sharing, signup, photos, payment details and host grouping using mocked accounts and sharing APIs.

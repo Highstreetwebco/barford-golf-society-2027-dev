@@ -124,6 +124,46 @@ async function render() {
       return `<article class="panel event-card" id="event-${ev.id}"><div class="event-top"><div class="date-block"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div><div class="event-title"><p class="eyebrow">${e(d.toLocaleDateString("en-GB", { weekday: "long" }))} · ${e(ev.first_time || "Tee time to follow")}</p><h2>${e(ev.name)}</h2><p>${e(ev.location)}</p></div>${ev.price ? `<div class="event-price">${e(ev.price)}</div>` : ""}</div><div class="event-meta"><span>${e(slots)}</span><span>${ev.cancelled ? '<span class="status-pill cancelled">Cancelled</span>' : r ? `<span class="status-pill ${r.reserve ? "waiting" : ""}">${status(r)}</span>` : closed ? "Event complete" : "RSVP when you’re ready"}</span></div><div class="event-body"><div id="response-${ev.id}">${r ? `<div class="saved-response"><div><h3>${status(r)}</h3>${r.attending || r.reserve ? `<p>${ev.event_type === "social" ? "Attendance saved" : `${r.buggy ? "Buggy requested" : "Walking"} · ${e(r.preferred_time ? r.preferred_time + " tee time preference" : "No tee time preference")}`}</p>` : ""}</div>${!closed ? `<button class="secondary" data-rsvp="${ev.id}">Change booking</button>${r.attending || r.reserve ? `<button class="secondary" data-withdraw="${ev.id}">Withdraw</button>` : ""}` : ""}</div>` : !closed ? `<div class="actions"><button data-rsvp="${ev.id}">${state.user ? "Save your RSVP" : "Sign in to RSVP"}</button></div>` : ""}</div><div id="form-${ev.id}" hidden></div><details class="event-details" open><summary>Event details &amp; players</summary>${roster(ev)}</details></div></article>`;
     })
     .join("");
+  list
+    .querySelectorAll("[data-rsvp]")
+    .forEach(
+      (button) =>
+        (button.onclick = () => openForm(Number(button.dataset.rsvp))),
+    );
+  list.querySelectorAll("[data-withdraw]").forEach(
+    (btn) =>
+      (btn.onclick = async () => {
+        const id = Number(btn.dataset.withdraw),
+          ev = events.find((x) => x.id === id);
+        if (
+          !confirm(
+            "Withdraw from " +
+              ev.name +
+              "? Any fee or refund will be reviewed by an organiser.",
+          )
+        )
+          return;
+        btn.disabled = true;
+        const { error } = await c.rpc("submit_rsvp", {
+          payload: { event_id: id, attending: false },
+        });
+        if (error) {
+          b.toast(error.message);
+          btn.disabled = false;
+          return;
+        }
+        await load();
+        b.toast("Withdrawal saved.");
+      }),
+  );
+  list.querySelectorAll("[data-hole]").forEach(
+    (sel) =>
+      (sel.onchange = () => {
+        sel.nextElementSibling.innerHTML = sel.value
+          ? `<iframe class="event-video" src="${e(sel.value)}" title="Hole preview" allowfullscreen></iframe>`
+          : "";
+      }),
+  );
   if (dedicated && visible[0]) {
     const ev = visible[0];
     document.title = ev.name + " | Barford Golf Society";
@@ -199,46 +239,6 @@ async function render() {
     const teeArea = document.getElementById("memberTees-" + ev.id);
     if (teeArea) await mountMemberTees(teeArea, ev.id);
   }
-  list
-    .querySelectorAll("[data-rsvp]")
-    .forEach(
-      (button) =>
-        (button.onclick = () => openForm(Number(button.dataset.rsvp))),
-    );
-  list.querySelectorAll("[data-withdraw]").forEach(
-    (btn) =>
-      (btn.onclick = async () => {
-        const id = Number(btn.dataset.withdraw),
-          ev = events.find((x) => x.id === id);
-        if (
-          !confirm(
-            "Withdraw from " +
-              ev.name +
-              "? Any fee or refund will be reviewed by an organiser.",
-          )
-        )
-          return;
-        btn.disabled = true;
-        const { error } = await c.rpc("submit_rsvp", {
-          payload: { event_id: id, attending: false },
-        });
-        if (error) {
-          b.toast(error.message);
-          btn.disabled = false;
-          return;
-        }
-        await load();
-        b.toast("Withdrawal saved.");
-      }),
-  );
-  list.querySelectorAll("[data-hole]").forEach(
-    (sel) =>
-      (sel.onchange = () => {
-        sel.nextElementSibling.innerHTML = sel.value
-          ? `<iframe class="event-video" src="${e(sel.value)}" title="Hole preview" allowfullscreen></iframe>`
-          : "";
-      }),
-  );
 }
 function roster(ev) {
   if (!state.user)
@@ -390,9 +390,10 @@ document.querySelectorAll("[data-filter]").forEach(
     }),
 );
 window.addEventListener("barford-signout", () => location.reload());
+const initialHash = location.hash;
 try {
   await load();
-  const hash = location.hash;
+  const hash = initialHash;
   if (dedicated && hash === "#rsvp") await openForm(eventId);
   if (/^#event-\d+$/.test(hash))
     document.querySelector(hash)?.scrollIntoView({ block: "start" });
