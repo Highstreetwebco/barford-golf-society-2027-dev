@@ -60,5 +60,35 @@ do $$declare d jsonb;g uuid;begin
  if not exists(select 1 from jsonb_array_elements(d->'groups') grp,jsonb_array_elements(grp->'players') p where p->>'name'='QA Share Guest (guest)' and (p->>'handicap')::numeric=28) then raise exception 'Published group lost guest label or handicap';end if;
 end $$;
 reset role;
+-- Reuse by another identity, stale terms and revoked invitations cannot create bookings.
+select set_config('request.jwt.claim.sub',(select id::text from guest_qa where k='waiter'),true);
+set local role authenticated;
+do $$begin
+ begin perform public.baseline_guest_invitations('join',jsonb_build_object('token',(select id from guest_qa where k='link')));raise exception 'Used link was reclaimed';exception when raise_exception then if sqlerrm<>'This invitation has already been used' then raise;end if;end;
+ begin perform public.baseline_guest_invitations('join',jsonb_build_object('token',(select id from guest_qa where k='revoke')));raise exception 'Revoked link was accepted';exception when raise_exception then if sqlerrm<>'This invitation is unavailable. Ask your host for a new link' then raise;end if;end;
+end $$;
+reset role;
+with e as(insert into public.baseline_events(name,date,round_number,max_players,guest_price,member_price,cancellation_terms) values('QA return guest round','2027-07-25',2,4,50,35,'New terms') returning id)insert into guest_qa(k,ev)select 'event2',id from e;
+select set_config('request.jwt.claim.sub',(select id::text from guest_qa where k='host'),true);
+set local role authenticated;
+insert into guest_qa(k,id)select 'return',(public.baseline_guest_invitations('create',jsonb_build_object('event_id',(select ev from guest_qa where k='event2')))->>'token')::uuid;
+reset role;
+select set_config('request.jwt.claim.sub',(select id::text from guest_qa where k='guest'),true);
+set local role authenticated;
+do $$declare payload jsonb;begin
+ payload:=jsonb_build_object('token',(select id from guest_qa where k='return'),'guest_price',45,'guest_handicap',29,'accept_terms',true,'terms_snapshot','New terms');
+ begin perform public.baseline_guest_invitations('join',payload);raise exception 'Stale price accepted';exception when raise_exception then if sqlerrm<>'The guest price has changed. Reload the invitation before joining' then raise;end if;end;
+ begin perform public.baseline_guest_invitations('join',payload||'{"guest_price":50,"terms_snapshot":"Old terms"}');raise exception 'Stale terms accepted';exception when raise_exception then if sqlerrm<>'Read and accept the current cancellation terms' then raise;end if;end;
+ perform public.baseline_guest_invitations('join',payload||'{"guest_price":50}');
+ if (select count(*) from public.baseline_rsvps where user_id=auth.uid())<>2 then raise exception 'Returning guest did not join using existing account';end if;
+end $$;
+reset role;
+update public.baseline_events set guest_price=55 where id=(select ev from guest_qa where k='event2');
+set local role authenticated;
+do $$declare d jsonb;begin
+ d:=public.baseline_guest_invitations('mine');
+ if not exists(select 1 from jsonb_array_elements(d->'bookings') x where (x->>'event_id')::bigint=(select ev from guest_qa where k='event2') and (x->>'guest_price')::numeric=50) then raise exception 'Advertised price change rewrote booked fee';end if;
+end $$;
+reset role;
 rollback;
-select 'PASS: private single-use invites, automatic account/RSVP, guest price, no annual fee, capacity waitlist, idempotence, handicap approval, host link, persistent guest label, published tee groups, access denials. All fixtures rolled back.' verification;
+select 'PASS: private single-use invites, automatic account/RSVP, guest price, no annual fee, capacity waitlist, idempotence, handicap approval, host link, persistent guest label, published tee groups, returning guests, used/revoked links, stale terms/prices, agreed fee retention, access denials. All fixtures rolled back.' verification;
