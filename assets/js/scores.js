@@ -1,4 +1,4 @@
-import { rulesHTML } from "./league-rules.js?v=2027-operations-1";
+import { rulesHTML } from "./league-rules.js?v=2027-guests-1";
 const b = await window.barfordReady,
   e = b.escape;
 const area = document.getElementById("leagueBoard");

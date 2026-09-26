@@ -1,10 +1,10 @@
-import { openScoreWizard } from "./score-wizard.js?v=2027-operations-1";
+import { openScoreWizard } from "./score-wizard.js?v=2027-guests-1";
 import {
   adjustment,
   roundAverage,
   handicapAt,
   rulesHTML,
-} from "./league-rules.js?v=2027-operations-1";
+} from "./league-rules.js?v=2027-guests-1";
 const b = await window.barfordReady,
   e = b.escape;
 let state,
@@ -344,7 +344,7 @@ function renderCards(area) {
           g.players.some((x) => x.user_id === r.user_id),
         );
       return {
-        name: p?.name || r.name,
+        name: r.guest_host_id ? r.name : p?.name || r.name,
         handicap: p ? handicapAt(p, event.round_number, state.rounds) : null,
         tee: group?.tee_time || "",
         group: group?.group_number || 999,

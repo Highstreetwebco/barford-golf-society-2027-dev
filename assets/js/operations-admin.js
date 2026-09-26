@@ -1,3 +1,4 @@
+import { guestAction } from "./guest-invites.js?v=2027-guests-1";
 import {
   operation,
   field,
@@ -5,8 +6,8 @@ import {
   bindForms,
   stamp,
   reservationNotices,
-} from "./operations.js?v=2027-operations-1";
-import { handicapAt } from "./league-rules.js?v=2027-operations-1";
+} from "./operations.js?v=2027-guests-1";
+import { handicapAt } from "./league-rules.js?v=2027-guests-1";
 const b = await window.barfordReady,
   e = b.escape;
 let token = 0;
@@ -230,7 +231,7 @@ function payments(area, data, event) {
 function guests(area, data, event) {
   const requests = data.guests.filter((g) => !event || g.event_id === event.id);
   const name = (id) => data.accounts.find((p) => p.id === id)?.name || "Member";
-  area.innerHTML = `<h2>Guests & playing partners</h2><p>Approve a guest’s name and handicap, then the host can copy their signup link from the event page. Every guest uses their own account and RSVP. Invitations do not hold a place.</p><div class="stack">${requests.length ? requests.map((g) => `<form data-guest="${g.id}" class="panel form-grid"><div class="full"><h3>${e(g.name)} · ${e(g.status)}</h3><p>Invited by ${e(g.host_name)} · ${e(g.phone)} · Suggested HCP ${g.requested_handicap ?? "Not given"}</p></div>${g.status === "pending" ? `${field("Approved starting handicap (golf only)", "handicap", g.requested_handicap, "number", 'min="0" max="36" step="0.1"')}<div class="actions"><button name="decision" value="approve">Approve invitation</button><button class="secondary" name="decision" value="reject">Decline request</button></div><p role="status"></p>` : "<p>Request reviewed. The guest still needs to complete their own booking.</p>"}</form>`).join("") : "<p>No guest requests.</p>"}</div>${
+  area.innerHTML = `<h2>Guests & playing partners</h2><p>Guests join from their host’s shared invitation. Their RSVP is saved immediately; review any new handicap before play. Older invitation requests can still be approved below.</p><div class="stack">${requests.length ? requests.map((g) => `<form data-guest="${g.id}" class="panel form-grid"><div class="full"><h3>${e(g.name)} · ${e(g.status)}</h3><p>Invited by ${e(g.host_name)} · ${e(g.phone)} · Suggested HCP ${g.requested_handicap ?? "Not given"}</p></div>${g.status === "pending" ? `${field("Approved starting handicap (golf only)", "handicap", g.requested_handicap, "number", 'min="0" max="36" step="0.1"')}<div class="actions"><button name="decision" value="approve">${g.link_token ? "Approve handicap" : "Approve invitation"}</button>${g.link_token ? "" : '<button class="secondary" name="decision" value="reject">Decline request</button>'}</div><p role="status"></p>` : g.link_token ? "<p>Guest account created and RSVP saved. Manage attendance under RSVPs.</p>" : "<p>Request reviewed. The guest still needs to complete their own booking.</p>"}</form>`).join("") : "<p>No guest requests.</p>"}</div>${
     event?.event_type === "pairs"
       ? `<section class="section"><h3>Playing pairs</h3><div class="stack">${data.pairs.map((p) => `<form data-existing-pair="${p.id}" data-player="${p.first_user}" class="response-row"><p>${e(name(p.first_user))}${p.second_user ? " & " + e(name(p.second_user)) : ""} · ${e(p.status)}</p>${p.status === "requested" ? '<button name="mode" value="accept">Confirm pair</button>' : ""}<button class="secondary" name="mode" value="clear">Clear pair</button><p role="status"></p></form>`).join("")}</div><form data-admin-pair class="form-grid section">${select(
           "user_id",
@@ -246,7 +247,15 @@ function guests(area, data, event) {
       : ""
   }`;
   bindForms(area, async (form, f, button) => {
-    if (form.dataset.guest)
+    if (
+      form.dataset.guest &&
+      requests.find((g) => g.id === form.dataset.guest)?.link_token
+    )
+      await guestAction("review", {
+        id: form.dataset.guest,
+        handicap: f.handicap || null,
+      });
+    else if (form.dataset.guest)
       await operation("approve_guest", {
         id: form.dataset.guest,
         approve: button?.value === "approve",

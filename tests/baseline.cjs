@@ -104,6 +104,57 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       },
     ],
   };
+  function completeGuest(payload) {
+    model.guestCategory = "guest";
+    if (payload.full_name) model.profile.full_name = payload.full_name;
+    if (payload.phone) model.profile.phone = payload.phone;
+    model.guestBookings = [
+      {
+        event_id: 999,
+        host_name: "Gary Host",
+        status: "pending",
+        guest_price: 45,
+        attending: true,
+        reserve: false,
+      },
+    ];
+    model.responses = [
+      {
+        id: 123,
+        event_id: 999,
+        user_id: uid,
+        name: model.profile.full_name + " (guest)",
+        attending: true,
+        reserve: false,
+        buggy: payload.buggy,
+        guest_host_id: "host",
+        preferred_time: payload.preferred_time,
+      },
+    ];
+    model.ops = {
+      settings: {
+        bank_instructions:
+          "Pay Barford Treasurer · sort code 00-00-00 · account 00000000",
+        guest_policy: "Committee approves handicaps",
+      },
+      category: "guest",
+      charges: [
+        {
+          id: 1,
+          event_id: 999,
+          user_id: uid,
+          label: fixture.name,
+          amount: 45,
+          received: 0,
+          category: "guest",
+        },
+      ],
+      guests: [],
+      pairs: [],
+      players: [],
+      changes: [],
+    };
+  }
   if (signedIn)
     await context.addInitScript(
       ({ session }) =>
@@ -140,6 +191,50 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       if (body.action === "admin_reset_password") {
         model.passwordReset = body;
         return reply({ updated: true });
+      }
+    }
+    if (p.endsWith("/rpc/baseline_guest_invitations")) {
+      const token = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+      model.guestLinks ||= [];
+      model.guestBookings ||= [];
+      if (body.action === "mine")
+        return reply({
+          category: model.guestCategory || "member",
+          links: model.guestLinks,
+          bookings: model.guestBookings,
+        });
+      if (body.action === "create") {
+        model.guestLinks.push({ token, event_id: 999, claimed: false });
+        return reply({ token, event_id: 999, host_name: "Test Member" });
+      }
+      if (body.action === "view")
+        return reply(
+          model.guestView || {
+            status: "open",
+            event_id: 999,
+            event_name: fixture.name,
+            date: fixture.date,
+            first_time: "10:00",
+            event_type: "league",
+            host_name: "Gary Host",
+            guest_price: 45,
+            cancellation_terms: "Cancel by the agreed deadline",
+            waiting: false,
+          },
+        );
+      if (body.action === "join") {
+        model.guestJoin = body.payload;
+        completeGuest(body.payload);
+        return reply({ event_id: 999, attending: true, reserve: false });
+      }
+      if (body.action === "revoke") {
+        model.guestLinks.find((l) => l.token === body.payload.token).revoked =
+          true;
+        return reply({});
+      }
+      if (body.action === "review") {
+        model.guestReview = body.payload;
+        return reply({});
       }
     }
     if (p.endsWith("/rpc/baseline_reservation_notices")) return reply([]);
@@ -355,6 +450,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
     if (p === "/auth/v1/logout" || p === "/auth/v1/recover") return reply({});
     if (p === "/auth/v1/signup") {
       model.signup.push(body);
+      if (body.data?.guest_token) completeGuest(body.data);
       return reply({ ...session });
     }
     if (p === "/rest/v1/profiles") {
@@ -1782,6 +1878,206 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       });
       await context.close();
     }
+    // Real UI, mocked sharing/auth: no invitations are sent and no accounts are created.
+    for (const width of [390, 1365]) {
+      const ctx = await browser.newContext({
+        viewport: { width, height: 960 },
+        serviceWorkers: "block",
+      });
+      const m = await mocks(ctx, { signedIn: true }),
+        p = await ctx.newPage();
+      m.events = [{ ...fixture, guest_price: 45 }];
+      const errors = [];
+      p.on("pageerror", (e) => errors.push(e.message));
+      await ctx.addInitScript(() =>
+        Object.defineProperty(navigator, "share", {
+          configurable: true,
+          value: async (data) => {
+            window.__shared = data;
+          },
+        }),
+      );
+      await p.goto(base + "index.html");
+      await p
+        .getByRole("button", { name: "Invite a guest", exact: true })
+        .click();
+      await p.getByRole("dialog", { name: "Share guest invitation" }).waitFor();
+      assert.match(
+        await p.getByLabel("Invitation message").inputValue(),
+        /£45.00/,
+      );
+      assert.match(
+        await p.getByLabel("Invitation message").inputValue(),
+        /guest.html#aaaaaaaa/,
+      );
+      await p.getByRole("button", { name: "Send invite", exact: true }).click();
+      assert.match(
+        (await p.evaluate(() => window.__shared)).text,
+        /The Warwickshire Golf Day/,
+      );
+      await p.evaluate(() =>
+        Object.defineProperty(navigator, "share", {
+          configurable: true,
+          value: undefined,
+        }),
+      );
+      await p.getByRole("button", { name: "Send invite", exact: true }).click();
+      await p
+        .getByRole("link", { name: "Open WhatsApp", exact: true })
+        .waitFor();
+      await p.screenshot({
+        path: path.join(out, `guest-share-${width}.png`),
+        fullPage: true,
+      });
+      assert.equal(
+        await p.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      assert.deepEqual(errors, []);
+      report.push({
+        page: "homepage-guest-invite-native-share-and-fallback",
+        width,
+        status: "passed",
+      });
+      await ctx.close();
+      const guestCtx = await browser.newContext({
+          viewport: { width, height: 960 },
+          serviceWorkers: "block",
+        }),
+        gm = await mocks(guestCtx),
+        gp = await guestCtx.newPage();
+      gm.events = [{ ...fixture, guest_price: 45 }];
+      const guestErrors = [];
+      gp.on("pageerror", (e) => guestErrors.push(e.message));
+      await gp.goto(base + "guest.html#aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+      await gp.getByLabel("Full name", { exact: true }).fill("New Guest");
+      await gp
+        .getByLabel("Contact number", { exact: true })
+        .fill("07000000999");
+      await gp
+        .getByLabel("Create a password", { exact: true })
+        .fill("guest-test-password");
+      await gp.getByLabel("Your current handicap", { exact: true }).fill("29");
+      await gp.getByLabel("I need a buggy", { exact: true }).check();
+      await gp
+        .getByLabel("Preferred tee time", { exact: true })
+        .selectOption("Middle");
+      await gp
+        .getByLabel("I accept the cancellation terms", { exact: true })
+        .check();
+      await gp
+        .getByLabel("Profile photo (optional)", { exact: true })
+        .setInputFiles(path.join(root, "icon-logo.png"));
+      await gp.screenshot({
+        path: path.join(out, `guest-signup-${width}.png`),
+        fullPage: true,
+      });
+      await gp
+        .getByRole("button", {
+          name: "Create account & join round",
+          exact: true,
+        })
+        .click();
+      await gp
+        .getByRole("heading", { name: "You’re booked as a guest", exact: true })
+        .waitFor();
+      assert.equal(gm.signup.length, 1);
+      assert.equal(gm.signup[0].data.guest_handicap, "29");
+      assert.equal(
+        gm.signup[0].data.guest_token,
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      );
+      assert.equal(gm.photoUploads, 1);
+      await gp
+        .getByRole("link", {
+          name: "View round & payment details",
+          exact: true,
+        })
+        .click();
+      await gp
+        .getByText(
+          "Pay Barford Treasurer · sort code 00-00-00 · account 00000000",
+          { exact: true },
+        )
+        .waitFor();
+      await gp.getByText("£45.00 to pay", { exact: true }).waitFor();
+      await gp.goto(base + "index.html");
+      await gp.getByText("£45.00 to pay", { exact: true }).waitFor();
+      await gp
+        .getByText(
+          "Your handicap is awaiting committee approval. Your booking is saved.",
+          { exact: true },
+        )
+        .waitFor();
+      assert.equal(
+        await gp
+          .getByRole("button", { name: "Invite a guest", exact: true })
+          .count(),
+        0,
+      );
+      await gp.screenshot({
+        path: path.join(out, `guest-home-${width}.png`),
+        fullPage: true,
+      });
+      assert.equal(
+        await gp.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      assert.deepEqual(guestErrors, []);
+      report.push({
+        page: "guest-signup-photo-auto-rsvp-home-price-bank-details",
+        width,
+        status: "passed",
+      });
+      await guestCtx.close();
+    }
+    const { packPlayers } = await import(
+      "data:text/javascript;base64," +
+        Buffer.from(
+          fs.readFileSync(path.join(root, "assets/js/tee-groups.js"), "utf8"),
+        ).toString("base64")
+    );
+    const teePeople = [
+      { user_id: "host", name: "Host", buggy: true },
+      {
+        user_id: "guest",
+        name: "Guest (guest)",
+        guest_host_id: "host",
+        buggy: false,
+      },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        user_id: "p" + i,
+        name: "Player " + i,
+        buggy: i < 3,
+      })),
+    ];
+    const packed = packPlayers(teePeople, [
+      { first_user: "p0", second_user: "p1" },
+    ]);
+    assert(
+      packed.some(
+        (g) =>
+          g.some((p) => p.user_id === "host") &&
+          g.some((p) => p.user_id === "guest"),
+      ),
+    );
+    assert(
+      packed.some(
+        (g) =>
+          g.some((p) => p.user_id === "p0") &&
+          g.some((p) => p.user_id === "p1"),
+      ),
+    );
+    assert(packed.every((g) => g.length <= 4));
+    assert.equal(new Set(packed.flat().map((p) => p.user_id)).size, 10);
+    report.push({
+      page: "host-guest-grouping-preserves-confirmed-pairs-and-capacity",
+      status: "passed",
+    });
     fs.writeFileSync(
       path.join(out, "checks.json"),
       JSON.stringify(report, null, 2),
@@ -1794,177 +2090,6 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       `${report.length} checks passed: mobile/desktop pages, account signup/sign-in/out, RSVP editing/waiting list, reservations and organiser tee publication.`,
     );
   } finally {
-    // Operations: member transfers and social forms; admin override and record management.
-    for (const width of [390, 1365]) {
-      const context = await browser.newContext({
-          viewport: { width, height: 960 },
-          serviceWorkers: "block",
-        }),
-        model = await mocks(context, { signedIn: true, admin: true }),
-        page = await context.newPage();
-      const errors = [];
-      page.on("pageerror", (e) => errors.push(e.message));
-      page.on("dialog", (d) => d.accept());
-      model.events = [
-        {
-          ...fixture,
-          event_type: "social",
-          name: "Presentation evening",
-          arrival_time: "19:00",
-          refreshment_time: "19:30",
-          included: "Dinner and presentation",
-          cancellation_terms: "Contact the organiser before cancelling.",
-          member_price: 12,
-          guest_price: 12,
-        },
-      ];
-      model.league = {
-        revision: 1,
-        players: [
-          {
-            id: uid,
-            name: "Test Member",
-            starting_handicap: 30,
-            adjustments: [],
-          },
-        ],
-        rounds: [],
-      };
-      model.ops = {
-        settings: {
-          bank_instructions: "Society transfer details",
-          membership_fee: 20,
-          guest_policy: "Organiser approval required",
-        },
-        charges: [
-          {
-            id: 1,
-            user_id: uid,
-            event_id: 999,
-            scope: "event:999",
-            name: "Test Member",
-            label: "Presentation evening",
-            category: "member",
-            amount: 12,
-            received: 0,
-            reported: false,
-            revision: 0,
-          },
-        ],
-        guests: [],
-        changes: [],
-        pairs: [],
-        players: [],
-        accounts: [{ id: uid, name: "Test Member", category: "member" }],
-        items: [],
-        tasks: [],
-        buggies: [],
-        handicap_history: [],
-      };
-      await page.goto(base + "event.html?id=999");
-      await page
-        .getByRole("button", { name: "Save your RSVP", exact: true })
-        .click();
-      await page
-        .getByRole("radio", { name: "Yes, I’m attending", exact: true })
-        .check();
-      assert.equal(await page.locator("[data-playing]").isVisible(), false);
-      assert.equal(await page.locator("[data-weather]").count(), 0);
-      await page.getByLabel("I accept the cancellation terms").check();
-      await page
-        .locator(".rsvp-form")
-        .getByRole("button", { name: "Save RSVP", exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: "Withdraw", exact: true })
-        .waitFor();
-      assert.equal(model.payloads.at(-1).buggy, false);
-      assert.equal(model.payloads.at(-1).accept_terms, true);
-      await page
-        .getByRole("button", { name: "I’ve sent the transfer", exact: true })
-        .click();
-      await page
-        .getByText("Transfer reported — awaiting organiser confirmation.", {
-          exact: true,
-        })
-        .waitFor();
-      assert.equal(model.ops.charges[0].received, 0);
-      await page.screenshot({
-        path: path.join(out, `operations-social-payment-${width}.png`),
-        fullPage: true,
-      });
-      await page.getByRole("button", { name: "Withdraw", exact: true }).click();
-      await page
-        .getByRole("heading", { name: "Not playing", exact: true })
-        .waitFor();
-      await page.goto(base + "admin.html");
-      await page
-        .getByRole("button", {
-          name: "Manual handicap adjustments",
-          exact: true,
-        })
-        .click();
-      await page.locator("#adminOp-adjustments [name=new_handicap]").fill("24");
-      await page
-        .locator("#adminOp-adjustments [name=reason]")
-        .fill("Committee agreed exceptional cut after review");
-      await page
-        .getByRole("button", { name: "Save adjustment", exact: true })
-        .click();
-      await page
-        .getByText("Future-round handicap updated.", { exact: true })
-        .waitFor();
-      assert.equal(model.manual.from_round, 2);
-      assert.equal(model.manual.new_handicap, 24);
-      assert.equal(model.league.players[0].starting_handicap, 30);
-      await page.screenshot({
-        path: path.join(out, `operations-handicap-${width}.png`),
-        fullPage: true,
-      });
-      await page.getByRole("button", { name: "Payments", exact: true }).click();
-      await page.locator('[data-charge="1"] [name=received]').fill("12");
-      await page
-        .getByRole("button", { name: "Save payment record", exact: true })
-        .click();
-      await page
-        .getByText("Payment settings saved.", { exact: true })
-        .waitFor();
-      assert.equal(Number(model.ops.charges[0].received), 12);
-      await page.screenshot({
-        path: path.join(out, `operations-admin-payments-${width}.png`),
-        fullPage: true,
-      });
-      await page
-        .getByRole("button", { name: "Event details", exact: true })
-        .click();
-      await page.getByLabel("Choose an event").selectOption("999");
-      await page
-        .getByRole("button", { name: "Event checklist", exact: true })
-        .click();
-      await page
-        .locator('[data-task="Course confirmed"] [name=owner]')
-        .fill("Tim");
-      await page.locator('[data-task="Course confirmed"] [name=done]').check();
-      await page.locator('[data-task="Course confirmed"] button').click();
-      await page
-        .locator('[data-task="Course confirmed"] [role=status]')
-        .getByText("Saved.", { exact: true })
-        .waitFor();
-      assert.equal(model.ops.tasks[0].owner, "Tim");
-      assert.equal(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth > innerWidth + 2,
-        ),
-        false,
-      );
-      assert.deepEqual(errors, []);
-      report.push({
-        page: "operations-social-payments-future-handicap-checklist",
-        width,
-        status: "passed",
-      });
-      await context.close();
-    }
     fs.writeFileSync(
       path.join(out, "checks.json"),
       JSON.stringify(report, null, 2),

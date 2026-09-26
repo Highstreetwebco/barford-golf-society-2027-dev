@@ -1,19 +1,19 @@
 import {
   operationTabs,
   showOperations,
-} from "./operations-admin.js?v=2027-operations-1";
-import { operation } from "./operations.js?v=2027-operations-1";
+} from "./operations-admin.js?v=2027-guests-1";
+import { operation } from "./operations.js?v=2027-guests-1";
 import {
   mountEventFields,
   eventFields,
   updateEventType,
-} from "./event-fields.js?v=2027-operations-1";
+} from "./event-fields.js?v=2027-guests-1";
 import {
   showLeagueTab,
   canLeaveLeague,
-} from "./league-admin.js?v=2027-operations-1";
-import { loadAccounts } from "./account-admin.js?v=2027-operations-1";
-import { packPlayers } from "./tee-groups.js?v=2027-operations-1";
+} from "./league-admin.js?v=2027-guests-1";
+import { loadAccounts } from "./account-admin.js?v=2027-guests-1";
+import { packPlayers } from "./tee-groups.js?v=2027-guests-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),
@@ -394,6 +394,20 @@ async function generate() {
   renderGroups();
   document.getElementById("teeMessage").textContent =
     "Draft groups generated. Review buggy pairs and preferences before publishing.";
+  const unpairedGuests = players.filter(
+    (p) =>
+      p.guest_host_id &&
+      !packed.some(
+        (g) =>
+          g.some((q) => q.user_id === p.user_id) &&
+          g.some((q) => q.user_id === p.guest_host_id),
+      ),
+  );
+  if (unpairedGuests.length)
+    document.getElementById("teeMessage").textContent +=
+      " Host pairing needs review: " +
+      unpairedGuests.map((p) => p.name).join(", ") +
+      ". Their host may not be booked or the group may be full.";
 }
 async function loadGroups() {
   if (!selected) return b.toast("Choose an event first.");

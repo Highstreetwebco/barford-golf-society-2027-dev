@@ -1,10 +1,11 @@
-import { mountEventOperations } from "./operations.js?v=2027-operations-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-operations-1";
+import { guestAction } from "./guest-invites.js?v=2027-guests-1";
+import { mountEventOperations } from "./operations.js?v=2027-guests-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-guests-1";
 import {
   mountExperience,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-operations-1";
+} from "./event-experience.js?v=2027-guests-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 if (b.state.user) {
@@ -16,13 +17,24 @@ if (b.state.user) {
     (b.state.profile?.full_name?.split(" ")[0] || "golfer") +
     ".";
 }
-const { data, error } = await b.client
+let guestHome = null;
+if (b.state.user) {
+  try {
+    guestHome = await guestAction("mine");
+  } catch {}
+}
+const guestNext = (guestHome?.bookings || []).find(
+  (x) => x.attending || x.reserve,
+);
+let eventQuery = b.client
   .from("events")
   .select("*")
   .gte("date", londonToday())
   .eq("cancelled", false)
-  .order("date")
-  .limit(1);
+  .order("date");
+if (guestHome?.category === "guest" && guestNext)
+  eventQuery = eventQuery.eq("id", guestNext.event_id);
+const { data, error } = await eventQuery.limit(1);
 if (error)
   area.innerHTML = b.empty(
     "Unable to load the next event.",

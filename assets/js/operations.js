@@ -1,3 +1,4 @@
+import { mountGuestInvites } from "./guest-invites.js?v=2027-guests-1";
 const b = await window.barfordReady,
   e = b.escape;
 export async function operation(action, payload = {}) {
@@ -173,7 +174,7 @@ export async function mountEventOperations(area, ev, { compact = false } = {}) {
        }</section>`
      : ""
  }
- ${!compact ? `<details class="section"><summary>Invite a guest</summary><p>An organiser approves their name and ${ev.event_type === "social" ? "attendance request" : "starting handicap"}. Then share their signup link. They create their own account and RSVP; this request does not reserve a place.</p><form data-guest class="form-grid section">${field("Guest’s full name", "name", "", "text", 'required maxlength="150"')}${field("Guest’s mobile", "phone", "", "tel", 'required minlength="10" maxlength="25"')}${ev.event_type !== "social" ? field("Suggested handicap (optional)", "handicap", "", "number", 'min="0" max="54" step="0.1"') : ""}<button>Request invitation</button><p class="full" role="status"></p></form>${data.guests.map((g) => `<article class="panel section"><strong>${e(g.name)}</strong><p>${e(g.status)}</p>${g.status === "approved" ? `<button class="secondary" data-invite="${e(g.member_id)}">Copy signup link</button>` : ""}</article>`).join("")}</details><details class="section"><summary>Guest handicap policy</summary><p class="preserve-lines">${e(data.settings.guest_policy)}</p></details>` : ""}<p data-operation-status role="status"></p>`;
+ <section class="section" data-guest-invites></section>${!compact ? `<details class="section"><summary>Guest handicap policy</summary><p class="preserve-lines">${e(data.settings.guest_policy)}</p></details>` : ""}<p data-operation-status role="status"></p>`;
     const act = async (action, payload, btn) => {
       if (btn) btn.disabled = true;
       try {
@@ -214,21 +215,6 @@ export async function mountEventOperations(area, ev, { compact = false } = {}) {
               btn,
             )),
       );
-    area.querySelectorAll("[data-invite]").forEach(
-      (btn) =>
-        (btn.onclick = async () => {
-          const url = new URL("signup.html", location.href);
-          url.searchParams.set("member", btn.dataset.invite);
-          url.searchParams.set("next", `event.html?id=${ev.id}`);
-          try {
-            await navigator.clipboard.writeText(url.href);
-            b.toast("Signup link copied. Share it with your guest.");
-          } catch {
-            area.querySelector("[data-operation-status]").textContent =
-              url.href;
-          }
-        }),
-    );
     bindForms(area, async (form, f) => {
       await operation(
         form.hasAttribute("data-guest") ? "invite_guest" : "pair",
@@ -241,6 +227,11 @@ export async function mountEventOperations(area, ev, { compact = false } = {}) {
       );
       await mountEventOperations(area, ev, { compact });
     });
+    await mountGuestInvites(
+      area.querySelector("[data-guest-invites]"),
+      ev,
+      data.category,
+    );
     await reservationNotices(
       area.querySelector("[data-reservation-notices]"),
       ev.id,

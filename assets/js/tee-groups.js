@@ -15,6 +15,26 @@ export function packPlayers(players, playingPairs = []) {
       paired.add(b.user_id);
     }
   }
+  // Host links are preferences. Confirmed playing pairs remain indivisible.
+  for (const guest of ordered.filter((p) => p.guest_host_id)) {
+    const host = ordered.find((p) => p.user_id === guest.guest_host_id);
+    if (!host) continue;
+    const guestUnit = units.find((u) =>
+      u.some((p) => p.user_id === guest.user_id),
+    ) || [guest];
+    const hostUnit = units.find((u) =>
+      u.some((p) => p.user_id === host.user_id),
+    ) || [host];
+    if (guestUnit === hostUnit || guestUnit.length + hostUnit.length > 4)
+      continue;
+    for (const unit of [guestUnit, hostUnit]) {
+      const i = units.indexOf(unit);
+      if (i >= 0) units.splice(i, 1);
+    }
+    const merged = [...hostUnit, ...guestUnit];
+    units.push(merged);
+    merged.forEach((p) => paired.add(p.user_id));
+  }
   const remaining = ordered.filter((p) => !paired.has(p.user_id));
   const buggy = remaining.filter((p) => p.buggy);
   units.push(...remaining.filter((p) => !p.buggy).map((p) => [p]));

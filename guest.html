@@ -3,20 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex,nofollow" />
     <meta name="theme-color" content="#183f34" />
     <meta
       http-equiv="Content-Security-Policy"
       content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
     />
-    <title>Scores | Barford Golf Society</title>
+    <title>Guest invitation | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-guests-1" />
     <script src="assets/js/baseline.js?v=2027-guests-1" defer></script>
     <script
       type="module"
-      src="assets/js/scores.js?v=2027-guests-1"
+      src="assets/js/guest-join.js?v=2027-guests-1"
     ></script>
   </head>
   <body>
@@ -57,29 +58,32 @@
     </header>
     <main id="main" class="container">
       <div class="page-heading">
-        <p class="eyebrow">THE SEASON SO FAR</p>
-        <h1>A little friendly competition.</h1>
-        <p class="lede">
-          Seven rounds. Your best five scores count towards the season total.
+        <p class="eyebrow">JOIN A BARFORD GOLF DAY</p>
+        <h1>Your guest invitation.</h1>
+        <p class="lede">Your own account. A place in your host’s round.</p>
+      </div>
+      <section id="guestJoin" class="panel section guest-join">
+        <p>Loading your invitation…</p>
+      </section>
+      <details class="panel section install-help">
+        <summary>Add Barford to your phone</summary>
+        <p>
+          Open this website on your phone. It does not need an App Store
+          download.
         </p>
-      </div>
-      <div class="toolbar">
-        <button id="refreshLeague" class="secondary">Refresh leaderboard</button
-        ><a class="button" href="admin.html?tab=scoring" data-admin hidden
-          >Enter event scores</a
-        >
-      </div>
-      <p id="leagueVisibility" class="notice"></p>
-      <section id="leagueBoard" class="panel" aria-live="polite">
-        Loading scores…
-      </section>
-      <section class="panel section">
-        <h2>Round results</h2>
-        <label for="leagueRound">Choose round</label
-        ><select id="leagueRound"></select>
-        <div id="roundResults"></div>
-      </section>
-      <div id="leagueRules"></div>
+        <p>
+          <strong>iPhone:</strong> open in Safari, tap Share, then Add to Home
+          Screen.
+        </p>
+        <p>
+          <strong>Android:</strong> open in Chrome, open the menu, then Add to
+          Home screen or Install app.
+        </p>
+        <p>
+          Sign in once on your own device. Your account stays signed in until
+          you sign out or clear your browser data.
+        </p>
+      </details>
     </main>
     <footer class="site-footer">
       <div>

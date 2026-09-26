@@ -2243,3 +2243,24 @@ dialog {
 #teeMessage {
   white-space: pre-line;
 }
+
+.invite-dialog {
+  width: min(600px, calc(100% - 24px));
+  max-height: 90dvh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+}
+.invite-dialog textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 220px;
+}
+.guest-join {
+  max-width: 760px;
+  margin-inline: auto;
+}
+.guest-join .form-stack {
+  max-width: 580px;
+}
