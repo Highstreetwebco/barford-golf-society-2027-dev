@@ -1754,7 +1754,11 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
     for (const id of ["generateTees", "loadTees", "saveTees", "adminEvent", "teeStart", "teeGap"]) assert.equal(await page.locator("#" + id).isDisabled(), false, id + " must recover after a failed request");
     await page.getByRole("button", { name: "Generate groups", exact: true }).click();
     await page.getByText("Draft groups generated. Review buggy pairs and preferences before publishing.", { exact: true }).waitFor();
-    await page.locator("#teeEditor").getByText("Test Member", { exact: true }).waitFor();
+    const memberGroup = page.locator("#teeEditor").getByRole("combobox", { name: "Group for Test Member", exact: true });
+    await memberGroup.waitFor();
+    assert.equal(await memberGroup.count(), 1, "The confirmed member must appear in exactly one generated group");
+    assert.equal(await memberGroup.inputValue(), "0", "The confirmed member must be assigned to Group 1");
+    assert.equal(await page.locator("#teeEditor .tee-player").count(), 1);
     await page
       .getByRole("button", { name: "Publish tee times", exact: true })
       .click();

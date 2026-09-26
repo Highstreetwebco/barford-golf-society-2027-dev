@@ -273,12 +273,12 @@ async function run() {
         await editor.locator("[data-scorecard-choice]").selectOption("0");
         await editor.locator("[data-use-scorecard]").click();
         assert.equal(await editor.locator('[name="reviewed"]').isChecked(), true, "An identical saved scorecard must not invalidate an unchanged checked hole");
-        assert.match(await editor.locator("[data-review-count]").textContent(), /^17\s*\/\s*18/);
+        assert.match(await editor.locator("[data-review-count]").textContent(), /^17\s+mapped\s*·\s*17\s*\/\s*18\s+checked$/);
         await editor.locator("[data-scorecard-choice]").selectOption("1");
         await editor.locator("[data-use-scorecard]").click();
         assert.equal(await editor.locator('[name="tee_name"]').inputValue(), "Yellow", "This regression occurs even when the tee colour does not change");
         assert.equal(await editor.locator('[name="reviewed"]').isChecked(), false);
-        assert.match(await editor.locator("[data-review-count]").textContent(), /^0\s*\/\s*18/);
+        assert.match(await editor.locator("[data-review-count]").textContent(), /^17\s+mapped\s*·\s*0\s*\/\s*18\s+checked$/);
         await editor.locator("[data-save-close]").click();
         await editor.waitFor({ state: "detached" });
         assert.ok(f.model.savedCourseLayouts[0].holes.every(hole => !hole.reviewed));
