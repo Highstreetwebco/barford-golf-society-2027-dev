@@ -1,4 +1,8 @@
-import { loadAccounts } from "./account-admin.js?v=2027-admin-1";
+import {
+  showLeagueTab,
+  canLeaveLeague,
+} from "./league-admin.js?v=2027-scoring-1";
+import { loadAccounts } from "./account-admin.js?v=2027-scoring-1";
 import { packPlayers } from "./tee-groups.js?v=2027-experience-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
@@ -16,6 +20,9 @@ if (!b.state.admin) {
   gate.hidden = true;
   content.hidden = false;
   await init();
+  const initialTab = new URLSearchParams(location.search).get("tab");
+  if (["scoring", "scorecards", "handicaps"].includes(initialTab))
+    document.querySelector(`[data-tab="${initialTab}"]`)?.click();
 }
 async function init() {
   const { data, error } = await c.from("events").select("*").order("date");
@@ -30,7 +37,7 @@ async function init() {
     events
       .map(
         (ev) =>
-          `<option value="${ev.id}">${e(ev.name)} · ${e(b.date(ev.date))}</option>`,
+          `<option value="${ev.id}">${ev.round_number ? "R" + ev.round_number + " · " : ""}${e(ev.name)} · ${e(b.date(ev.date))}</option>`,
       )
       .join("");
   picker.value = selected?.id || "";
@@ -41,6 +48,10 @@ async function init() {
       `<label>Hole ${i + 1}<input name="hole${i + 1}" type="url" placeholder="YouTube URL"></label>`,
   ).join("");
   picker.onchange = async () => {
+    if (!canLeaveLeague()) {
+      picker.value = selected?.id || "";
+      return;
+    }
     selected = events.find((ev) => ev.id === Number(picker.value)) || null;
     groups = [];
     document.getElementById("teeEditor").innerHTML = "";
@@ -51,16 +62,30 @@ async function init() {
   document.querySelectorAll("[data-tab]").forEach(
     (button) =>
       (button.onclick = () => {
-        document.getElementById("eventToolbar").hidden =
-          button.dataset.tab === "accounts";
+        if (!canLeaveLeague()) return;
+        document.getElementById("eventToolbar").hidden = [
+          "accounts",
+          "handicaps",
+        ].includes(button.dataset.tab);
         document
           .querySelectorAll("[data-tab]")
           .forEach((btn) => btn.classList.toggle("active", btn === button));
-        ["accounts", "details", "responses", "tees"].forEach(
+        [
+          "accounts",
+          "details",
+          "responses",
+          "tees",
+          "handicaps",
+          "scoring",
+          "scorecards",
+        ].forEach(
           (tab) =>
             (document.getElementById(
               "admin" +
                 {
+                  handicaps: "Handicaps",
+                  scoring: "Scoring",
+                  scorecards: "Scorecards",
                   accounts: "Accounts",
                   details: "Details",
                   responses: "Responses",
@@ -68,6 +93,7 @@ async function init() {
                 }[tab],
             ).hidden = tab !== button.dataset.tab),
         );
+        showLeagueTab(button.dataset.tab, selected);
       }),
   );
   form.onsubmit = (ev) => {
@@ -78,6 +104,9 @@ async function init() {
       if (!name) throw new Error("Enter an event name.");
       const updates = {
         name,
+        round_number: f.get("round_number")
+          ? Number(f.get("round_number"))
+          : null,
         course_name: String(f.get("course_name") || "").trim() || null,
         place_id: f.get("place_id") || null,
         address: String(f.get("address") || "").trim() || null,
@@ -223,6 +252,10 @@ async function fillEvent() {
   if (selected?.first_time && /^\d{2}:\d{2}$/.test(selected.first_time))
     document.getElementById("teeStart").value = selected.first_time;
   await loadResponses();
+  await showLeagueTab(
+    document.querySelector("[data-tab].active")?.dataset.tab,
+    selected,
+  );
 }
 async function loadResponses() {
   const area = document.getElementById("adminRsvps");

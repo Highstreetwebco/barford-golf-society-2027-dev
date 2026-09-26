@@ -12,9 +12,9 @@
     <title>Organiser tools | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-admin-1" />
-    <script src="assets/js/baseline.js?v=2027-admin-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-admin-1"></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-scoring-1" />
+    <script src="assets/js/baseline.js?v=2027-scoring-1" defer></script>
+    <script type="module" src="assets/js/admin.js?v=2027-scoring-1"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -57,7 +57,7 @@
         <p class="eyebrow">ORGANISER AREA</p>
         <h1>Society administration.</h1>
         <p class="lede">
-          Manage member accounts, admin access, events and tee groups.
+          Manage the season, member accounts, events and scorecards.
         </p>
       </div>
       <div id="adminGate" class="panel">Checking organiser access…</div>
@@ -69,10 +69,17 @@
           ><a class="button secondary" href="events.html">View member page</a>
         </div>
         <div class="segmented admin-tabs">
-          <button data-tab="accounts" class="active">Accounts</button><button data-tab="details">Event details</button
+          <button data-tab="accounts" class="active">Accounts</button
+          ><button data-tab="details">Event details</button
           ><button data-tab="responses">RSVPs</button
-          ><button data-tab="tees">Tee groups</button>
+          ><button data-tab="tees">Tee groups</button
+          ><button data-tab="handicaps">Starting handicaps</button
+          ><button data-tab="scoring">Enter scores</button
+          ><button data-tab="scorecards">Setup next round score cards</button>
         </div>
+        <section id="adminHandicaps" class="panel" hidden></section>
+        <section id="adminScoring" class="panel" hidden></section>
+        <section id="adminScorecards" class="panel" hidden></section>
         <section id="adminAccounts" class="panel">
           <div class="section-heading">
             <div>
@@ -165,6 +172,17 @@
             <label
               >Event name<input name="name" required maxlength="200" /></label
             ><label>Date<input name="date" type="date" required /></label
+            ><label
+              >League round<select name="round_number">
+                <option value="">Social event · no league scoring</option>
+                <option value="1">Round 1</option>
+                <option value="2">Round 2</option>
+                <option value="3">Round 3</option>
+                <option value="4">Round 4</option>
+                <option value="5">Round 5</option>
+                <option value="6">Round 6</option>
+                <option value="7">Round 7</option>
+              </select></label
             ><label
               >Course / location<input name="location" maxlength="300" /></label
             ><label

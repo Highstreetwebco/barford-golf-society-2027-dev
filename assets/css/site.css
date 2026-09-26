@@ -1795,3 +1795,88 @@ td button {
     padding: 10px 14px;
   }
 }
+
+/* League entry and scorecard preparation */
+.admin-tabs {
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.admin-tabs button {
+  white-space: normal;
+}
+.score-input {
+  width: 6rem;
+  min-width: 4.5rem;
+  font-size: 1.1rem;
+}
+.score-entry-table th,
+.score-entry-table td {
+  padding: 0.75rem;
+}
+.score-entry-table input[type="checkbox"],
+.scorecard-table input {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+.league-table {
+  min-width: 720px;
+}
+.league-table th:nth-child(2),
+.league-table td:nth-child(2) {
+  min-width: 160px;
+}
+.secret-score {
+  display: inline-block;
+  border-radius: 6px;
+  background: var(--border, #e3e8e5);
+  padding: 0.3rem 0.5rem;
+}
+.secret-score span {
+  filter: blur(3px);
+  user-select: none;
+}
+.card-hcp {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.scorecard-table th,
+.scorecard-table td {
+  padding: 1rem 0.8rem;
+}
+.league-rules table {
+  max-width: 600px;
+}
+@media print {
+  body.printing-scorecards {
+    color: #000;
+    background: #fff;
+  }
+  body.printing-scorecards > :not(main),
+  body.printing-scorecards main > :not(#adminContent),
+  body.printing-scorecards #adminContent > :not(#adminScorecards),
+  body.printing-scorecards #adminScorecards > :not(.scorecard-print) {
+    display: none !important;
+  }
+  body.printing-scorecards main,
+  body.printing-scorecards #adminScorecards {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+    border: 0;
+    box-shadow: none;
+  }
+  .scorecard-print table {
+    width: 100%;
+  }
+  .scorecard-print tr {
+    break-inside: avoid;
+  }
+  .scorecard-print .table-scroll {
+    overflow: visible;
+  }
+  .scorecard-print .notice {
+    color: #000;
+    border: 1px solid #000;
+  }
+}

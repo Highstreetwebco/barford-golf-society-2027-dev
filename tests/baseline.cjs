@@ -142,6 +142,47 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         return reply({ updated: true });
       }
     }
+    if (p.endsWith("/rpc/baseline_league_admin"))
+      return reply(model.league || { revision: 0, players: [], rounds: [] });
+    if (p.endsWith("/rpc/baseline_league_board"))
+      return reply(
+        model.board || {
+          players: [],
+          rounds: [],
+          visible_rounds: admin ? 7 : 5,
+        },
+      );
+    if (p.endsWith("/rpc/baseline_league_save_handicaps")) {
+      model.handicaps = body;
+      for (const x of body.entries)
+        model.league.players.find((p) => p.id === x.user_id).starting_handicap =
+          x.handicap;
+      model.league.revision++;
+      return reply(model.league);
+    }
+    if (p.endsWith("/rpc/baseline_league_save_round")) {
+      model.roundSave = body;
+      model.league.revision++;
+      model.league.rounds = [
+        {
+          event_id: body.event,
+          round_number: 1,
+          draft: body.entries,
+          draft_winner: body.chosen_winner,
+          published_entries: body.publish ? body.entries : null,
+          results: body.publish
+            ? body.entries.map((x) => ({
+                ...x,
+                handicap: 20,
+                next_handicap: 18,
+                adjustment: -2,
+                winner: x.user_id === body.chosen_winner,
+              }))
+            : null,
+        },
+      ];
+      return reply(model.league);
+    }
     if (p.endsWith("/rpc/baseline_admin_accounts"))
       return admin
         ? reply(
@@ -772,8 +813,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("heading", { name: "All accounts", exact: true })
         .waitFor();
-      await page.getByRole("button",{name:"Event details",exact:true}).click();
-      await page.getByRole("button",{name:"Accounts",exact:true}).click();
+      await page
+        .getByRole("button", { name: "Event details", exact: true })
+        .click();
+      await page.getByRole("button", { name: "Accounts", exact: true }).click();
       await page.getByLabel("Find a member", { exact: true }).fill("Another");
       await page
         .getByRole("button", { name: "Edit account", exact: true })
@@ -834,6 +877,270 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         status: "passed",
       });
       await context.close();
+    }
+    // Fast league entry, drafts, explicit ties, scorecard filtering, and member secrecy.
+    {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 960 },
+        serviceWorkers: "block",
+        acceptDownloads: true,
+      });
+      const model = await mocks(context, { signedIn: true, admin: true }),
+        page = await context.newPage();
+      const people = Array.from({ length: 6 }, (_, i) => ({
+        id: `22222222-2222-4222-8222-${String(i + 1).padStart(12, "0")}`,
+        name: `Player ${i + 1}`,
+        starting_handicap: 20,
+      }));
+      model.league = { revision: 1, players: people, rounds: [] };
+      model.events = [
+        { ...fixture, round_number: 1 },
+        {
+          ...fixture,
+          id: 1000,
+          name: "Next round",
+          round_number: 2,
+          date: "2027-07-25",
+        },
+      ];
+      model.responses = people.map((p, i) => ({
+        id: i + 1,
+        user_id: p.id,
+        name: p.name,
+        event_id: 999,
+        attending: i !== 5,
+        reserve: i === 4,
+        buggy: i < 2,
+      }));
+      await page.goto(base + "admin.html");
+      await page
+        .getByRole("button", { name: "Starting handicaps", exact: true })
+        .click();
+      await page
+        .getByLabel("Starting handicap for Player 1", { exact: true })
+        .fill("18.5");
+      await page
+        .getByLabel("Starting handicap for Player 1", { exact: true })
+        .press("Enter");
+      assert.equal(
+        await page
+          .getByLabel("Starting handicap for Player 2", { exact: true })
+          .evaluate((x) => x === document.activeElement),
+        true,
+      );
+      await page
+        .getByRole("button", { name: "Save all starting handicaps" })
+        .click();
+      await page
+        .getByText("Starting handicaps saved. Published rounds recalculated.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(model.handicaps.entries[0].handicap, 18.5);
+      await page
+        .getByRole("button", { name: "Enter scores", exact: true })
+        .click();
+      await page.getByLabel("Choose an event").selectOption("999");
+      await page.getByLabel("Points for Player 1", { exact: true }).fill("40");
+      await page
+        .getByLabel("Points for Player 1", { exact: true })
+        .press("Enter");
+      assert.equal(
+        await page
+          .getByLabel("Points for Player 2", { exact: true })
+          .evaluate((x) => x === document.activeElement),
+        true,
+      );
+      await page
+        .getByText("Paste scores from a spreadsheet", { exact: true })
+        .click();
+      await page
+        .locator("#pasteScores")
+        .fill("Player 1\t40\nPlayer 2\t40\nPlayer 3\t30\nPlayer 4\t25");
+      await page.getByRole("button", { name: "Apply to score sheet" }).click();
+      await page
+        .getByText("4 rows added. Review before publishing.", { exact: true })
+        .waitFor();
+      await page.locator("#pasteScores").fill("Unknown Person\t99");
+      await page.getByRole("button", { name: "Apply to score sheet" }).click();
+      await page
+        .getByText(
+          "No registered player matches “Unknown Person”. No rows changed.",
+          { exact: true },
+        )
+        .waitFor();
+      assert.equal(
+        await page
+          .getByLabel("Points for Player 1", { exact: true })
+          .inputValue(),
+        "40",
+      );
+      await page
+        .getByRole("button", { name: "Save draft", exact: true })
+        .click();
+      await page
+        .getByText("Draft saved. Members cannot see it.", { exact: true })
+        .waitFor();
+      assert.equal(model.roundSave.publish, false);
+      assert.equal(model.roundSave.entries.length, 4);
+      await page
+        .getByLabel("Round winner — tied on 40 points")
+        .selectOption(people[1].id);
+      await page
+        .getByRole("button", { name: "Publish round & update handicaps" })
+        .click();
+      await page
+        .getByText("Round published. Leaderboard and handicaps updated.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(model.roundSave.chosen_winner, people[1].id);
+      assert.equal(model.roundSave.publish, true);
+      await page.screenshot({
+        path: path.join(out, "admin-scoring-390.png"),
+        fullPage: true,
+      });
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      // Round 2 card preparation must use round 1's resulting handicap.
+      model.responses = model.responses.map((x) => ({ ...x, event_id: 1000 }));
+      await page.getByLabel("Choose an event").selectOption("1000");
+      await page
+        .getByRole("button", {
+          name: "Setup next round score cards",
+          exact: true,
+        })
+        .click();
+      await page.locator(".scorecard-table tbody tr").first().waitFor();
+      assert.equal(await page.locator(".scorecard-table tbody tr").count(), 4);
+      assert.equal(await page.locator(".card-hcp").first().textContent(), "18");
+      assert(
+        !(await page
+          .locator("#adminScorecards")
+          .textContent()
+          .then((x) => x.includes("Player 5") || x.includes("Player 6"))),
+      );
+      const download = page.waitForEvent("download");
+      await page
+        .getByRole("button", { name: "Download CSV", exact: true })
+        .click();
+      assert.equal(
+        (await download).suggestedFilename(),
+        "barford-round-2-scorecards.csv",
+      );
+      await page.screenshot({
+        path: path.join(out, "admin-scorecards-390.png"),
+        fullPage: true,
+      });
+      await page.emulateMedia({ media: "print" });
+      await page.evaluate(() =>
+        document.body.classList.add("printing-scorecards"),
+      );
+      await page.screenshot({
+        path: path.join(out, "scorecards-print.png"),
+        fullPage: true,
+      });
+      await page.emulateMedia({ media: "screen" });
+      await context.close();
+      report.push({
+        page: "league-bulk-handicaps-fast-entry-drafts-winner-scorecards",
+        width: 390,
+        status: "passed",
+      });
+      const member = await browser.newContext({
+        viewport: { width: 390, height: 960 },
+        serviceWorkers: "block",
+      });
+      const memberModel = await mocks(member, { signedIn: true });
+      memberModel.board = {
+        players: people.slice(0, 2),
+        visible_rounds: 5,
+        rounds: [1, 2, 3, 4, 5].map((n) => ({
+          round: n,
+          average: 30,
+          results: people
+            .slice(0, 2)
+            .map((p, i) => ({
+              user_id: p.id,
+              points: i ? 25 : 30,
+              handicap: 20,
+              adjustment: 0,
+              next_handicap: 20,
+              winner: i === 0,
+            })),
+        })),
+      };
+      const mp = await member.newPage();
+      await mp.goto(base + "scores.html");
+      await mp.locator(".league-table tbody tr").first().waitFor();
+      assert.equal(await mp.locator(".secret-score").count(), 4);
+      assert.equal(
+        await mp
+          .locator(".league-table tbody tr")
+          .first()
+          .locator("td")
+          .nth(8)
+          .textContent(),
+        "150",
+      );
+      await mp.getByLabel("Choose round", { exact: true }).selectOption("6");
+      await mp
+        .getByText("🔒 Round 6 is secret. Only admins can see these results.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await mp.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      await mp.screenshot({
+        path: path.join(out, "leaderboard-member-390.png"),
+        fullPage: true,
+      });
+      // Admin best-five calculation: drop two lowest from seven, including secret rounds.
+      memberModel.board.visible_rounds = 7;
+      memberModel.board.rounds.push(
+        ...[6, 7].map((n) => ({
+          round: n,
+          average: 40,
+          results: [
+            {
+              user_id: people[0].id,
+              points: 40,
+              handicap: 20,
+              adjustment: -1,
+              next_handicap: 19,
+              winner: true,
+            },
+          ],
+        })),
+      );
+      await mp.getByRole("button", { name: "Refresh leaderboard" }).click();
+      await mp
+        .getByText("Admin view · All seven rounds visible.", { exact: true })
+        .waitFor();
+      assert.equal(await mp.locator(".secret-score").count(), 0);
+      assert.equal(
+        await mp
+          .locator(".league-table tbody tr")
+          .first()
+          .locator("td")
+          .nth(8)
+          .textContent(),
+        "170",
+      );
+      await member.close();
+      report.push({
+        page: "league-member-secret-rounds-and-best-five-ranking",
+        width: 390,
+        status: "passed",
+      });
     }
     // Organiser can create events and publish every confirmed member once.
     const context = await browser.newContext({

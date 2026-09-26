@@ -12,9 +12,9 @@
     <title>Scores | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-admin-1" />
-    <script src="assets/js/baseline.js?v=2027-admin-1" defer></script>
-    <script type="module" src="assets/js/scores.js?v=2027-admin-1"></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-scoring-1" />
+    <script src="assets/js/baseline.js?v=2027-scoring-1" defer></script>
+    <script type="module" src="assets/js/scores.js?v=2027-scoring-1"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -61,74 +61,22 @@
         </p>
       </div>
       <div class="toolbar">
-        <div class="segmented">
-          <button onclick="prevRound()" aria-label="Previous round">
-            ← Previous</button
-          ><button onclick="nextRound()" aria-label="Next round">Next →</button>
-        </div>
-        <button class="secondary" onclick="unlockInputs()" data-admin hidden>
-          Edit scores
-        </button>
+        <button id="refreshLeague" class="secondary">Refresh leaderboard</button
+        ><a class="button" href="admin.html?tab=scoring" data-admin hidden
+          >Enter event scores</a
+        >
       </div>
-      <div id="scoreAdminActions" class="panel" hidden>
-        <div class="actions">
-          <button onclick="calculateHandicaps()">Calculate &amp; save</button
-          ><button class="secondary" onclick="addPlayer()">Add player</button
-          ><button class="secondary" onclick="lockInputs()">
-            Finish editing</button
-          ><button id="exportLeaderboardBtn" onclick="exportLeaderboardCSV()">
-            Export leaderboard</button
-          ><button id="exportAllBtn" onclick="exportAllCSV()">
-            Export scores</button
-          ><button id="exportStatsBtn" onclick="exportStatsCSV()">
-            Export stats</button
-          ><button id="clearLeagueBtn" class="danger" onclick="confirmReset()">
-            Reset scores</button
-          ><button id="removePlayerBtn" class="danger" onclick="removePlayer()">
-            Remove player
-          </button>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="round-info">
-          <h2 id="roundHeader">Round 1 of 7</h2>
-          <div class="progress-bar"><div id="progressFill"></div></div>
-        </div>
-        <div id="emptyScores" class="empty-state" style="display: none">
-          <h3>A fresh scorecard.</h3>
-          <p>
-            No players added for 2027 yet. The leaderboard will appear here once
-            the season gets started.
-          </p>
-        </div>
-        <div id="tableContainer" class="table-scroll">
-          <p id="secretNotice" class="notice" hidden>
-            Rounds 6 and 7 are reserved for the organisers.
-          </p>
-          <table id="playersTableWrap">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th id="hcpHeader">Round 1 HCP</th>
-                <th>Points</th>
-                <th>Adj</th>
-                <th id="newHcpHeader">Next HCP</th>
-                <th>Total</th>
-                <th>DNP</th>
-                <th>Wins</th>
-              </tr>
-            </thead>
-            <tbody id="playersTable"></tbody>
-          </table>
-        </div>
-      </div>
-      <details class="panel section">
-        <summary>Player statistics &amp; handicap history</summary>
-        <div id="statsGrid" class="stats-grid"></div>
-        <h3>Handicap by round</h3>
-        <div id="handicapHistory"></div>
-      </details>
+      <p id="leagueVisibility" class="notice"></p>
+      <section id="leagueBoard" class="panel" aria-live="polite">
+        Loading scores…
+      </section>
+      <section class="panel section">
+        <h2>Round results</h2>
+        <label for="leagueRound">Choose round</label
+        ><select id="leagueRound"></select>
+        <div id="roundResults"></div>
+      </section>
+      <div id="leagueRules"></div>
     </main>
     <footer class="site-footer">
       <div>
