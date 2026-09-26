@@ -131,6 +131,13 @@ button:disabled {
 .skip-link:focus {
   top: 10px;
 }
+.skip-link:not(:focus) {
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+}
 .site-header {
   border-bottom: 1px solid var(--line);
   background: var(--surface);
@@ -680,6 +687,14 @@ details.panel[open] > summary {
 }
 .tee-group h4 {
   margin-bottom: 10px;
+}
+.tee-group .section-heading h3 {
+  white-space: nowrap;
+  font-size: 1.35rem;
+}
+.tee-group .section-heading label {
+  max-width: 150px;
+  font-size: 0.8rem;
 }
 .tee-group ol {
   padding-left: 20px;

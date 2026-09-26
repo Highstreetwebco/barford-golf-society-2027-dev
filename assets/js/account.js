@@ -37,7 +37,7 @@ if (isSignup) {
 } else {
   const area = document.getElementById("accountContent");
   async function render() {
-    if (state.recovery) {
+    if (state.recovery && state.user) {
       passwordForm(true);
       return;
     }
@@ -137,6 +137,13 @@ if (isSignup) {
     document.querySelector(".page-heading h1").textContent =
       "Choose a new password.";
     area.innerHTML = `<section class="panel"><form id="passwordForm" class="form-stack"><h2>${recovery ? "Reset password" : "Change password"}</h2>${recovery ? "" : '<label for="currentPassword">Current password</label><input id="currentPassword" type="password" name="current" autocomplete="current-password" required>'}<label for="newPassword">New password</label><input id="newPassword" name="password" type="password" minlength="8" autocomplete="new-password" required><small>Use at least 8 characters.</small><label for="confirmPassword">Confirm new password</label><input id="confirmPassword" name="confirm" type="password" minlength="8" autocomplete="new-password" required><button>Save password</button><p class="form-status" role="status"></p><a href="account.html">Back to my account</a></form></section>`;
+    area.querySelector('a[href="account.html"]').onclick = async (event) => {
+      event.preventDefault();
+      state.recovery = false;
+      sessionStorage.removeItem("barford-password-recovery");
+      history.replaceState(null, "", "account.html");
+      await render();
+    };
     document.getElementById("passwordForm").onsubmit = (ev) => {
       ev.preventDefault();
       submit(ev.target, async () => {

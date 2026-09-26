@@ -471,6 +471,42 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         path: path.join(out, `account-member-${width}.png`),
         fullPage: true,
       });
+      await page
+        .getByRole("button", { name: "Change password", exact: true })
+        .click();
+      await page
+        .getByLabel("Current password", { exact: true })
+        .fill("test-password");
+      await page
+        .getByLabel("New password", { exact: true })
+        .fill("updated-password");
+      await page
+        .getByLabel("Confirm new password", { exact: true })
+        .fill("different-password");
+      await page
+        .getByRole("button", { name: "Save password", exact: true })
+        .click();
+      await page
+        .getByText("Your passwords do not match.", { exact: true })
+        .waitFor();
+      await page
+        .getByLabel("Confirm new password", { exact: true })
+        .fill("updated-password");
+      await page
+        .getByRole("button", { name: "Save password", exact: true })
+        .click();
+      await page.getByLabel("Full name", { exact: true }).waitFor();
+      await page.evaluate(() =>
+        sessionStorage.setItem("barford-password-recovery", "true"),
+      );
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Reset password", exact: true })
+        .waitFor();
+      await page
+        .getByRole("link", { name: "Back to my account", exact: true })
+        .click();
+      await page.getByLabel("Full name", { exact: true }).waitFor();
       await page.goto(base + "shop.html");
       await page
         .getByRole("button", { name: "Add to basket", exact: true })
