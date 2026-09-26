@@ -5,29 +5,60 @@ const redirect = b.nextPath();
 if (isSignup) {
   document.getElementById("signInLink").href =
     "account.html?next=" + encodeURIComponent(redirect);
+  const selector = document.getElementById("memberName");
+  let roster = [];
+  try {
+    const result = await b.client.rpc("member_roster");
+    if (result.error) throw result.error;
+    roster = result.data;
+    selector.innerHTML =
+      '<option value="">Select your name</option>' +
+      roster
+        .map(
+          (m) =>
+            `<option value="${e(m.id)}" ${m.claimed ? "disabled" : ""}>${e(m.name)}${m.claimed ? " — account already created" : ""}</option>`,
+        )
+        .join("");
+  } catch {
+    selector.innerHTML =
+      '<option value="">Names could not load. Please refresh.</option>';
+  }
+  selector.onchange = () =>
+    (document.getElementById("fullName").value =
+      roster.find((m) => m.id === selector.value)?.name || "");
   document.getElementById("signupForm").onsubmit = (ev) => {
     ev.preventDefault();
     submit(ev.target, async () => {
       const f = new FormData(ev.target),
-        name = String(f.get("full_name")).trim();
-      if (!name) throw new Error("Enter your full name.");
+        member = roster.find((m) => m.id === f.get("roster_id"));
+      if (!member || member.claimed)
+        throw new Error(
+          "Choose your own available name. If it is already claimed, sign in or contact an organiser.",
+        );
+      if (!(await confirmName(member.name))) return;
       const { data, error } = await raw.auth.signUp({
-        email: String(f.get("email")).trim(),
+        email: "member-" + crypto.randomUUID() + "@members.barford2027.invalid",
         password: String(f.get("password")),
         options: {
-          data: { full_name: name },
-          emailRedirectTo: new URL("account.html", location.href).href,
+          data: {
+            roster_id: member.id,
+            full_name: member.name,
+            phone: String(f.get("phone")).trim(),
+            name_confirmation: true,
+          },
         },
       });
-      if (error) throw error;
-      if (data.session) {
-        location.href = redirect;
-        return;
-      }
-      const status = ev.target.querySelector('[role="status"]');
-      status.classList.add("success");
-      status.textContent =
-        "Check your email for a confirmation link, then sign in. If you already have an account, use Sign in or reset your password.";
+      if (error)
+        throw new Error(
+          error.message.includes("Database")
+            ? "This name may already have an account, or the mobile number is invalid. Refresh the list and check your details."
+            : error.message,
+        );
+      if (!data.session)
+        throw new Error(
+          "Your account needs organiser help to finish signing in. Please do not create another account.",
+        );
+      location.href = redirect;
     });
   };
   if (state.user) {
@@ -47,7 +78,54 @@ if (isSignup) {
     }
     document.querySelector(".page-heading h1").textContent = "Your account.";
     const p = state.profile || {};
-    area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Full name</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" required><label for="profileEmail">Email address</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly><label for="profilePhone">Phone number <span class="muted">(optional)</span></label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="40" value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Only visible to the organisers.</small><button>Save details</button><p class="form-status" role="status"></p></form><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
+    const membership = await raw
+      .from("baseline_member_accounts")
+      .select("member_id,disabled")
+      .eq("user_id", state.user.id)
+      .maybeSingle();
+    const linked = !!membership.data?.member_id;
+    if (membership.data?.disabled) {
+      area.innerHTML =
+        '<section class="panel"><h2>Account needs organiser help</h2><p>This account’s name has been released. Contact an organiser before using it again.</p><button id="blockedSignOut">Sign out</button></section>';
+      document.getElementById("blockedSignOut").onclick = async () => {
+        await raw.auth.signOut();
+        location.reload();
+      };
+      return;
+    }
+
+    area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Username (your name)</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" ${linked ? "readonly" : ""} required>${state.user.email?.endsWith("@members.barford2027.invalid") ? "" : `<label for="profileEmail">Existing account email</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly>`}<label for="profilePhone">Mobile number</label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="25" required value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Visible to organisers and your assigned buggy partner.</small><button>Save details</button><p class="form-status" role="status"></p></form><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
+    if (!linked) {
+      const claim = document.createElement("section");
+      claim.className = "panel section";
+      claim.innerHTML =
+        '<h2>Link your scoreboard name</h2><p>Keep your existing account and select your 2026 name. This becomes your username.</p><form id="claimForm" class="form-stack"><label for="claimName">Your name</label><select id="claimName" required></select><button>Link my name</button><p role="status"></p></form>';
+      area.prepend(claim);
+      const rr = await b.client.rpc("member_roster");
+      const available = (rr.data || []).filter((m) => !m.claimed);
+      claim.querySelector("select").innerHTML =
+        '<option value="">Select your name</option>' +
+        available
+          .map((m) => `<option value="${e(m.id)}">${e(m.name)}</option>`)
+          .join("");
+      claim.querySelector("form").onsubmit = (ev) => {
+        ev.preventDefault();
+        submit(ev.target, async () => {
+          const m = available.find(
+            (m) => m.id === claim.querySelector("select").value,
+          );
+          if (!m || !(await confirmName(m.name))) return;
+          const result = await b.client.rpc("claim_member", {
+            who: m.id,
+            mobile: document.getElementById("profilePhone").value,
+            confirmed: true,
+          });
+          if (result.error) throw result.error;
+          await b.refresh();
+          await render();
+        });
+      };
+    }
     document.getElementById("profileForm").onsubmit = (ev) => {
       ev.preventDefault();
       submit(ev.target, async () => {
@@ -55,8 +133,8 @@ if (isSignup) {
           name = String(f.get("full_name")).trim(),
           phone = String(f.get("phone")).trim();
         if (!name) throw new Error("Enter your full name.");
-        if (phone && phone.length < 5)
-          throw new Error("Enter a valid phone number or leave it blank.");
+        if (phone.replace(/[^0-9]/g, "").length < 10)
+          throw new Error("Enter a valid mobile number.");
         const { error } = await raw
           .from("profiles")
           .update({ full_name: name, phone: phone || null })
@@ -99,14 +177,14 @@ if (isSignup) {
         ? list
             .map(
               (r) =>
-                `<a href="events.html#event-${r.event_id}"><strong>${e(r.baseline_events.name)}</strong><span>${e(b.date(r.baseline_events.date))}</span><br><span>${r.baseline_events.cancelled ? "Event cancelled" : r.reserve ? "On the waiting list" : r.attending ? "Playing" : "Not playing"}</span></a>`,
+                `<a href="event.html?id=${r.event_id}"><strong>${e(r.baseline_events.name)}</strong><span>${e(b.date(r.baseline_events.date))}</span><br><span>${r.baseline_events.cancelled ? "Event cancelled" : r.reserve ? "On the waiting list" : r.attending ? "Playing" : "Not playing"}</span></a>`,
             )
             .join("")
         : '<p class="muted">No upcoming responses yet. Find a golf day and save your RSVP.</p>';
   }
   function renderSignIn() {
     const reset = new URLSearchParams(location.search).get("mode") === "reset";
-    area.innerHTML = `<section class="panel"><form id="loginForm" class="form-stack"><h2>${reset ? "Reset your password" : "Sign in"}</h2><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="username" required>${reset ? "" : '<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>'}<button>${reset ? "Send reset link" : "Sign in"}</button><p class="form-status" role="status"></p><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(redirect)}">Create an account</a><a href="account.html${reset ? "" : "?mode=reset"}">${reset ? "Back to sign in" : "Forgot password?"}</a></div></form></section><aside class="account-aside"><p class="eyebrow">YOUR NEXT ROUND STARTS HERE</p><h2>A few taps.<br>Then you’re in.</h2><p>Use the same account for every event. Your saved RSVP can be updated whenever your plans change.</p><p>Already have a 2027 account? Your existing login still works.</p></aside>`;
+    area.innerHTML = `${reset ? '<p class="notice">For a name-only account, contact an organiser to reset your password. Email reset is only for existing email accounts.</p>' : ""}<section class="panel"><form id="loginForm" class="form-stack"><h2>${reset ? "Reset your password" : "Sign in"}</h2><label for="email">${reset ? "Existing account email" : "Username (your name), or existing email"}</label><input id="email" name="email" type="${reset ? "email" : "text"}" autocomplete="username" required>${reset ? "" : '<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required>'}<button>${reset ? "Send reset link" : "Sign in"}</button><p class="form-status" role="status"></p><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(redirect)}">Create an account</a><a href="account.html${reset ? "" : "?mode=reset"}">${reset ? "Back to sign in" : "Forgot password?"}</a></div></form></section><aside class="account-aside"><p class="eyebrow">YOUR NEXT ROUND STARTS HERE</p><h2>A few taps.<br>Then you’re in.</h2><p>Use the same account for every event. Your saved RSVP can be updated whenever your plans change.</p><p>Your device remembers your login. Already have a 2027 account? Your existing email login still works.</p></aside>`;
     document.getElementById("loginForm").onsubmit = (ev) => {
       ev.preventDefault();
       submit(ev.target, async () => {
@@ -123,11 +201,7 @@ if (isSignup) {
             "If an account exists for this email, you’ll receive a reset link.";
           status.classList.add("success");
         } else {
-          const { error } = await raw.auth.signInWithPassword({
-            email,
-            password: String(f.get("password")),
-          });
-          if (error) throw error;
+          await b.login(email, String(f.get("password")));
           location.href = redirect;
         }
       });
@@ -168,4 +242,26 @@ if (isSignup) {
   const params = new URLSearchParams(location.hash.slice(1));
   if (params.has("error_description")) b.toast(params.get("error_description"));
   await render();
+}
+
+async function confirmName(name) {
+  const dialog = document.createElement("dialog");
+  dialog.setAttribute("aria-labelledby", "confirmNameTitle");
+  dialog.innerHTML = `<h2 id="confirmNameTitle">Are you ${e(name)}?</h2><p>You are creating an account under <strong>${e(name)}</strong>. This will be your username.</p><p class="notice">Only continue if this is you. Creating an account for someone else could ruin the setup for the season, so please don’t try to be funny.</p><div class="actions"><button data-confirm>Yes, I am ${e(name)}</button><button class="secondary" data-cancel>Go back</button></div>`;
+  document.body.append(dialog);
+  return new Promise((resolve) => {
+    const finish = (x) => {
+      dialog.close();
+      dialog.remove();
+      resolve(x);
+    };
+    dialog.querySelector("[data-confirm]").onclick = () => finish(true);
+    dialog.querySelector("[data-cancel]").onclick = () => finish(false);
+    dialog.oncancel = (ev) => {
+      ev.preventDefault();
+      finish(false);
+    };
+    dialog.showModal();
+    dialog.querySelector("[data-cancel]").focus();
+  });
 }

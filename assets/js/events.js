@@ -1,3 +1,9 @@
+import {
+  mountExperience,
+  mountBuggy,
+  updateSlots,
+  londonToday,
+} from "./event-experience.js?v=2027-experience-1";
 const b = await window.barfordReady;
 const { client: c, state, escape: e } = b;
 let events = [],
@@ -6,7 +12,10 @@ let events = [],
   tees = [],
   filter = "upcoming";
 const list = document.getElementById("eventList");
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = londonToday;
+const dedicated = location.pathname.endsWith("event.html");
+const eventId = Number(new URLSearchParams(location.search).get("id"));
+let experienceMounted = false;
 const own = (id) =>
   responses.find((r) => r.event_id === id && r.user_id === state.user?.id);
 const status = (r) =>
@@ -56,11 +65,15 @@ async function load() {
   tees = result[2].data || [];
   responses = result[3]?.data || [];
   document.getElementById("memberNotice").hidden = !!state.user;
-  render();
+  await render();
 }
-function render() {
+async function render() {
   const visible = events.filter((ev) =>
-    filter === "past" ? ev.date < today() : ev.date >= today(),
+    dedicated
+      ? ev.id === eventId
+      : filter === "past"
+        ? ev.date < today()
+        : ev.date >= today(),
   );
   if (!visible.length) {
     list.innerHTML =
@@ -96,13 +109,64 @@ function render() {
           : available === 0
             ? "Full · waiting list open"
             : `${available} of ${ev.max_players} places available`;
+      if (!dedicated)
+        return `<article class="panel event-card" id="event-${ev.id}"><div class="event-top"><div class="date-block"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div><div class="event-title"><p class="eyebrow">${e(ev.first_time || "Tee time to follow")}</p><h2><a href="event.html?id=${ev.id}">${e(ev.name)}</a></h2><p>${e(ev.location)}</p></div></div><div class="event-meta"><span>${e(slots)}</span>${r ? `<span class="status-pill">${status(r)}</span>` : ""}</div><div class="event-body"><a class="button" href="event.html?id=${ev.id}">${r ? "View event & edit RSVP" : "View event & RSVP"}</a></div></article>`;
       const embed = youtube(ev.video_link);
       const holes = Object.entries(ev.per_hole_videos || {}).filter(([, url]) =>
         youtube(url),
       );
-      return `<article class="panel event-card" id="event-${ev.id}"><div class="event-top"><div class="date-block"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div><div class="event-title"><p class="eyebrow">${e(d.toLocaleDateString("en-GB", { weekday: "long" }))} · ${e(ev.first_time || "Tee time to follow")}</p><h2>${e(ev.name)}</h2><p>${e(ev.location)}</p></div>${ev.price ? `<div class="event-price">${e(ev.price)}</div>` : ""}</div><div class="event-meta"><span>${e(slots)}</span><span>${ev.cancelled ? '<span class="status-pill cancelled">Cancelled</span>' : r ? `<span class="status-pill ${r.reserve ? "waiting" : ""}">${status(r)}</span>` : closed ? "Event complete" : "RSVP when you’re ready"}</span></div><div class="event-body"><div id="response-${ev.id}">${r ? `<div class="saved-response"><div><h3>${status(r)}</h3>${r.attending || r.reserve ? `<p>${r.buggy ? "Buggy requested" : "Walking"} · ${e(r.preferred_time)} tee time preference</p>` : ""}</div>${!closed ? `<button class="secondary" data-rsvp="${ev.id}">Edit RSVP</button>` : ""}</div>` : !closed ? `<div class="actions"><button data-rsvp="${ev.id}">${state.user ? "Save your RSVP" : "Sign in to RSVP"}</button></div>` : ""}</div><div id="form-${ev.id}" hidden></div><details class="event-details"><summary>Event details &amp; players</summary>${ev.description ? `<p class="event-description">${e(ev.description)}</p>` : ""}<div class="event-links">${b.safeUrl(ev.course_link) ? `<a href="${b.safeUrl(ev.course_link)}" target="_blank" rel="noopener">Course website ↗</a>` : ""}${b.safeUrl(ev.weather_link) ? `<a href="${b.safeUrl(ev.weather_link)}" target="_blank" rel="noopener">Weather ↗</a>` : ""}<a href="${calendar(ev)}" target="_blank" rel="noopener">Add to calendar ↗</a></div>${ev.video_type === "whole" && embed ? `<iframe class="event-video" src="${embed}" title="${e(ev.name)} course preview" loading="lazy" allowfullscreen></iframe>` : ""}${ev.video_type === "per-hole" && holes.length ? `<label for="hole-${ev.id}">Preview a hole</label><select id="hole-${ev.id}" data-hole><option value="">Choose a hole</option>${holes.map(([h, url]) => `<option value="${youtube(url)}">Hole ${e(h.replace("hole", ""))}</option>`).join("")}</select><div class="hole-preview"></div>` : ""}${roster(ev)}</details></div></article>`;
+      return `<article class="panel event-card" id="event-${ev.id}"><div class="event-top"><div class="date-block"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div><div class="event-title"><p class="eyebrow">${e(d.toLocaleDateString("en-GB", { weekday: "long" }))} · ${e(ev.first_time || "Tee time to follow")}</p><h2>${e(ev.name)}</h2><p>${e(ev.location)}</p></div>${ev.price ? `<div class="event-price">${e(ev.price)}</div>` : ""}</div><div class="event-meta"><span>${e(slots)}</span><span>${ev.cancelled ? '<span class="status-pill cancelled">Cancelled</span>' : r ? `<span class="status-pill ${r.reserve ? "waiting" : ""}">${status(r)}</span>` : closed ? "Event complete" : "RSVP when you’re ready"}</span></div><div class="event-body"><div id="response-${ev.id}">${r ? `<div class="saved-response"><div><h3>${status(r)}</h3>${r.attending || r.reserve ? `<p>${r.buggy ? "Buggy requested" : "Walking"} · ${e(r.preferred_time ? r.preferred_time + " tee time preference" : "No tee time preference")}</p>` : ""}</div>${!closed ? `<button class="secondary" data-rsvp="${ev.id}">Edit RSVP</button>` : ""}</div>` : !closed ? `<div class="actions"><button data-rsvp="${ev.id}">${state.user ? "Save your RSVP" : "Sign in to RSVP"}</button></div>` : ""}</div><div id="form-${ev.id}" hidden></div><details class="event-details" open><summary>Event details &amp; players</summary>${roster(ev)}</details></div></article>`;
     })
     .join("");
+  if (dedicated && visible[0]) {
+    const ev = visible[0];
+    document.title = ev.name + " | Barford Golf Society";
+    document.querySelector(".page-heading h1").textContent = ev.name;
+    if (
+      !document.getElementById("quickRsvp") &&
+      !ev.cancelled &&
+      ev.date >= today()
+    ) {
+      const action = document.createElement("button");
+      action.id = "quickRsvp";
+      action.textContent = "RSVP to this event";
+      action.onclick = async () => {
+        await openForm(ev.id);
+        document
+          .getElementById("form-" + ev.id)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      };
+      document.querySelector(".page-heading").append(action);
+    }
+    document
+      .querySelectorAll("[data-filter]")
+      .forEach((x) => (x.hidden = true));
+    if (!document.getElementById("eventExperience")) {
+      const extra = document.createElement("div");
+      extra.id = "eventExperience";
+      list.before(extra);
+      const buggy = document.createElement("section");
+      buggy.id = "buggyPanel";
+      buggy.className = "panel section";
+      list.after(buggy);
+    }
+    const ownTime =
+      !ev.tee_times_dirty &&
+      tees.find(
+        (t) =>
+          t.event_id === ev.id &&
+          t.players.some((p) => p.user_id === state.user?.id),
+      )?.tee_time;
+    if (!experienceMounted) {
+      experienceMounted = true;
+      mountExperience(
+        document.getElementById("eventExperience"),
+        ev,
+        ownTime,
+      ).then(() => updateSlots(ev, document.getElementById("eventExperience")));
+    }
+    await mountBuggy(document.getElementById("buggyPanel"), ev);
+  }
   list
     .querySelectorAll("[data-rsvp]")
     .forEach(
@@ -185,7 +249,7 @@ function radio(name, legend, options, selected) {
   return `<fieldset><legend>${legend}</legend><div class="choices">${options.map(([value, label]) => `<label><input type="radio" name="${name}" value="${value}" ${selected === value ? "checked" : ""} required><span>${label}</span></label>`).join("")}</div></fieldset>`;
 }
 async function openForm(id) {
-  history.replaceState(null, "", "#event-" + id);
+  history.replaceState(null, "", "event.html?id=" + id + "#rsvp");
   if (!state.user) {
     if (!(await b.requireMember())) return;
     await load();
@@ -211,16 +275,17 @@ async function openForm(id) {
       ["yes", "Yes, please"],
       ["no", "No, I’ll walk"],
     ],
-    r ? (r.buggy ? "yes" : "no") : null,
+    r?.buggy ? "yes" : "no",
   )}${radio(
     "preferred_time",
-    "Preferred tee time",
+    "Preferred tee time (optional)",
     [
+      ["", "No preference"],
       ["First", "First"],
       ["Middle", "Middle"],
       ["End", "End"],
     ],
-    r?.preferred_time,
+    r?.preferred_time || "",
   )}<small>We’ll do our best to match your preference. A buggy request is subject to availability.</small></div><div class="actions"><button type="submit">${r ? "Save changes" : "Save RSVP"}</button><button type="button" class="secondary" data-cancel>Cancel</button></div><p class="form-status" role="status"></p></form>`;
   const form = area.querySelector("form");
   const toggle = () => {
@@ -246,7 +311,7 @@ async function openForm(id) {
         event_id: id,
         attending: f.get("attending") === "yes",
         buggy: f.get("buggy") === "yes",
-        preferred_time: f.get("preferred_time"),
+        preferred_time: f.get("preferred_time") || null,
       };
       const { data, error } = await c.rpc("submit_rsvp", { payload });
       if (error) throw error;
@@ -280,6 +345,7 @@ window.addEventListener("barford-signout", () =>
 try {
   await load();
   const hash = location.hash;
+  if (dedicated && hash === "#rsvp") await openForm(eventId);
   if (/^#event-\d+$/.test(hash))
     document.querySelector(hash)?.scrollIntoView({ block: "start" });
 } catch (error) {
@@ -291,3 +357,17 @@ try {
     ) +
     "</div>";
 }
+
+setInterval(async () => {
+  if (document.hidden) return;
+  const ev = events.find((x) => x.id === eventId);
+  if (dedicated && ev) {
+    await updateSlots(ev, document.getElementById("eventExperience"));
+    if (!document.querySelector(".rsvp-form"))
+      await mountBuggy(document.getElementById("buggyPanel"), ev);
+  }
+}, 25000);
+window.addEventListener("focus", () => {
+  const ev = events.find((x) => x.id === eventId);
+  if (ev) updateSlots(ev, document.getElementById("eventExperience"));
+});

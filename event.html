@@ -1,8 +1,102 @@
 <!doctype html>
-<html lang="en">
-  <meta charset="utf-8" /><meta name="robots" content="noindex" /><meta
-    http-equiv="refresh"
-    content="0;url=events.html"
-  /><title>Barford Golf Society</title
-  ><a href="events.html">Continue</a>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="theme-color" content="#183f34" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co;"
+    />
+    <title>Golf day | Barford Golf Society</title>
+    <link rel="icon" href="icon-logo.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-experience-1" />
+    <script src="assets/js/baseline.js?v=2027-experience-1" defer></script>
+    <script
+      type="module"
+      src="assets/js/events.js?v=2027-experience-1"
+    ></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a
+          href="index.html"
+          class="brand"
+          aria-label="Barford Golf Society home"
+          ><span class="brand-mark">B<span>G S</span></span
+          ><span>Barford<small>GOLF SOCIETY</small></span></a
+        ><button
+          class="menu-toggle secondary"
+          id="menuToggle"
+          aria-expanded="false"
+          aria-controls="siteNav"
+        >
+          Menu
+        </button>
+        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
+          <a href="index.html">Home</a><a href="events.html">Events</a
+          ><a href="scores.html">Scores</a>
+          <details class="more-nav">
+            <summary>More</summary>
+            <div>
+              <a href="worldevents.html">World events</a
+              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
+              ><a href="about.html">About us</a>
+            </div>
+          </details>
+          <a class="account-link" href="account.html" id="accountNav"
+            >Sign in</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main id="main" class="container">
+      <div class="page-heading">
+        <p class="eyebrow">THE 2027 SEASON</p>
+        <h1>Your next golf day.</h1>
+        <p class="lede">
+          Choose an event, save your RSVP and we’ll see you on the first tee.
+        </p>
+      </div>
+      <div class="toolbar">
+        <div class="segmented" aria-label="Event filter">
+          <button class="active" data-filter="upcoming" aria-pressed="true">
+            Upcoming</button
+          ><button data-filter="past" aria-pressed="false">Past events</button>
+        </div>
+        <a class="button secondary" href="admin.html" data-admin hidden
+          >Manage events</a
+        >
+      </div>
+      <p class="notice" id="memberNotice" hidden>
+        Sign in to save your RSVP and see who’s playing.
+        <a href="signup.html">Create an account</a> if you’re new here.
+      </p>
+      <div id="eventList" class="stack" aria-live="polite">Loading events…</div>
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href="index.html">Barford Golf Society</a
+        ><span>2027 season · Development site</span>
+      </div>
+      <div class="footer-actions">
+        <a href="admin.html" data-admin hidden>Organiser tools</a
+        ><button id="themeToggle" class="text-button" aria-pressed="false">
+          Dark mode</button
+        ><button id="installButton" class="text-button" hidden>
+          Install app
+        </button>
+      </div>
+    </footer>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <noscript
+      ><p class="notice">
+        Please enable JavaScript to sign in and use the member features.
+      </p></noscript
+    >
+  </body>
 </html>

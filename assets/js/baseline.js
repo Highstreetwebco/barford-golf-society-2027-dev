@@ -11,6 +11,13 @@ window.barfordReady = (async () => {
   const raw = window.supabase.createClient(
     "https://xspzmthygrajzktydvvj.supabase.co",
     "sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c",
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    },
   );
   const tables = new Set([
     "events",
@@ -63,8 +70,8 @@ window.barfordReady = (async () => {
   };
   const nextPath = () => {
     const value =
-      new URLSearchParams(location.search).get("next") || "events.html";
-    return /^(index|events|scores|gallery|shop|worldevents|admin|account)\.html(?:#[\w-]+)?$/.test(
+      new URLSearchParams(location.search).get("next") || "index.html";
+    return /^(index|events|scores|gallery|shop|worldevents|admin|account|event)\.html(?:\?id=\d+)?(?:#[\w-]+)?$/.test(
       value,
     )
       ? value
@@ -118,13 +125,41 @@ window.barfordReady = (async () => {
     if (nav) nav.textContent = state.user ? "My account" : "Sign in";
     return state;
   }
+  async function service(action, values = {}) {
+    const { data, error } = await raw.functions.invoke("baseline-services", {
+      body: { action, ...values },
+    });
+    if (error) {
+      let message = error.message;
+      try {
+        message = (await error.context.json()).error || message;
+      } catch {}
+      throw new Error(message);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
+  }
+  async function login(username, password) {
+    if (username.includes("@")) {
+      const { error } = await raw.auth.signInWithPassword({
+        email: username,
+        password,
+      });
+      if (error) throw error;
+    } else {
+      const { session } = await service("login", { username, password });
+      const { error } = await raw.auth.setSession(session);
+      if (error) throw error;
+    }
+  }
   let pendingSignIn;
   async function signIn() {
     if (pendingSignIn) return pendingSignIn;
     const el = document.createElement("dialog");
     el.setAttribute("aria-labelledby", "signInTitle");
-    const current = location.pathname.split("/").pop() + location.hash;
-    el.innerHTML = `<form class="form-stack"><h2 id="signInTitle">Member sign in</h2><p class="muted">Sign in to save your response.</p><label for="dialogEmail">Email address</label><input id="dialogEmail" name="email" type="email" autocomplete="username" required><label for="dialogPassword">Password</label><input id="dialogPassword" name="password" type="password" autocomplete="current-password" required><p class="form-status" role="status"></p><div class="dialog-actions"><button>Sign in</button><button type="button" class="secondary" data-cancel>Cancel</button></div></form><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(current)}">Create an account</a><a href="account.html?mode=reset">Forgot password?</a></div>`;
+    const current =
+      location.pathname.split("/").pop() + location.search + location.hash;
+    el.innerHTML = `<form class="form-stack"><h2 id="signInTitle">Member sign in</h2><p class="muted">Sign in to save your response.</p><label for="dialogEmail">Username (your name)</label><input id="dialogEmail" name="email" type="text" autocomplete="username" required><label for="dialogPassword">Password</label><input id="dialogPassword" name="password" type="password" autocomplete="current-password" required><p class="form-status" role="status"></p><div class="dialog-actions"><button>Sign in</button><button type="button" class="secondary" data-cancel>Cancel</button></div></form><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(current)}">Create an account</a><a href="account.html?mode=reset">Forgot password?</a></div>`;
     document.body.append(el);
     pendingSignIn = new Promise((resolve) => {
       const finish = (value) => {
@@ -142,11 +177,10 @@ window.barfordReady = (async () => {
         e.preventDefault();
         await submit(e.target, async () => {
           const data = new FormData(e.target);
-          const { error } = await raw.auth.signInWithPassword({
-            email: String(data.get("email")).trim(),
-            password: String(data.get("password")),
-          });
-          if (error) throw error;
+          await login(
+            String(data.get("email")).trim(),
+            String(data.get("password")),
+          );
           await refresh();
           finish(true);
         });
@@ -277,6 +311,8 @@ window.barfordReady = (async () => {
       .catch(() => {});
   window.barford = {
     raw,
+    login,
+    service,
     client,
     state,
     escape,

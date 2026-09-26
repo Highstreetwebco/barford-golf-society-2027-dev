@@ -1,7 +1,7 @@
 name: Verify 2027 member site
 on:
   push:
-    branches: [main, restart/live-replica, feature/member-accounts]
+    branches: [main, restart/live-replica, feature/member-accounts, feature/member-experience]
   workflow_dispatch:
 permissions:
   contents: read

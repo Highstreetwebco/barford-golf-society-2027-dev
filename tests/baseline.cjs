@@ -128,6 +128,21 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         })()
       : {};
     const reply = (json, status = 200) => route.fulfill({ status, json });
+    if (p === "/functions/v1/baseline-services") {
+      if (body.action === "login")
+        return body.password === "wrong-password"
+          ? reply({ error: "Check your username and password." }, 400)
+          : reply({ session });
+      if (body.action === "course") return reply({});
+      if (body.action === "weather") return reply({ status: "too_early" });
+      if (body.action === "search_course") return reply({ places: [] });
+    }
+    if (p.endsWith("/baseline_member_accounts"))
+      return reply({ member_id: uid, disabled: false });
+    if (p.endsWith("/rpc/baseline_member_roster"))
+      return reply([{ id: uid, name: "New Member", claimed: false }]);
+    if (p.endsWith("/rpc/baseline_buggy_details"))
+      return reply({ status: "unpaired" });
     if (p === "/auth/v1/token")
       return body.password === "wrong-password"
         ? reply(
@@ -185,16 +200,19 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       );
     if (p.endsWith("/baseline_rsvps")) {
       return reply(
-        model.responses.map((r) =>
-          u.searchParams.get("select")?.includes("baseline_events")
-            ? {
-                ...r,
-                baseline_events: model.events.find(
-                  (ev) => ev.id === r.event_id,
-                ),
-              }
-            : r,
-        ),
+        u.searchParams.get("user_id") &&
+          !u.searchParams.get("select")?.includes("baseline_events")
+          ? model.responses.find((r) => r.user_id === uid) || null
+          : model.responses.map((r) =>
+              u.searchParams.get("select")?.includes("baseline_events")
+                ? {
+                    ...r,
+                    baseline_events: model.events.find(
+                      (ev) => ev.id === r.event_id,
+                    ),
+                  }
+                : r,
+            ),
       );
     }
     if (p.endsWith("/baseline_tee_times")) return reply(model.groups);
@@ -355,16 +373,18 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
-      await page.goto(base + "events.html");
+      await page.goto(base + "event.html?id=999");
       await page
         .getByRole("button", { name: "Sign in to RSVP", exact: true })
         .click();
       await page.getByRole("dialog").waitFor();
-      await page.getByLabel("Email address", { exact: true }).fill(user.email);
+      await page
+        .getByLabel("Username (your name)", { exact: true })
+        .fill("New Member");
       await page.getByLabel("Password", { exact: true }).fill("wrong-password");
       await page.getByRole("button", { name: "Sign in", exact: true }).click();
       await page
-        .getByText("Invalid login credentials", { exact: true })
+        .getByText("Check your username and password.", { exact: true })
         .waitFor();
       await page.getByLabel("Password", { exact: true }).fill("test-password");
       await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -456,17 +476,24 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         "Populated event overflows",
       );
       await page.goto(base + "account.html");
-      await page.getByLabel("Full name", { exact: true }).waitFor();
+      await page.getByLabel("Username (your name)", { exact: true }).waitFor();
+      assert.equal(
+        await page
+          .getByLabel("Username (your name)", { exact: true })
+          .getAttribute("readonly"),
+        "",
+      );
       await page
-        .getByLabel("Full name", { exact: true })
-        .fill("Updated Member");
+        .getByLabel("Mobile number", { exact: true })
+        .fill("07000000009");
       await page
         .getByRole("button", { name: "Save details", exact: true })
         .click();
       await page
         .getByText("Your details are saved.", { exact: true })
         .waitFor();
-      assert.equal(model.profile.full_name, "Updated Member");
+      assert.equal(model.profile.full_name, "Test Member");
+      assert.equal(model.profile.phone, "07000000009");
       await page.screenshot({
         path: path.join(out, `account-member-${width}.png`),
         fullPage: true,
@@ -495,7 +522,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("button", { name: "Save password", exact: true })
         .click();
-      await page.getByLabel("Full name", { exact: true }).waitFor();
+      await page.getByLabel("Username (your name)", { exact: true }).waitFor();
       await page.evaluate(() =>
         sessionStorage.setItem("barford-password-recovery", "true"),
       );
@@ -506,7 +533,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await page
         .getByRole("link", { name: "Back to my account", exact: true })
         .click();
-      await page.getByLabel("Full name", { exact: true }).waitFor();
+      await page.getByLabel("Username (your name)", { exact: true }).waitFor();
       await page.goto(base + "shop.html");
       await page
         .getByRole("button", { name: "Add to basket", exact: true })
@@ -525,24 +552,45 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         )
         .waitFor();
       assert.equal(model.orders.length, 1);
-      assert.equal(model.orders[0].customer_name, "Updated Member");
+      assert.equal(model.orders[0].customer_name, "Test Member");
       await page.goto(base + "account.html");
       await page.getByRole("button", { name: "Sign out", exact: true }).click();
       await page
         .getByRole("heading", { name: "Sign in", exact: true })
         .waitFor();
       await page.goto(base + "signup.html?next=events.html");
-      await page.getByLabel("Full name", { exact: true }).fill("New Member");
+      await page.getByLabel("Who are you?", { exact: true }).selectOption(uid);
+      assert.equal(
+        await page.getByLabel("Your username", { exact: true }).inputValue(),
+        "New Member",
+      );
       await page
-        .getByLabel("Email address", { exact: true })
-        .fill("new@example.invalid");
+        .getByLabel("Mobile number", { exact: true })
+        .fill("07000000003");
       await page.getByLabel("Password", { exact: true }).fill("new-password");
       await page
         .getByRole("button", { name: "Create account", exact: true })
         .click();
+      await page.getByRole("dialog").waitFor();
+      assert.equal(
+        model.signup.length,
+        0,
+        "No account before name confirmation",
+      );
+      await page.getByRole("button", { name: "Go back", exact: true }).click();
+      assert.equal(model.signup.length, 0);
+      await page
+        .getByRole("button", { name: "Create account", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Yes, I am New Member", exact: true })
+        .click();
       await page.waitForURL("**/events.html");
       assert.equal(model.signup.length, 1);
       assert.equal(model.signup[0].data.full_name, "New Member");
+      assert.equal(model.signup[0].data.roster_id, uid);
+      assert.equal(model.signup[0].data.name_confirmation, true);
+      assert.equal(model.signup[0].data.phone, "07000000003");
       assert.deepEqual(errors, []);
       report.push({
         page: "member-account-rsvp-shop-flow",

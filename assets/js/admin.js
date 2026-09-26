@@ -71,6 +71,15 @@ async function init() {
       if (!name) throw new Error("Enter an event name.");
       const updates = {
         name,
+        course_name: String(f.get("course_name") || "").trim() || null,
+        place_id: f.get("place_id") || null,
+        address: String(f.get("address") || "").trim() || null,
+        latitude: f.get("latitude") !== "" ? Number(f.get("latitude")) : null,
+        longitude:
+          f.get("longitude") !== "" ? Number(f.get("longitude")) : null,
+        cover_url: f.get("cover_url") || null,
+        cover_credit: f.get("cover_credit") || null,
+        round_hours: Number(f.get("round_hours") || 5),
         date: f.get("date"),
         location: String(f.get("location")).trim(),
         price: String(f.get("price")).trim() || null,
@@ -146,6 +155,47 @@ async function init() {
   document.getElementById("saveTees").onclick = saveGroups;
   await fillEvent();
   await loadEnquiries();
+  await loadMemberRecovery();
+  document.getElementById("findCourse").onclick = async () => {
+    const button = document.getElementById("findCourse"),
+      status = document.getElementById("courseLookupStatus");
+    button.disabled = true;
+    status.textContent = "Finding courses…";
+    try {
+      const result = await b.service("search_course", {
+        query: document.getElementById("courseQuery").value,
+      });
+      status.textContent = result.places.length
+        ? "Choose the correct course. Photo and review data are supplied live by Google Maps."
+        : "No matching courses found.";
+      const area = document.getElementById("courseResults");
+      area.innerHTML = result.places
+        .map(
+          (p, i) =>
+            `<button class="secondary" type="button" data-course="${i}">${e(p.displayName?.text)}<br><small>${e(p.formattedAddress)}</small></button>`,
+        )
+        .join("");
+      area.querySelectorAll("[data-course]").forEach(
+        (btn) =>
+          (btn.onclick = () => {
+            const p = result.places[Number(btn.dataset.course)];
+            form.elements.place_id.value = p.id;
+            form.elements.course_name.value = document
+              .getElementById("courseQuery")
+              .value.trim();
+            status.textContent =
+              "Matched " +
+              p.displayName.text +
+              ". Save the event to keep this course match.";
+            area.innerHTML = "";
+          }),
+      );
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  };
 }
 async function fillEvent() {
   form.reset();
@@ -376,6 +426,81 @@ async function loadEnquiries() {
           .eq("id", Number(button.dataset.enquiry));
         if (error) return b.toast(error.message);
         await loadEnquiries();
+        await loadMemberRecovery();
+        document.getElementById("findCourse").onclick = async () => {
+          const button = document.getElementById("findCourse"),
+            status = document.getElementById("courseLookupStatus");
+          button.disabled = true;
+          status.textContent = "Finding courses…";
+          try {
+            const result = await b.service("search_course", {
+              query: document.getElementById("courseQuery").value,
+            });
+            status.textContent = result.places.length
+              ? "Choose the correct course. Photo and review data are supplied live by Google Maps."
+              : "No matching courses found.";
+            const area = document.getElementById("courseResults");
+            area.innerHTML = result.places
+              .map(
+                (p, i) =>
+                  `<button class="secondary" type="button" data-course="${i}">${e(p.displayName?.text)}<br><small>${e(p.formattedAddress)}</small></button>`,
+              )
+              .join("");
+            area.querySelectorAll("[data-course]").forEach(
+              (btn) =>
+                (btn.onclick = () => {
+                  const p = result.places[Number(btn.dataset.course)];
+                  form.elements.place_id.value = p.id;
+                  form.elements.course_name.value = document
+                    .getElementById("courseQuery")
+                    .value.trim();
+                  status.textContent =
+                    "Matched " +
+                    p.displayName.text +
+                    ". Save the event to keep this course match.";
+                  area.innerHTML = "";
+                }),
+            );
+          } catch (error) {
+            status.textContent = error.message;
+          } finally {
+            button.disabled = false;
+          }
+        };
       }),
   );
+}
+
+async function loadMemberRecovery() {
+  const { data, error } = await c.rpc("member_roster");
+  const select = document.getElementById("claimedNames");
+  if (error) {
+    select.innerHTML = '<option value="">Unable to load names</option>';
+    return;
+  }
+  const names = (data || []).filter((m) => m.claimed);
+  select.innerHTML =
+    '<option value="">Select claimed name</option>' +
+    names
+      .map((m) => `<option value="${e(m.id)}">${e(m.name)}</option>`)
+      .join("");
+  document.getElementById("releaseMember").onsubmit = (ev) => {
+    ev.preventDefault();
+    b.submit(ev.target, async () => {
+      const member = names.find((m) => m.id === select.value);
+      if (
+        !member ||
+        !confirm(
+          "Release " +
+            member.name +
+            "? This blocks the claimed account from RSVPs and cancels its future places. Only continue after checking with the member.",
+        )
+      )
+        return;
+      const result = await c.rpc("release_member", { who: member.id });
+      if (result.error) throw result.error;
+      await loadMemberRecovery();
+      b.toast("Name released. The member can now create their account.");
+    });
+  };
 }

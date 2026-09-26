@@ -39,3 +39,18 @@ The additive migration is `supabase/migrations/20260926131936_member_accounts.sq
 `tests/baseline.cjs` runs in GitHub Actions with Playwright: real read-only development API page checks at 390 and 1365 pixels, and mocked HTTP account/RSVP/shop/admin journeys. No accounts, emails or bookings are created by browser verification.
 
 `tests/member-rsvp.sql` verifies the actual database functions and permissions within a transaction, including synthetic account-profile creation, repeated submissions, editing, duplicate names, capacity, promotion, member identity, anonymous blocking, private contacts, trip responses and tee publication. It rolls back every test record.
+
+
+## Member and event experience (September 2026)
+
+The isolated 2027 site now uses the 48 public 2026 scoreboard names as the signup roster. One account can claim each name, with an explicit identity confirmation. This is a deterrent, not identity verification. Names are derived and protected server-side. Existing matching accounts keep their login; unmatched existing accounts must link a roster name before RSVPing. No live scores, mobile numbers or emails were imported.
+
+Name/password login uses Supabase password authentication behind the `baseline-services` function. Internal random email aliases are not user-facing email inboxes. Name-only members need organiser-assisted password recovery. Never enable email confirmation for these aliases without replacing this auth design. Session persistence and token refresh are enabled.
+
+Event pages support optional tee preference, private assigned buggy-partner phone access, atomic booking responsibility, directions, UTC-correct ICS calendars, and a forecast based on published tee time (otherwise the first tee). Buggy pairs are formed within published tee groups; odd buggy players need organiser attention. Changing attendance marks tee groups stale and hides pair contact until reviewed. Re-publishing preserves booking responsibility for unchanged pairs.
+
+Course lookup uses the existing server-side GOOGLE_MAPS_API_KEY. Only place IDs are retained from Google; photos, descriptions and review excerpts are fetched for display with attribution and are not cached. Organiser-entered course details/photos can override defaults. YouTube search tries YOUTUBE_API_KEY or the Google key; automatic search requires YouTube Data API access and quota. Manual YouTube URLs remain supported.
+
+Open-Meteo provides hourly forecasts within 16 days. The scheduled GitHub Action refreshes upcoming events daily; page views refresh stale data as fallback. Courses need coordinates or a valid Google course match. Forecast probabilities are hourly, not aggregated round probabilities. Dates and calendars use Europe/London; duration is an organiser-set estimate. GitHub scheduled jobs can be delayed or disabled after repository inactivity.
+
+Verification: `tests/member-rsvp.sql` and `tests/member-experience.sql` use synthetic accounts and roll back. `tests/baseline.cjs` checks desktop/mobile layout and member/organiser flows without sending messages or creating real registrations.

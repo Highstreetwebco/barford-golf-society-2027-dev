@@ -1,0 +1,27 @@
+name: Refresh upcoming event weather
+on:
+  schedule:
+    - cron: '20 6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refresh forecasts for the next sixteen days
+        shell: python
+        run: |
+          import datetime, json, urllib.request
+          base = 'https://xspzmthygrajzktydvvj.supabase.co'
+          headers = {'apikey': 'sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c', 'Content-Type': 'application/json'}
+          today = datetime.date.today()
+          url = base + '/rest/v1/baseline_events?select=id&cancelled=eq.false&date=gte.' + str(today) + '&date=lte.' + str(today + datetime.timedelta(days=15))
+          events = json.load(urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30))
+          for event in events:
+              request = urllib.request.Request(base + '/functions/v1/baseline-services', headers=headers, data=json.dumps({'action': 'weather', 'event_id': event['id']}).encode())
+              result = json.load(urllib.request.urlopen(request, timeout=60))
+              print('Event', event['id'], result.get('status', 'error'))
+              if result.get('error'): raise RuntimeError(result['error'])
+          print('Checked', len(events), 'upcoming events.')

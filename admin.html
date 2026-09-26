@@ -12,9 +12,9 @@
     <title>Organiser tools | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-members-1" />
-    <script src="assets/js/baseline.js?v=2027-members-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-members-1"></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-experience-1" />
+    <script src="assets/js/baseline.js?v=2027-experience-1" defer></script>
+    <script type="module" src="assets/js/admin.js?v=2027-experience-1"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -72,6 +72,67 @@
         </div>
         <section id="adminDetails" class="panel">
           <form id="eventForm" class="form-grid">
+            <details class="panel" open>
+              <summary>Course information</summary>
+              <p>
+                Search for the course and choose the correct match. Members will
+                see live course photos and review excerpts with their source.
+              </p>
+              <div class="actions">
+                <input
+                  id="courseQuery"
+                  aria-label="Find golf course"
+                  placeholder="e.g. The Warwickshire"
+                /><button type="button" class="secondary" id="findCourse">
+                  Find course
+                </button>
+              </div>
+              <p id="courseLookupStatus" role="status"></p>
+              <div id="courseResults" class="course-results"></div>
+              <label
+                >Course name<input name="course_name" maxlength="160" /></label
+              ><input type="hidden" name="place_id" /><label
+                >Address<input
+                  name="address"
+                  maxlength="300"
+                  placeholder="Course address and postcode"
+              /></label>
+              <div class="form-grid">
+                <label
+                  >Latitude (optional with a matched course)<input
+                    name="latitude"
+                    type="number"
+                    step="any"
+                    min="-90"
+                    max="90" /></label
+                ><label
+                  >Longitude<input
+                    name="longitude"
+                    type="number"
+                    step="any"
+                    min="-180"
+                    max="180"
+                /></label>
+              </div>
+              <label
+                >Cover photo URL (optional override)<input
+                  name="cover_url"
+                  type="url" /></label
+              ><label>Photo credit<input name="cover_credit" /></label
+              ><label
+                >Estimated round duration (hours)<input
+                  name="round_hours"
+                  type="number"
+                  min="2"
+                  max="8"
+                  value="5"
+              /></label>
+              <p class="muted">
+                The course match provides a photo and forecast location
+                automatically. A YouTube video URL can be entered below if
+                automatic video search is unavailable.
+              </p>
+            </details>
             <label
               >Event name<input name="name" required maxlength="200" /></label
             ><label>Date<input name="date" type="date" required /></label
@@ -171,6 +232,22 @@
           </div>
           <p class="muted">
             WhatsApp delivery is not connected on the development site.
+          </p>
+          <h3>Member account recovery</h3>
+          <p>
+            Release a name only after checking with the member. This blocks the
+            incorrectly claimed account from RSVPs, cancels its future places,
+            and frees the name for a new account. Existing history is retained.
+          </p>
+          <form id="releaseMember" class="member-management">
+            <label
+              >Claimed name<select id="claimedNames" required></select></label
+            ><button class="secondary">Release name</button>
+            <p role="status"></p>
+          </form>
+          <p>
+            For password resets, use Supabase Auth’s account recovery tools.
+            Name-only accounts cannot receive email reset links.
           </p>
           <h3>Membership enquiries</h3>
           <div id="enquiries"></div>

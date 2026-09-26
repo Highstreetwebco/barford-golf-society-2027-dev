@@ -12,9 +12,12 @@
     <title>Create an account | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-members-1" />
-    <script src="assets/js/baseline.js?v=2027-members-1" defer></script>
-    <script type="module" src="assets/js/account.js?v=2027-members-1"></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-experience-1" />
+    <script src="assets/js/baseline.js?v=2027-experience-1" defer></script>
+    <script
+      type="module"
+      src="assets/js/account.js?v=2027-experience-1"
+    ></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -61,22 +64,38 @@
         <section class="panel">
           <form id="signupForm" class="form-stack">
             <h2>Create your account</h2>
-            <label for="fullName">Full name</label
+            <label for="memberName">Who are you?</label
+            ><select id="memberName" name="roster_id" required>
+              <option value="">Loading the 2026 scoreboard names…</option>
+            </select>
+            <label for="fullName">Your username</label
             ><input
               id="fullName"
               name="full_name"
-              autocomplete="name"
-              maxlength="150"
+              autocomplete="username"
+              readonly
               required
-            /><label for="email">Email address</label
+              aria-describedby="usernameHelp"
+            /><small id="usernameHelp"
+              >This name is your username. Use it with your password to sign in.
+              Names already registered are marked in the list.</small
+            >
+            <label for="phone">Mobile number</label
             ><input
-              id="email"
-              name="email"
-              type="email"
-              autocomplete="email"
-              maxlength="254"
+              id="phone"
+              name="phone"
+              type="tel"
+              autocomplete="tel"
+              inputmode="tel"
               required
-            /><label for="password">Password</label
+              minlength="10"
+              maxlength="25"
+              aria-describedby="mobileHelp"
+            /><small id="mobileHelp"
+              >Visible to organisers and your assigned buggy partner so you can
+              arrange booking.</small
+            >
+            <label for="password">Password</label
             ><input
               id="password"
               name="password"
@@ -103,10 +122,12 @@
           <ol class="simple-steps">
             <li>Are you playing?</li>
             <li>Do you need a buggy?</li>
-            <li>First, middle or end?</li>
+            <li>Tee time preference, if you have one.</li>
           </ol>
           <p class="muted">
-            You can change your RSVP whenever plans change, before the event.
+            We’ll keep you signed in on this device until you sign out or your
+            browser clears the session. Only create an account under your own
+            name.
           </p>
         </aside>
       </div>
