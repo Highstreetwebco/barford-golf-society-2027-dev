@@ -1,8 +1,9 @@
+import { mountMemberTees } from "./member-tees.js?v=2027-groups-1";
 import {
   mountExperience,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-experience-1";
+} from "./event-experience.js?v=2027-groups-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 if (b.state.user) {
@@ -33,24 +34,34 @@ else if (!data?.length)
   );
 else {
   const ev = data[0];
-  area.innerHTML = `<div class="section-heading"><div><p class="eyebrow">${b.escape(b.date(ev.date))}</p><h2>${b.escape(ev.name)}</h2></div><a class="button" href="event.html?id=${ev.id}#rsvp">RSVP & event details</a></div><div id="homeExperience"></div>`;
+  area.innerHTML = `<div class="section-heading"><div><p class="eyebrow">${b.escape(b.date(ev.date))}</p><h2>${b.escape(ev.name)}</h2></div><a class="button" href="event.html?id=${ev.id}#rsvp">RSVP & event details</a></div><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section><div id="homeExperience"></div>`;
   let ownTime = null;
-  if (b.state.user && !ev.tee_times_dirty) {
-    const t = await b.client
-      .from("tee_times")
-      .select("*")
-      .eq("event_id", ev.id);
-    ownTime = t.data?.find((x) =>
-      x.players.some((p) => p.user_id === b.state.user.id),
-    )?.tee_time;
-  }
+  const groupArea = document.getElementById("homeTeeGroup");
+  if (b.state.user)
+    ownTime = await mountMemberTees(groupArea, ev.id, { home: true });
   const detail = document.getElementById("homeExperience");
   await mountExperience(detail, ev, ownTime);
   await updateSlots(ev, detail);
-  setInterval(() => {
-    if (!document.hidden) updateSlots(ev, detail);
-  }, 25000);
-  window.addEventListener("focus", () => updateSlots(ev, detail));
+  let refreshing = false;
+  async function refreshEvent() {
+    if (document.hidden || refreshing) return;
+    refreshing = true;
+    try {
+      await updateSlots(ev, detail);
+      if (b.state.user) {
+        const updated = await mountMemberTees(groupArea, ev.id, { home: true });
+        if (updated !== ownTime) {
+          ownTime = updated;
+          await mountExperience(detail, ev, ownTime);
+          await updateSlots(ev, detail);
+        }
+      }
+    } finally {
+      refreshing = false;
+    }
+  }
+  setInterval(refreshEvent, 25000);
+  window.addEventListener("focus", refreshEvent);
 }
 
 window.addEventListener("barford-signout", () => location.reload());

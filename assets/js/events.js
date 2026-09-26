@@ -1,9 +1,10 @@
+import { mountMemberTees } from "./member-tees.js?v=2027-groups-1";
 import {
   mountExperience,
   mountBuggy,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-experience-1";
+} from "./event-experience.js?v=2027-groups-1";
 const b = await window.barfordReady;
 const { client: c, state, escape: e } = b;
 let events = [],
@@ -173,6 +174,8 @@ async function render() {
     }
     await updateSlots(ev, document.getElementById("eventExperience"));
     await mountBuggy(document.getElementById("buggyPanel"), ev);
+    const teeArea = document.getElementById("memberTees-" + ev.id);
+    if (teeArea) await mountMemberTees(teeArea, ev.id);
   }
   list
     .querySelectorAll("[data-rsvp]")
@@ -197,7 +200,9 @@ function roster(ev) {
     waiting = rows.filter((r) => r.reserve),
     groups = tees.filter((t) => t.event_id === ev.id);
   let html = "";
-  if (ev.tee_times_dirty)
+  if (dedicated)
+    html += `<section id="memberTees-${ev.id}" class="section">Loading tee groups…</section>`;
+  else if (ev.tee_times_dirty)
     html +=
       '<p class="notice" style="margin-top:22px">The player list has changed. The organisers are reviewing the tee times.</p>';
   else if (groups.length)
@@ -366,7 +371,11 @@ setInterval(async () => {
             JSON.stringify(tees.filter((t) => t.event_id === ev.id)))
       )
         await load();
-      else await mountBuggy(document.getElementById("buggyPanel"), ev);
+      else {
+        await mountBuggy(document.getElementById("buggyPanel"), ev);
+        const teeArea = document.getElementById("memberTees-" + ev.id);
+        if (teeArea) await mountMemberTees(teeArea, ev.id);
+      }
     }
   }
 }, 25000);

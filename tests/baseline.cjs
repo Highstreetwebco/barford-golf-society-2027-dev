@@ -142,6 +142,47 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         return reply({ updated: true });
       }
     }
+    if (p.endsWith("/rpc/baseline_event_tee_groups"))
+      return reply(
+        model.teeView || {
+          status: model.groups.length ? "published" : "unpublished",
+          round_number: 1,
+          provisional: false,
+          groups: model.groups.map((g) => ({
+            ...g,
+            players: g.players.map((p) => ({
+              ...p,
+              handicap: 18,
+              handicap_secret: false,
+              avatar_path: null,
+            })),
+          })),
+        },
+      );
+    if (p === "/storage/v1/object/sign/baseline-profile-images")
+      return reply(
+        (body.paths || []).map((path) => ({
+          path,
+          signedURL:
+            "/object/sign/baseline-profile-images/" + path + "?token=mock",
+        })),
+      );
+    if (p.startsWith("/storage/v1/object/sign/baseline-profile-images/"))
+      return route.fulfill({
+        status: 200,
+        contentType: "image/png",
+        body: fs.readFileSync(path.join(root, "icon-logo.png")),
+      });
+    if (p.startsWith("/storage/v1/object/baseline-profile-images")) {
+      if (method === "POST") {
+        model.photoUploads = (model.photoUploads || 0) + 1;
+        return reply({ Id: uid, Key: p.replace("/storage/v1/object/", "") });
+      }
+      if (method === "DELETE") {
+        model.photoRemovals = (model.photoRemovals || 0) + 1;
+        return reply([]);
+      }
+    }
     if (p.endsWith("/rpc/baseline_league_admin"))
       return reply(model.league || { revision: 0, players: [], rounds: [] });
     if (p.endsWith("/rpc/baseline_league_board"))
@@ -161,6 +202,13 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       return reply(model.league);
     }
     if (p.endsWith("/rpc/baseline_league_save_round")) {
+      if (model.roundFail) {
+        model.roundFail = false;
+        return reply(
+          { message: "Connection interrupted. Retry your confirmation." },
+          503,
+        );
+      }
       model.roundSave = body;
       model.league.revision++;
       model.league.rounds = [
@@ -943,6 +991,9 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Enter scores", exact: true })
         .click();
       await page.getByLabel("Choose an event").selectOption("999");
+      await page
+        .getByText("Edit full score sheet or paste scores", { exact: true })
+        .click();
       await page.getByLabel("Points for Player 1", { exact: true }).fill("40");
       await page
         .getByLabel("Points for Player 1", { exact: true })
@@ -1145,6 +1196,265 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await member.close();
       report.push({
         page: "league-member-secret-rounds-and-best-five-ranking",
+        width: 390,
+        status: "passed",
+      });
+    }
+    // Guided entry: failed confirmation stays put, resume saved progress, final review.
+    {
+      const context = await browser.newContext({
+          viewport: { width: 390, height: 960 },
+          serviceWorkers: "block",
+        }),
+        model = await mocks(context, { signedIn: true, admin: true }),
+        page = await context.newPage();
+      const people = Array.from({ length: 6 }, (_, i) => ({
+        id: `33333333-3333-4333-8333-${String(i + 1).padStart(12, "0")}`,
+        name: `Golfer ${i + 1}`,
+        starting_handicap: 20,
+      }));
+      model.league = { revision: 1, players: people, rounds: [] };
+      model.events = [{ ...fixture, round_number: 1 }];
+      model.responses = people.slice(0, 5).map((p, i) => ({
+        id: i + 1,
+        event_id: 999,
+        user_id: p.id,
+        name: p.name,
+        attending: true,
+        reserve: false,
+      }));
+      await page.goto(base + "admin.html");
+      await page
+        .getByRole("button", { name: "Enter scores", exact: true })
+        .click();
+      await page.getByLabel("Choose an event").selectOption("999");
+      await page
+        .getByRole("button", { name: "Input scores for round 1", exact: true })
+        .click();
+      const dialog = page.getByRole("dialog");
+      await dialog
+        .getByRole("heading", { name: "Golfer 1", exact: true })
+        .waitFor();
+      await dialog.getByLabel("Stableford points", { exact: true }).fill("40");
+      await dialog
+        .getByText(
+          "Round handicap: 20. Adjustment available after at least four played scores. It may range from −3 to +2.",
+          { exact: true },
+        )
+        .waitFor();
+      model.roundFail = true;
+      await dialog
+        .getByRole("button", { name: "Confirm & next", exact: true })
+        .click();
+      await dialog
+        .getByText("Connection interrupted. Retry your confirmation.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await dialog
+          .getByRole("heading", { name: "Golfer 1", exact: true })
+          .count(),
+        1,
+      );
+      await dialog
+        .getByRole("button", { name: "Confirm & next", exact: true })
+        .click();
+      await dialog
+        .getByRole("heading", { name: "Golfer 2", exact: true })
+        .waitFor();
+      assert.equal(model.roundSave.publish, false);
+      await dialog.getByLabel("Stableford points", { exact: true }).fill("36");
+      await dialog
+        .getByRole("button", { name: "Save & close", exact: true })
+        .click();
+      await dialog.waitFor({ state: "hidden" });
+      await page
+        .getByRole("button", { name: "Input scores for round 1", exact: true })
+        .click();
+      await dialog
+        .getByRole("heading", { name: "Golfer 3", exact: true })
+        .waitFor();
+      await dialog.getByLabel("Stableford points", { exact: true }).fill("31");
+      await dialog
+        .getByRole("button", { name: "Confirm & next", exact: true })
+        .click();
+      await dialog
+        .getByRole("heading", { name: "Golfer 4", exact: true })
+        .waitFor();
+      await dialog.getByLabel("Stableford points", { exact: true }).fill("24");
+      await page.screenshot({
+        path: path.join(out, "score-wizard-preview-390.png"),
+        fullPage: true,
+      });
+      await dialog
+        .getByRole("button", { name: "Confirm & next", exact: true })
+        .click();
+      await dialog
+        .getByRole("heading", { name: "Golfer 5", exact: true })
+        .waitFor();
+      await dialog.getByLabel("Did not play (DNP)", { exact: true }).check();
+      await dialog
+        .getByRole("button", { name: "Confirm & next", exact: true })
+        .click();
+      await dialog
+        .getByRole("heading", { name: "Complete round 1", exact: true })
+        .waitFor();
+      await dialog
+        .getByText("1 non-participants automatically marked DNP", {
+          exact: true,
+        })
+        .click();
+      await dialog.getByText("Golfer 6", { exact: true }).waitFor();
+      assert.equal(model.roundSave.publish, false);
+      await page.screenshot({
+        path: path.join(out, "score-wizard-complete-390.png"),
+        fullPage: true,
+      });
+      await dialog
+        .getByRole("button", { name: "Complete round", exact: true })
+        .click();
+      await dialog.waitFor({ state: "hidden" });
+      assert.equal(model.roundSave.publish, true);
+      assert.equal(model.roundSave.entries.length, 5);
+      assert.equal(model.roundSave.entries[4].status, "dnp");
+      await context.close();
+      report.push({
+        page: "guided-round-entry-resume-retry-preview-completion",
+        width: 390,
+        status: "passed",
+      });
+    }
+    // Profile upload at signup and afterwards; homepage groups and enlarged portraits.
+    {
+      const context = await browser.newContext({
+          viewport: { width: 390, height: 960 },
+          serviceWorkers: "block",
+        }),
+        model = await mocks(context),
+        page = await context.newPage();
+      await page.goto(base + "signup.html");
+      await page.getByLabel("Who are you?", { exact: true }).selectOption(uid);
+      await page
+        .getByLabel("Mobile number", { exact: true })
+        .fill("07000000003");
+      await page.getByLabel("Password", { exact: true }).fill("test-password");
+      await page
+        .getByLabel("Profile photo (optional)", { exact: true })
+        .setInputFiles(path.join(root, "icon-logo.png"));
+      await page.locator("#profilePhotoPreview").waitFor({ state: "visible" });
+      await page
+        .getByRole("button", { name: "Create account", exact: true })
+        .click();
+      await page.getByRole("dialog").waitFor();
+      await page
+        .getByRole("button", { name: "Yes, I am New Member", exact: true })
+        .click();
+      await page.waitForURL("**/index.html");
+      assert.equal(model.photoUploads, 1);
+      assert(model.profile.baseline_avatar_path.startsWith(uid + "/"));
+      model.teeView = {
+        status: "published",
+        round_number: 2,
+        provisional: false,
+        groups: [
+          {
+            group_number: 2,
+            tee_time: "10:16",
+            players: [
+              {
+                user_id: uid,
+                name: "Test Member",
+                handicap: 18.5,
+                type: "buggy",
+                avatar_path: model.profile.baseline_avatar_path,
+              },
+              {
+                user_id: "other",
+                name: "Gary Example",
+                handicap: 21,
+                type: "walker",
+                avatar_path: null,
+              },
+            ],
+          },
+          {
+            group_number: 3,
+            tee_time: "10:24",
+            players: [
+              {
+                user_id: "third",
+                name: "Simon Example",
+                handicap: 14,
+                type: "walker",
+                avatar_path: null,
+              },
+            ],
+          },
+        ],
+      };
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Your tee group", exact: true })
+        .waitFor();
+      await page
+        .getByText("Round 2 HCP: 18.5 · Buggy", { exact: true })
+        .first()
+        .waitFor();
+      await page
+        .getByRole("button", {
+          name: "Enlarge photo of Test Member",
+          exact: true,
+        })
+        .first()
+        .click();
+      await page
+        .getByRole("dialog", { name: "Test Member profile photo", exact: true })
+        .waitFor();
+      await page
+        .getByRole("button", { name: "Close photo", exact: true })
+        .click();
+      await page.getByText("View all tee groups", { exact: true }).click();
+      await page.getByText("Simon Example", { exact: true }).waitFor();
+      await page.screenshot({
+        path: path.join(out, "home-tee-groups-390.png"),
+        fullPage: true,
+      });
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      await page.goto(base + "account.html");
+      await page
+        .getByRole("heading", { name: "Your profile photo", exact: true })
+        .waitFor();
+      await page
+        .getByLabel("Profile photo (optional)", { exact: true })
+        .setInputFiles(path.join(root, "icon-logo.png"));
+      await page
+        .getByRole("button", { name: "Save photo", exact: true })
+        .click();
+      await page.getByText("Profile photo saved.", { exact: true }).waitFor();
+      assert.equal(model.photoUploads, 2);
+      await page
+        .getByRole("button", { name: "Remove photo", exact: true })
+        .click();
+      await page.getByText("Profile photo removed.", { exact: true }).waitFor();
+      assert.equal(model.profile.baseline_avatar_path, null);
+      model.teeView = { status: "reviewing", groups: [] };
+      await page.goto(base + "index.html");
+      await page
+        .getByText(
+          "The player list has changed. Organisers are reviewing the tee times.",
+          { exact: true },
+        )
+        .waitFor();
+      assert.equal(await page.locator(".member-tee-card").count(), 0);
+      await context.close();
+      report.push({
+        page: "signup-account-private-photos-home-group-all-groups-enlarge",
         width: 390,
         status: "passed",
       });

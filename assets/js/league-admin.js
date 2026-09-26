@@ -1,9 +1,10 @@
+import { openScoreWizard } from "./score-wizard.js?v=2027-groups-1";
 import {
   adjustment,
   roundAverage,
   handicapAt,
   rulesHTML,
-} from "./league-rules.js?v=2027-scoring-1";
+} from "./league-rules.js?v=2027-groups-1";
 const b = await window.barfordReady,
   e = b.escape;
 let state,
@@ -131,6 +132,7 @@ function renderHandicaps(area) {
   };
 }
 function renderScoring(area) {
+  const bulkOpen = area.querySelector("#bulkScoreEntry")?.open;
   const saved = state.rounds.find((r) => r.event_id === event.id);
   const entered = new Map(
     (saved?.draft || []).map((x) => [x.user_id, { ...x }]),
@@ -144,7 +146,25 @@ function renderScoring(area) {
         points: null,
       });
   let chosen = saved?.draft_winner || saved?.winner || "";
-  area.innerHTML = `<p class="eyebrow">ROUND ${event.round_number}${event.round_number >= 6 ? " · ADMIN ONLY" : ""}</p><h2>${e(event.name)} · Enter scores</h2>${notice()}<p>Enter points and press Enter for the next player. Choose DNP for a non-starter or zero. Save a draft at any time; publish once every row is complete.</p>${saved?.published_entries ? '<p class="notice">This round is already published. Saving a draft keeps the published results unchanged. Publishing a correction recalculates later rounds.</p>' : ""}<div class="actions"><label>Add a player<select id="addScorePlayer"><option value="">Choose registered member</option>${state.players.map((p) => `<option value="${p.id}">${e(p.name)}</option>`).join("")}</select></label><button type="button" class="secondary" id="reloadScores">Reload saved scores</button></div><details class="section"><summary>Paste scores from a spreadsheet</summary><p>One row per player: exact name, then a tab or comma, then points or DNP. Check the rows below before publishing.</p><textarea id="pasteScores" rows="4" placeholder="Player name&#9;32"></textarea><button type="button" class="secondary" id="applyPasted">Apply to score sheet</button><p id="pasteStatus" role="status"></p></details><form id="roundScoreForm"><div id="scoreRows" class="table-scroll section"></div><p id="scoreProgress" class="notice" aria-live="polite"></p><div id="winnerChoice"></div><div class="actions section"><button type="submit" name="action" value="draft" class="secondary">Save draft</button><button type="submit" name="action" value="publish">Publish round &amp; update handicaps</button></div><p class="form-status" role="status"></p></form>${rulesHTML}`;
+  area.innerHTML = `<p class="eyebrow">ROUND ${event.round_number}${event.round_number >= 6 ? " · ADMIN ONLY" : ""}</p><h2>${e(event.name)} · Enter scores</h2>${notice()}<div class="actions"><button type="button" id="startScoreWizard">Input scores for round ${event.round_number}</button></div><p>Use guided entry above, or the score sheet below. Enter points and press Enter for the next player. Choose DNP for a non-starter or zero. Save a draft at any time; publish once every row is complete.</p>${saved?.published_entries ? '<p class="notice">This round is already published. Saving a draft keeps the published results unchanged. Publishing a correction recalculates later rounds.</p>' : ""}<details id="bulkScoreEntry" class="section"><summary>Edit full score sheet or paste scores</summary><div class="actions section"><label>Add a player<select id="addScorePlayer"><option value="">Choose registered member</option>${state.players.map((p) => `<option value="${p.id}">${e(p.name)}</option>`).join("")}</select></label><button type="button" class="secondary" id="reloadScores">Reload saved scores</button></div><details class="section"><summary>Paste scores from a spreadsheet</summary><p>One row per player: exact name, then a tab or comma, then points or DNP. Check the rows below before publishing.</p><textarea id="pasteScores" rows="4" placeholder="Player name&#9;32"></textarea><button type="button" class="secondary" id="applyPasted">Apply to score sheet</button><p id="pasteStatus" role="status"></p></details><form id="roundScoreForm"><div id="scoreRows" class="table-scroll section"></div><p id="scoreProgress" class="notice" aria-live="polite"></p><div id="winnerChoice"></div><div class="actions section"><button type="submit" name="action" value="draft" class="secondary">Save draft</button><button type="submit" name="action" value="publish">Publish round &amp; update handicaps</button></div><p class="form-status" role="status"></p></form></details>${rulesHTML}`;
+  area.querySelector("#bulkScoreEntry").open = !!bulkOpen;
+  area.querySelector("#startScoreWizard").onclick = () => {
+    let savedInWizard = false;
+    openScoreWizard({
+      event,
+      season: state,
+      entries: entries(),
+      winner: chosen,
+      onSaved: (data) => {
+        state = data;
+        dirty = false;
+        savedInWizard = true;
+      },
+      onClose: () => {
+        if (savedInWizard) renderScoring(area);
+      },
+    });
+  };
   const form = area.querySelector("form");
   function entries() {
     return [...entered.values()];

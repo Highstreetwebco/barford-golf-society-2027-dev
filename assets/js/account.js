@@ -1,3 +1,9 @@
+import {
+  photoPickerHTML,
+  wirePhotoPicker,
+  savePhoto,
+  mountPhotoEditor,
+} from "./member-photos.js?v=2027-groups-1";
 const b = await window.barfordReady;
 const { raw, state, escape: e, submit } = b;
 const isSignup = location.pathname.endsWith("signup.html");
@@ -26,6 +32,11 @@ if (isSignup) {
   selector.onchange = () =>
     (document.getElementById("fullName").value =
       roster.find((m) => m.id === selector.value)?.name || "");
+  const photoArea = document.createElement("div");
+  photoArea.className = "form-stack";
+  photoArea.innerHTML = photoPickerHTML();
+  document.querySelector("#signupForm button[type=submit]").before(photoArea);
+  const selectedPhoto = wirePhotoPicker(photoArea);
   document.getElementById("signupForm").onsubmit = (ev) => {
     ev.preventDefault();
     submit(ev.target, async () => {
@@ -35,6 +46,7 @@ if (isSignup) {
         throw new Error(
           "Choose your own available name. If it is already claimed, sign in or contact an organiser.",
         );
+      const portrait = await selectedPhoto();
       if (!(await confirmName(member.name))) return;
       const { data, error } = await raw.auth.signUp({
         email: "member-" + crypto.randomUUID() + "@members.barford2027.invalid",
@@ -58,6 +70,14 @@ if (isSignup) {
         throw new Error(
           "Your account needs organiser help to finish signing in. Please do not create another account.",
         );
+      if (portrait) {
+        try {
+          await savePhoto(portrait, data.user.id);
+        } catch (error) {
+          ev.target.innerHTML = `<h2>Your account is ready.</h2><p>Your photo could not be saved: ${e(error.message)}</p><p>You can add it later in My account.</p><a class="button" href="${e(redirect)}">Continue to the homepage</a><a href="account.html">Add my photo</a>`;
+          return;
+        }
+      }
       location.href = redirect;
     });
   };
@@ -95,6 +115,10 @@ if (isSignup) {
     }
 
     area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Username (your name)</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" ${linked ? "readonly" : ""} required>${state.user.email?.endsWith("@members.barford2027.invalid") ? "" : `<label for="profileEmail">Existing account email</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly>`}<label for="profilePhone">Mobile number</label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="25" required value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Visible to organisers and your assigned buggy partner.</small><button>Save details</button><p class="form-status" role="status"></p></form><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
+    const photoEditor = document.createElement("section");
+    photoEditor.className = "panel section";
+    area.querySelector("section").after(photoEditor);
+    await mountPhotoEditor(photoEditor);
     if (!linked) {
       const claim = document.createElement("section");
       claim.className = "panel section";

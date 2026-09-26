@@ -110,7 +110,7 @@ window.barfordReady = (async () => {
       const [p, a] = await Promise.all([
         raw
           .from("profiles")
-          .select("id,full_name,email,phone")
+          .select("id,full_name,email,phone,baseline_avatar_path")
           .eq("id", state.user.id)
           .maybeSingle(),
         raw.rpc("is_admin"),

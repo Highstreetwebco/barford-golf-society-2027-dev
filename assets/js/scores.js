@@ -1,4 +1,4 @@
-import { rulesHTML } from "./league-rules.js?v=2027-scoring-1";
+import { rulesHTML } from "./league-rules.js?v=2027-groups-1";
 const b = await window.barfordReady,
   e = b.escape;
 const area = document.getElementById("leagueBoard");

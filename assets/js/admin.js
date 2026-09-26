@@ -1,9 +1,9 @@
 import {
   showLeagueTab,
   canLeaveLeague,
-} from "./league-admin.js?v=2027-scoring-1";
-import { loadAccounts } from "./account-admin.js?v=2027-scoring-1";
-import { packPlayers } from "./tee-groups.js?v=2027-experience-1";
+} from "./league-admin.js?v=2027-groups-1";
+import { loadAccounts } from "./account-admin.js?v=2027-groups-1";
+import { packPlayers } from "./tee-groups.js?v=2027-groups-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),
