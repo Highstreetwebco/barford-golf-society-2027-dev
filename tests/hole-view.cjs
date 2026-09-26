@@ -18,6 +18,11 @@ const layoutFixture = {
   id: eventFixture.course_layout_id, name: "Warwickshire", tee_name: "Yellow", revision: 1, ready_count: 17,
   holes: Array.from({ length: 18 }, (_, index) => ({ number: index + 1, par: 4, stroke_index: index + 1, yards: 365, reviewed: index !== 17, tee: index === 17 ? null : { lat: 52.0001, lng: -1.5 }, green: index === 17 ? null : { lat: 52.0031, lng: -1.5 }, front: index ? null : { lat: 52.0029, lng: -1.5 }, back: index ? null : { lat: 52.0033, lng: -1.5 }, dogleg: index ? null : { lat: 52.0016, lng: -1.5002 } })),
 };
+const preparedLayoutFixture = {
+  name: "Warwickshire", tee_name: "Yellow", place_id: "warwickshire-course-place", latitude: 52.001, longitude: -1.5, address: "Warwickshire test address",
+  source: { attribution: "© OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright", validation: { status: "verified", mapped: 18, tee_anchors: 18, green_anchors: 18 } },
+  holes: Array.from({ length: 18 }, (_, index) => ({ number: index + 1, par: 4, stroke_index: index + 1, yards: 365, reviewed: false, tee: { lat: 52.0001 + index * 0.0001, lng: -1.5 }, green: { lat: 52.0031 + index * 0.0001, lng: -1.5 }, front: null, back: null, dogleg: null })),
+};
 const server = http.createServer((req, res) => {
   const target = path.resolve(root, "." + decodeURIComponent(new URL(req.url, "http://localhost").pathname));
   if (!target.startsWith(root + path.sep) || !fs.existsSync(target) || !fs.statSync(target).isFile()) { res.writeHead(404); return res.end(); }
@@ -322,46 +327,117 @@ async function run() {
       await clean(f);
     });
 
-    await check("Admin maps and reviews a new layout, saves the next hole, and attaches it to an event", async () => {
-      const f = await fixture(browser, { admin: true });
+    await check("Course lookup selects the course and tees, previews all 18 discovered holes, then confirms them for the event", async () => {
+      const prepared = structuredClone(preparedLayoutFixture);
+      const place = { id: prepared.place_id, displayName: { text: prepared.name }, formattedAddress: prepared.address, location: { latitude: prepared.latitude, longitude: prepared.longitude }, websiteUri: "https://example.invalid/course", nationalPhoneNumber: "01926 000000" };
+      const cards = [{ key: "course-yellow", course_name: prepared.name, tee_name: "Yellow" }, { key: "course-red", course_name: prepared.name, tee_name: "Red" }];
+      const calls = [];
+      const f = await fixture(browser, { admin: true, prepare: async context => {
+        await context.route(backend + "/functions/v1/baseline-services", async route => {
+          const body = route.request().postDataJSON();
+          if (body.action === "search_course") return route.fulfill({ json: { places: [place] } });
+          if (body.action === "course_details") return route.fulfill({ json: { place } });
+          if (body.action === "prepare_course") {
+            calls.push(body);
+            if (!body.scorecard_key) return route.fulfill({ json: { status: "choice_required", draft: null, scorecards: cards } });
+            assert.equal(body.scorecard_key, "course-yellow");
+            return route.fulfill({ json: { status: "ready", draft: prepared, scorecards: cards, selected_key: body.scorecard_key } });
+          }
+          return route.fallback();
+        });
+      } });
       await f.page.locator('[data-tab="details"]').click();
       await f.page.locator("#adminEvent").selectOption("999");
-      await f.page.waitForFunction(() => document.querySelector("[name=course_layout_id]").value === "22222222-2222-4222-8222-222222222222");
-      await f.page.getByText("Set up a different layout", { exact: true }).click();
-      await f.page.locator("[data-new-layout]").click();
-      const editor = f.page.locator(".hole-admin-dialog");
-      await editor.locator("[name=layout_name]").fill("Checked course layout");
-      await editor.locator("[name=tee_name]").fill("Yellow");
-      await editor.locator("[name=par]").fill("4");
-      await editor.locator("[name=yards]").fill("365");
-      await editor.locator("[name=stroke_index]").fill("1");
-      await f.page.waitForFunction(() => window.__maps.instances.length > 0);
-      await editor.locator('[name="map_point"]').selectOption("tee");
-      await f.page.evaluate(() => window.google.maps.event.trigger(window.__maps.instances.at(-1), "click", { latLng: new window.google.maps.LatLng(52.0001, -1.5) }));
-      await editor.locator('[name="map_point"]').selectOption("green");
-      await f.page.evaluate(() => window.google.maps.event.trigger(window.__maps.instances.at(-1), "click", { latLng: new window.google.maps.LatLng(52.0031, -1.5) }));
-      await editor.locator("[name=reviewed]").check();
-      await editor.locator("[data-save-next]").click();
-      await f.page.waitForFunction(() => document.querySelector(".hole-admin-dialog [data-hole-title]").textContent === "Hole 2");
-      assert.equal(f.model.savedLayouts[0].ready_count, 1);
+      await f.page.waitForFunction(() => /previous map/.test(document.querySelector("[data-course-preparation]").textContent));
+      await f.page.locator("#courseQuery").fill(prepared.name);
+      await f.page.locator("#findCourse").click();
+      await f.page.locator("#courseResults [data-course]").click();
+      const choice = f.page.locator("[data-scorecard-choice]");
+      await choice.waitFor();
+      await choice.selectOption("course-yellow");
+      await f.page.locator("[data-preview-layout]").waitFor();
+      assert.equal(f.model.savedLayouts.length, 0, "Discovery must not save an unconfirmed layout");
+      assert.equal(await f.page.locator("[name=course_layout_id]").inputValue(), "");
+      await f.page.locator("[data-preview-layout]").click();
+      const preview = f.page.getByRole("dialog", { name: "Course map preview", exact: true });
+      await preview.locator("[data-hole-grid]").waitFor();
+      assert.equal(await preview.locator("[data-hole]:enabled").count(), 18);
+      await preview.locator("[data-hole='1']").click();
+      await preview.locator("[data-hole-screen]").waitFor();
+      assert.equal(await preview.locator("[data-hole-title]").textContent(), "Hole 1");
+      await preview.locator("[data-hole-close]").click();
+      await preview.waitFor({ state: "detached" });
+      await f.page.locator("[data-confirm-maps]").click();
+      await f.page.waitForFunction(() => document.querySelector("[name=course_layout_id]").value === "33333333-3333-4333-8333-333333333333");
+      assert.equal(f.model.savedLayouts.length, 1);
       assert.equal(f.model.savedLayouts[0].holes.length, 18);
-      assert.deepEqual(f.model.savedLayouts[0].holes[0].tee, { lat: 52.0001, lng: -1.5 });
-      await editor.screenshot({ path: path.join(out, "hole-admin.png") });
-      await editor.locator("[data-save-close]").click();
-      await editor.waitFor({ state: "detached" });
-      await f.page.getByRole("button", { name: "Save event", exact: true }).click();
-      await f.page.waitForFunction(() => document.querySelector("#eventForm [name=course_layout_id]").value === "33333333-3333-4333-8333-333333333333" && document.querySelector("#eventForm button:not([type])")?.textContent === "Save event");
-      assert.equal(f.model.eventSave.course_layout_id, "33333333-3333-4333-8333-333333333333");
-
-      // A transient list failure must not silently detach the saved course on an ordinary event edit.
-      f.model.failCourseList = true;
-      await f.page.locator("#adminEvent").selectOption("");
-      await f.page.locator("#adminEvent").selectOption("999");
-      await f.page.waitForFunction(() => document.querySelector("[data-layout-status]").textContent.includes("existing course selection is kept"));
+      assert.ok(f.model.savedLayouts[0].holes.every(h => h.reviewed));
+      assert.deepEqual(f.model.savedLayouts[0].holes.map(h => h.tee), prepared.holes.map(h => h.tee));
+      assert.equal(f.model.requests.filter(r => /baseline_course_layout$/.test(r.url) && ["list", "match", "import"].includes(r.body.action)).length, 0, "Fresh setup must not restore earlier course drafts");
+      assert.equal(calls.length, 2);
+      assert.equal(calls[0].place_id, prepared.place_id);
       await f.page.getByRole("button", { name: "Save event", exact: true }).click();
       await f.page.waitForFunction(() => document.querySelector("#eventForm button:not([type])")?.textContent === "Save event");
       assert.equal(f.model.eventSave.course_layout_id, "33333333-3333-4333-8333-333333333333");
       await clean(f);
+    });
+
+    await check("An admin can preview a verified map before an event is saved without publishing its holes", async () => {
+      const f = await fixture(browser, { admin: true });
+      const before = f.model.requests.length;
+      await f.page.evaluate(async prepared => {
+        const { openHolePicker } = await import("./assets/js/hole-view.js");
+        window.__previewDraft = prepared;
+        openHolePicker({ name: prepared.name }, window.barford, prepared);
+      }, preparedLayoutFixture);
+      const dialog = f.page.getByRole("dialog", { name: "Course map preview", exact: true });
+      await dialog.locator("[data-hole-grid]").waitFor();
+      assert.equal(await dialog.locator("[data-hole]:enabled").count(), 18);
+      assert.match(await dialog.locator("[data-hole-readiness]").textContent(), /Preview only/);
+      await dialog.locator("[data-hole='1']").click();
+      await dialog.locator("[data-hole-screen]").waitFor();
+      assert.equal(await dialog.locator(".hole-dialog-top h2").textContent(), "Course map preview");
+      assert.ok(Number(await dialog.locator("[data-distance='green']").textContent()) > 0);
+      await noOverflow(f.page);
+      await dialog.screenshot({ path: path.join(out, "hole-admin-preview.png") });
+      assert.equal(await f.page.evaluate(() => window.__previewDraft.holes.some(h => h.reviewed)), false, "Preview must not change organiser confirmation");
+      assert.equal(f.model.savedLayouts.length, 0, "Preview must not save a layout");
+      assert.equal(f.model.requests.slice(before).filter(r => r.url.endsWith("baseline_course_layout") && r.body.action === "event").length, 0, "Unsaved preview must not request a made-up event");
+      await clean(f);
+    });
+
+    await check("Members cannot use an injected prepared layout to view unconfirmed course coordinates", async () => {
+      const f = await fixture(browser, { layout: null });
+      await f.page.evaluate(async prepared => {
+        const { openHolePicker } = await import("./assets/js/hole-view.js");
+        openHolePicker({ id: 999, name: "Member course" }, window.barford, prepared);
+      }, preparedLayoutFixture);
+      await f.page.locator("[data-hole-grid]").waitFor();
+      assert.equal(await f.page.locator("[data-hole]:enabled").count(), 0);
+      assert.equal(await f.page.getByRole("dialog", { name: "Course map preview", exact: true }).count(), 0);
+      assert.equal(f.model.requests.filter(r => r.url.endsWith("baseline_course_layout") && r.body.action === "event").length, 1);
+      await clean(f);
+    });
+
+    await check("Even admin preview refuses incomplete or unverified hole geometry", async () => {
+      for (const mutate of [
+        draft => { draft.holes.pop(); },
+        draft => { draft.source.validation.status = "incomplete"; },
+        draft => { draft.holes[1].green = draft.holes[0].green; },
+        draft => { draft.holes[1].tee = draft.holes[1].green; },
+      ]) {
+        const draft = structuredClone(preparedLayoutFixture); mutate(draft);
+        const f = await fixture(browser, { admin: true });
+        await f.page.evaluate(async prepared => {
+          const { openHolePicker } = await import("./assets/js/hole-view.js");
+          openHolePicker({ name: prepared.name }, window.barford, prepared);
+        }, draft);
+        await f.page.waitForFunction(() => /could not load/.test(document.querySelector("[data-hole-loading]").textContent));
+        assert.equal(await f.page.locator("[data-hole]:enabled").count(), 0);
+        assert.equal(await f.page.evaluate(() => window.__maps.instances.length), 0);
+        assert.equal(f.model.savedLayouts.length, 0);
+        await clean(f);
+      }
     });
 
     await check("Google satellite map renders real tiles under the 2027 site's actual origin", async () => {
@@ -413,5 +489,5 @@ async function run() {
     server.close();
   }
 }
-module.exports = { fixture, server, root, out, backend, eventFixture, layoutFixture, uid };
+module.exports = { fixture, server, root, out, backend, eventFixture, layoutFixture, preparedLayoutFixture, uid };
 if (require.main === module) run().catch(error => { console.error(error); process.exitCode = 1; server.close(); });

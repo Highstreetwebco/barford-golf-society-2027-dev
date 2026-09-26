@@ -3,10 +3,10 @@
 export type Point = { lat: number; lng: number };
 export type CourseInput = {
   place_id: string; name: string; latitude: number; longitude: number;
-  address?: string; tee_name?: string;
+  address?: string; tee_name?: string; layout_name?: string;
 };
 export type Scorecard = {
-  tee_name: string; source_url?: string;
+  tee_name: string; source_url?: string; course_name?: string;
   holes: Array<{ number?: number; hole?: number; hole_number?: number; par?: number; yards?: number; stroke_index?: number }>;
 };
 type Element = { id?: number; type?: string; tags?: Record<string, string>; geometry?: Array<{ lat: number; lon: number }> };
@@ -27,7 +27,7 @@ const point = (p: { lat: number; lon?: number; lng?: number }): Point | null => 
   const lng = p?.lng ?? p?.lon;
   return typeof p?.lat === 'number' && typeof lng === 'number' && Number.isFinite(p.lat) && Number.isFinite(lng) && Math.abs(p.lat) <= 90 && Math.abs(lng) <= 180 ? { lat: p.lat, lng } : null;
 };
-const cleanName = (s: string) => s.toLowerCase().replace(/&/g, ' and ').replace(/\b(the|golf|club|course|country|resort|limited|ltd)\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+const cleanName = (s: string) => s.toLowerCase().replace(/[’']/g, '').replace(/&/g, ' and ').replace(/\b(the|golf|club|course|country|resort|limited|ltd)\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
 const nameMatch = (a: string, b: string) => {
   const aa = cleanName(a), bb = cleanName(b);
   if (!aa || !bb) return false;
@@ -44,6 +44,35 @@ function inside(p: Point, polygon: Point[]) {
     if ((a.lat > p.lat) !== (b.lat > p.lat) && p.lng < (b.lng - a.lng) * (p.lat - a.lat) / (b.lat - a.lat) + a.lng) result = !result;
   }
   return result;
+}
+function edgeDistance(p: Point, polygon: Point[]) {
+  const scale = Math.cos(rad(p.lat)); let closest = Infinity;
+  for (let i = 1; i < polygon.length; i++) {
+    const a = { x: (polygon[i - 1].lng - p.lng) * scale, y: polygon[i - 1].lat - p.lat };
+    const b = { x: (polygon[i].lng - p.lng) * scale, y: polygon[i].lat - p.lat };
+    const dx = b.x - a.x, dy = b.y - a.y, length = dx * dx + dy * dy;
+    const t = length ? Math.max(0, Math.min(1, -(a.x * dx + a.y * dy) / length)) : 0;
+    closest = Math.min(closest, Math.hypot(a.x + t * dx, a.y + t * dy) * 111195);
+  }
+  return closest;
+}
+const contains = (p: Point, polygon: Point[]) => inside(p, polygon) || edgeDistance(p, polygon) <= .5;
+function polygonCentre(g: Point[], fallback: Point) {
+  const base = g[0]; let area = 0, x = 0, y = 0;
+  for (let i = 1; i < g.length; i++) {
+    const a = { x: g[i - 1].lng - base.lng, y: g[i - 1].lat - base.lat }, b = { x: g[i].lng - base.lng, y: g[i].lat - base.lat };
+    const cross = a.x * b.y - b.x * a.y; area += cross; x += (a.x + b.x) * cross; y += (a.y + b.y) * cross;
+  }
+  if (Math.abs(area) < 1e-15) return fallback;
+  const centre = { lat: base.lat + y / (3 * area), lng: base.lng + x / (3 * area) };
+  return inside(centre, g) ? centre : fallback;
+}
+function layoutLabel(tags: Record<string, string>) {
+  return tags['course:name'] || tags['golf:course'] || tags.course || String(tags.name || '').match(/^\s*\d{1,2}\s*[,–—-]\s*(.+)$/)?.[1] || '';
+}
+export class CourseMappingError extends Error {
+  code: string;
+  constructor(code: string, message: string) { super(message); this.name = 'CourseMappingError'; this.code = code; }
 }
 function geometry(e: Element) {
   if (!Array.isArray(e.geometry) || e.geometry.length > 2000) return [];
@@ -83,57 +112,74 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   }
   if (official.size !== 18 || [...official.values()].some(h => !h.par || !h.yards || !h.stroke_index) || new Set([...official.values()].map(h => h.stroke_index)).size !== 18) cardValid = false;
   if (cardValid) for (const [n, h] of official) holes[n - 1] = h;
-  else if (scorecard) warnings.push('The scorecard source was incomplete or inconsistent, so its values were not imported.');
-  const boundaries = elements.filter(e => e.tags?.leisure === 'golf_course').map(e => ({ e, g: geometry(e) })).filter(x => x.g.length >= 4 && distanceMetres(x.g[0], x.g[x.g.length - 1]) < 10);
-  const containing = boundaries.filter(x => inside(center, x.g));
-  const named = boundaries.filter(x => nameMatch(course.name, x.e.tags?.name || ''));
-  let selected: { e: Element; g: Point[] } | undefined = containing.length === 1 ? containing[0] : containing.filter(x => nameMatch(course.name, x.e.tags?.name || ''))[0];
-  if (containing.length > 1 && containing.filter(x => nameMatch(course.name, x.e.tags?.name || '')).length !== 1) selected = undefined;
-  if (!selected && named.length === 1 && Math.min(...named[0].g.map(p => distanceMetres(center, p))) < 800) selected = named[0];
-  let unsafeCourse = false;
-  if (!selected && boundaries.length) {
-    warnings.push('Nearby course boundaries could not be matched safely. Check the selected course and map the holes manually.');
-    unsafeCourse = true;
-  }
-  if (!boundaries.length) warnings.push('No course boundary was available. Check every imported hole belongs to this course.');
-  const rows: Array<{ number: number; g: Point[]; par: number | null; si: number | null; yards: number | null }> = [];
-  if (!unsafeCourse) for (const e of elements) {
+  else if (scorecard) throw new CourseMappingError('SCORECARD_INCOMPLETE', 'The selected scorecard is incomplete or inconsistent. The hole map has not been produced.');
+  const boundaries = elements.filter(e => e.tags?.leisure === 'golf_course').map(e => ({ e, g: geometry(e) })).filter(x => x.g.length >= 4 && distanceMetres(x.g[0], x.g[x.g.length - 1]) < 1);
+  const matching = boundaries.filter(x => [x.e.tags?.name || '', ...(x.e.tags?.alt_name || '').split(';')].some(n => nameMatch(course.name, n)) && (contains(center, x.g) || edgeDistance(center, x.g) < 500));
+  if (matching.length !== 1) throw new CourseMappingError('COURSE_BOUNDARY_UNCONFIRMED', matching.length ? 'More than one course boundary matches this venue. The hole map has not been produced.' : 'The selected course boundary could not be confirmed. The hole map has not been produced.');
+  const selected = matching[0];
+  const rows: Array<{ id?: number; number: number; label: string; g: Point[]; par: number | null; si: number | null; yards: number | null }> = [];
+  for (const e of elements) {
     if (e.tags?.golf !== 'hole') continue;
     const n = integer(e.tags.ref, 1, 18), g = geometry(e);
     if (!n || g.length < 2) continue;
     if (g.some(p => distanceMetres(center, p) > 3500)) continue;
-    if (selected && (!inside(g[0], selected.g) || !inside(g[g.length - 1], selected.g))) continue;
+    if (g.some(p => !contains(p, selected.g))) continue;
     const length = routeLength(g);
     if (length < 25 || length > 1100) continue;
-    rows.push({ number: n, g, par: integer(e.tags.par, 3, 6), si: integer(e.tags.handicap ?? e.tags.stroke_index, 1, 18), yards: integer(e.tags['length:yards'] ?? e.tags['distance:yards'], 1, 1200) });
+    rows.push({ id: e.id, number: n, label: layoutLabel(e.tags), g, par: integer(e.tags.par, 3, 6), si: integer(e.tags.handicap ?? e.tags.stroke_index, 1, 18), yards: integer(e.tags['length:yards'] ?? e.tags['distance:yards'], 1, 1200) });
   }
+  const labels = [...new Set(rows.map(r => r.label).filter(Boolean))];
+  const requestedLayout = course.layout_name || scorecard?.course_name || '';
+  const matchingLabels = labels.filter(label => nameMatch(label, requestedLayout));
+  if (labels.length > 1 && matchingLabels.length !== 1) throw new CourseMappingError('COURSE_CHOICE_REQUIRED', `This venue contains ${labels.join(' and ')}. Choose the exact course before producing its hole map.`);
+  if (labels.length && requestedLayout && matchingLabels.length !== 1) throw new CourseMappingError('COURSE_LAYOUT_UNCONFIRMED', 'The selected course layout could not be matched to the numbered map routes. No hole map has been produced.');
+  const chosenLabel = matchingLabels[0] || (labels.length === 1 ? labels[0] : '');
+  const courseRows = chosenLabel ? rows.filter(r => r.label === chosenLabel) : rows;
   const grouped = new Map<number, typeof rows>();
-  for (const row of rows) grouped.set(row.number, [...(grouped.get(row.number) || []), row]);
+  for (const row of courseRows) grouped.set(row.number, [...(grouped.get(row.number) || []), row]);
   const duplicates = [...grouped.entries()].filter(([, v]) => v.length > 1).map(([n]) => n);
-  if (duplicates.length) warnings.push(`More than one route was found for holes ${duplicates.join(', ')}. Those holes were left unmapped to avoid mixing courses.`);
-  const unique = rows.filter(r => grouped.get(r.number)?.length === 1);
-  let shift = 0;
-  if (cardValid && unique.length >= 9) {
+  if (duplicates.length) throw new CourseMappingError('HOLE_ROUTES_AMBIGUOUS', `Multiple routes match holes ${duplicates.join(', ')}. The hole map has not been produced.`);
+  const unique = courseRows.filter(r => grouped.get(r.number)?.length === 1);
+  if (unique.length !== 18) throw new CourseMappingError('HOLE_ROUTES_INCOMPLETE', `Only ${unique.length} of 18 numbered holes could be confirmed for this course. The hole map has not been produced.`);
+  const footprints = elements.filter(e => ['tee', 'green'].includes(e.tags?.golf || '') && !/practice|putting/i.test(e.tags?.name || '')).map(e => ({ e, g: geometry(e) })).filter(f => f.g.length >= 4 && distanceMetres(f.g[0], f.g[f.g.length - 1]) < 1 && f.g.every(p => contains(p, selected.g)));
+  const anchors = new Map<typeof unique[number], { tee: typeof footprints[number]; green: typeof footprints[number] }>();
+  const failures: string[] = [];
+  for (const row of unique) {
+    const tees = footprints.filter(f => f.e.tags?.golf === 'tee' && contains(row.g[0], f.g));
+    const greens = footprints.filter(f => f.e.tags?.golf === 'green' && contains(row.g[row.g.length - 1], f.g));
+    if (tees.length !== 1 || greens.length !== 1) failures.push(`${row.number} (${tees.length !== 1 ? 'tee' : ''}${tees.length !== 1 && greens.length !== 1 ? ' and ' : ''}${greens.length !== 1 ? 'green' : ''})`);
+    else anchors.set(row, { tee: tees[0], green: greens[0] });
+  }
+  if (failures.length) throw new CourseMappingError('HOLE_ANCHORS_UNCONFIRMED', `Mapped tee or green areas could not be uniquely confirmed for holes ${failures.join(', ')}. No hole map has been produced.`);
+  if (new Set([...anchors.values()].map(a => a.tee.e)).size !== 18 || new Set([...anchors.values()].map(a => a.green.e)).size !== 18) throw new CourseMappingError('HOLE_ANCHORS_SHARED', 'Two holes point to the same mapped tee or green area. The hole map has not been produced.');
+  let shift = 0, orderEvidence = 'numbered_map_routes';
+  if (cardValid) {
     const rankings = Array.from({ length: 18 }, (_, offset) => {
-      let matches = 0, conflicts = 0, evidence = 0;
+      let parMatches = 0, parEvidence = 0, siMatches = 0, siEvidence = 0;
       for (const row of unique) {
         const h = official.get(((row.number + offset - 1) % 18) + 1)!;
-        for (const [actual, expected, weight] of [[row.si, h.stroke_index, 3], [row.par, h.par, 1]]) if (actual && expected) { evidence += weight!; if (actual === expected) matches += weight!; else conflicts += weight!; }
+        if (row.par) { parEvidence++; if (row.par === h.par) parMatches++; }
+        if (row.si) { siEvidence++; if (row.si === h.stroke_index) siMatches++; }
       }
-      return { offset, matches, conflicts, evidence, score: matches - conflicts * 2 };
-    }).sort((a, b) => b.score - a.score);
-    const [first, second] = rankings;
-    if (first.offset !== 0 && first.evidence >= 24 && first.matches / first.evidence >= 0.9 && first.score - second.score >= 8) {
-      shift = first.offset;
-      warnings.push(`Map numbering was aligned by ${shift} holes using the scorecard. Check the first hole and both nines before publication.`);
-    } else if (first.offset !== 0 || first.conflicts > first.matches / 4) {
-      warnings.push('Map numbering does not clearly agree with the scorecard. Original map numbers were kept for review.');
-    }
+      return { offset, parMatches, parEvidence, siMatches, siEvidence };
+    });
+    const parMatches = rankings.filter(r => r.parEvidence === 18 && r.parMatches === 18);
+    const combinedMatches = rankings.filter(r => r.siEvidence >= 15 && r.siMatches === r.siEvidence && r.parEvidence >= 9 && r.parMatches === r.parEvidence);
+    const chosen = parMatches.length === 1 ? parMatches[0] : combinedMatches.length === 1 ? combinedMatches[0] : null;
+    if (!chosen) throw new CourseMappingError('HOLE_ORDER_UNCONFIRMED', 'The numbered map routes do not uniquely match the selected scorecard. The hole map has not been produced.');
+    shift = chosen.offset;
+    orderEvidence = parMatches.length === 1 ? 'unique_18_hole_par_sequence' : 'matching_par_and_stroke_index_sequence';
+    if (shift) warnings.push(`Map numbering was aligned by ${shift} holes against the selected scorecard. Check the first hole and both nines in the preview.`);
+    if (chosen.siMatches < chosen.siEvidence) warnings.push('Map stroke indexes differ from the selected tee scorecard. The scorecard stroke indexes are used; hole order was confirmed by its unique 18-hole par sequence.');
   }
+  const evidence: Array<Record<string, unknown>> = [];
   for (const row of unique) {
     const n = ((row.number + shift - 1) % 18) + 1, h = holes[n - 1];
+    if (cardValid && row.par && row.par !== h.par) throw new CourseMappingError('SCORECARD_CONFLICT', `Hole ${n} map data conflicts with the selected scorecard. The hole map has not been produced.`);
     if (!cardValid) { h.par = row.par; h.stroke_index = row.si; h.yards = row.yards; }
-    h.tee = row.g[0]; h.green = row.g[row.g.length - 1]; h.dogleg = corner(row.g);
+    const anchor = anchors.get(row)!;
+    h.tee = row.g[0]; h.green = polygonCentre(anchor.green.g, row.g[row.g.length - 1]); h.dogleg = corner(row.g);
+    evidence.push({ number: n, osm_number: row.number, route_id: row.id, tee_feature_id: anchor.tee.e.id, green_feature_id: anchor.green.e.id });
   }
   // Conflicting OSM SI values are unknown, not guessed into a 1–18 permutation.
   if (!cardValid) {
@@ -145,23 +191,23 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
     }
   }
   const coverage = { mapped: holes.filter(h => h.tee && h.green).length, par: holes.filter(h => h.par).length, yards: holes.filter(h => h.yards).length, stroke_index: holes.filter(h => h.stroke_index).length };
-  if (coverage.mapped < 18) warnings.push(`${coverage.mapped} of 18 hole routes found. Missing positions need manual setup.`);
+  if (coverage.mapped !== 18) throw new CourseMappingError('MAPPING_VALIDATION_FAILED', 'All 18 tee and green positions could not be confirmed. No hole map has been produced.');
   const missingCardFields = [...(coverage.yards < 18 ? ['yardages'] : []), ...(coverage.stroke_index < 18 ? ['stroke indexes'] : [])];
   if (missingCardFields.length) warnings.push(`Complete the missing ${missingCardFields.join(' and ')} from the chosen tee scorecard.`);
-  warnings.push('All imported tee and green positions require an organiser check before members can use GPS.');
+  warnings.push('The numbered routes match mapped tee and green areas. Confirm the course preview before making it available to members. Tee colours are not verified by this map source.');
   return {
-    name: course.name.trim().slice(0, 200), tee_name: (cardValid ? scorecard!.tee_name : course.tee_name || 'Yellow').slice(0, 80),
+    name: `${course.name.trim()}${chosenLabel && !cleanName(course.name).includes(cleanName(chosenLabel)) ? ` · ${chosenLabel}` : ''}`.slice(0, 200), tee_name: (cardValid ? scorecard!.tee_name : course.tee_name || 'Yellow').slice(0, 80),
     place_id: course.place_id, center, address: String(course.address || '').slice(0, 500), holes,
-    source: { provider: 'openstreetmap', attribution: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright', fetched_at: new Date().toISOString(), coverage, warnings, ...(selected?.e.id ? { boundary_id: selected.e.id } : {}), ...(cardValid && scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), numbering_shift: shift },
+    source: { provider: 'openstreetmap', attribution: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright', fetched_at: new Date().toISOString(), coverage, warnings, boundary_id: selected.e.id, ...(cardValid && scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), numbering_shift: shift, validation: { status: 'verified', method: 'numbered_routes_inside_tee_green_footprints', mapped: 18, tee_anchors: 18, green_anchors: 18, course_name: chosenLabel || requestedLayout || course.name, tee_colour_confirmed: false, scorecard_order_confirmed: cardValid, order_evidence: orderEvidence, ...(scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), evidence } },
   };
 }
 
 async function boundedText(response: Response, maximum = MAX_BYTES) {
-  if (!response.ok) throw new Error('Course mapping is temporarily unavailable. Try again or set up the holes manually.');
-  if (Number(response.headers.get('content-length') || 0) > maximum || !response.body) throw new Error('The map response is too large. Set up this course manually.');
+  if (!response.ok) throw new Error('Course mapping is temporarily unavailable. No hole map has been created. Please try again.');
+  if (Number(response.headers.get('content-length') || 0) > maximum || !response.body) throw new Error('The map response is too large. No hole map has been created.');
   const reader = response.body.getReader(), chunks: Uint8Array[] = []; let total = 0;
   try {
-    while (true) { const { value, done } = await reader.read(); if (done) break; total += value.byteLength; if (total > maximum) throw new Error('The map response is too large. Set up this course manually.'); chunks.push(value); }
+    while (true) { const { value, done } = await reader.read(); if (done) break; total += value.byteLength; if (total > maximum) throw new Error('The map response is too large. No hole map has been created.'); chunks.push(value); }
   } catch (error) { await reader.cancel().catch(() => {}); throw error; }
   const data = new Uint8Array(total); let offset = 0;
   for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
@@ -185,7 +231,7 @@ function xmlAttributes(input: string) {
 // A small parser for the fixed OSM API response format. No DOM, DTD, external
 // entities or user-selected URLs are involved. Missing nodes invalidate a way.
 export function parseOsmXml(input: string): Element[] {
-  if (input.length > 8_000_000 || /<!DOCTYPE|<!ENTITY|<!\[CDATA\[/i.test(input) || !/<osm\b/.test(input) || !/<\/osm\s*>/.test(input)) throw new Error('The course map XML could not be read safely.');
+  if (input.length > 16_000_000 || /<!DOCTYPE|<!ENTITY|<!\[CDATA\[/i.test(input) || !/<osm\b/.test(input) || !/<\/osm\s*>/.test(input)) throw new Error('The course map XML could not be read safely.');
   const xml = input.replace(/<!--[\s\S]*?-->/g, '');
   const nodes = new Map<string, Point>();
   let nodeCount = 0, wayCount = 0;
@@ -206,7 +252,7 @@ export function parseOsmXml(input: string): Element[] {
       const a = xmlAttributes(tag[1]);
       if (a.k && a.v !== undefined) tags[a.k] = a.v;
     }
-    if (tags.golf !== 'hole' && tags.leisure !== 'golf_course') continue;
+    if (!['hole', 'tee', 'green'].includes(tags.golf) && tags.leisure !== 'golf_course') continue;
     const g: Array<{ lat: number; lon: number }> = []; let complete = true;
     for (const ref of match[2].matchAll(/<nd\b([^>]*)\/\s*>/g)) {
       const node = nodes.get(xmlAttributes(ref[1]).ref);
@@ -225,7 +271,7 @@ export async function prepareCourseMapping(course: CourseInput, options: Mapping
   const key = `${course.place_id}:${course.latitude.toFixed(5)}:${course.longitude.toFixed(5)}`;
   let elements = cache.get(key)?.at && Date.now() - cache.get(key)!.at < 600000 ? cache.get(key)!.elements : null;
   if (!elements) {
-    const query = `[out:json][timeout:12];(way(around:2500,${course.latitude},${course.longitude})["leisure"="golf_course"];way(around:2500,${course.latitude},${course.longitude})["golf"="hole"];);out tags geom;`;
+    const query = `[out:json][timeout:12];(way(around:2500,${course.latitude},${course.longitude})["leisure"="golf_course"];way(around:2500,${course.latitude},${course.longitude})["golf"~"^(hole|tee|green)$"];);out tags geom;`;
     const stop = new AbortController();
     const deadline = AbortSignal.any([stop.signal, AbortSignal.timeout(18000), ...(options.signal ? [options.signal] : [])]);
     const fetcher = options.fetcher || fetch;
@@ -237,9 +283,9 @@ export async function prepareCourseMapping(course: CourseInput, options: Mapping
         // Fetch the independent official OSM map API alongside the second Overpass
         // instance. This keeps a working fallback inside the shared 18-second budget.
         const bbox = [Math.max(-180, course.longitude - .03), Math.max(-90, course.latitude - .018), Math.min(180, course.longitude + .03), Math.min(90, course.latitude + .018)].join(',');
-        const xml = async () => parseOsmXml(await boundedText(await fetcher('https://api.openstreetmap.org/api/0.6/map?' + new URLSearchParams({ bbox }), { method: 'GET', redirect: 'error', headers, signal: AbortSignal.any([deadline, AbortSignal.timeout(13000)]) }), 8_000_000));
+        const xml = async () => parseOsmXml(await boundedText(await fetcher('https://api.openstreetmap.org/api/0.6/map?' + new URLSearchParams({ bbox }), { method: 'GET', redirect: 'error', headers, signal: AbortSignal.any([deadline, AbortSignal.timeout(13000)]) }), 16_000_000));
         try { elements = await Promise.any([overpass(OVERPASS[1], 10000), xml()]); }
-        catch (error) { throw error instanceof AggregateError && error.errors[0] instanceof Error ? error.errors[0] : new Error('Course mapping timed out. Try again or set up the holes manually.'); }
+        catch (error) { throw error instanceof AggregateError && error.errors[0] instanceof Error ? error.errors[0] : new Error('Course mapping timed out. No hole map has been created. Please try again.'); }
       }
     } finally { stop.abort(); }
     if (cache.size >= 32) cache.delete(cache.keys().next().value!);

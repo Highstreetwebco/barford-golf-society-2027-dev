@@ -15,9 +15,9 @@
     <link rel="apple-touch-icon" href="icon-logo.png" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
-    <link rel="stylesheet" href="assets/css/holes.css?v=2027-event-setup-1" />
-    <script src="assets/js/baseline.js?v=2027-event-setup-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-event-setup-1"></script>
+    <link rel="stylesheet" href="assets/css/holes.css?v=2027-accurate-gps-1" />
+    <script src="assets/js/baseline.js?v=2027-accurate-gps-1" defer></script>
+    <script type="module" src="assets/js/admin.js?v=2027-accurate-gps-1"></script>
   </head>
   <body class="page-admin">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -117,66 +117,16 @@
         </section>
         <section id="adminDetails" class="panel" hidden>
           <form id="eventForm" class="form-grid">
-            <details class="panel full" open>
-              <summary>Course information</summary>
-              <p>
-                Find your course to fill its address, website and phone number,
-                and prepare the hole view for your event.
-              </p>
-              <div class="actions">
-                <input
-                  id="courseQuery"
-                  aria-label="Find golf course"
-                  placeholder="e.g. The Warwickshire"
-                /><button type="button" class="secondary" id="findCourse">
-                  Find course
-                </button>
-              </div>
-              <p id="courseLookupStatus" role="status"></p>
-              <div id="courseResults" class="course-results"></div>
-              <label
-                >Course name<input name="course_name" maxlength="160" /></label
-              ><input type="hidden" name="place_id" /><label
-                >Address<input
-                  name="address"
-                  maxlength="300"
-                  placeholder="Course address and postcode"
-              /></label>
-              <input type="hidden" name="latitude" />
-              <input type="hidden" name="longitude" />
-              <input type="hidden" name="location" />
-              <div class="form-grid section">
-                <label>Course website<input name="course_link" type="url" placeholder="Filled from course lookup" /></label>
-                <label>Course / venue telephone<input name="course_phone" type="tel" maxlength="40" placeholder="Filled from course lookup" /></label>
-              </div>
-              <div class="section event-cover-picker">
-                <label for="eventCoverFile">Cover photo</label>
-                <input id="eventCoverFile" name="cover_file" type="file" accept="image/jpeg,image/png,image/webp" />
-                <input name="cover_url" type="hidden" />
-                <p class="muted">Choose a photo from your device. A landscape image works best. JPEG, PNG or WebP, up to 10 MB.</p>
-                <img id="eventCoverPreview" alt="Event cover preview" hidden style="width:100%;max-width:640px;max-height:280px;object-fit:cover;border-radius:16px" />
-                <button id="removeEventCover" type="button" class="secondary" hidden>Remove cover photo</button>
-                <p id="eventCoverStatus" role="status"></p>
-              </div>
-              <label
-                >Estimated round duration (hours)<input
-                  name="round_hours"
-                  type="number"
-                  min="2"
-                  max="8"
-                  value="5"
-              /></label>
-              <p class="muted">
-                The course address also sets the map and forecast location.
-                If you do not upload a cover, an available course photo is shown.
-              </p>
-            </details>
-            <label
-              >Event name<input name="name" required maxlength="200" /></label
-            ><label>Date<input name="date" type="date" required /></label
-            ><label
-              >League round<select name="round_number">
-                <option value="">Social event · no league scoring</option>
+            <label class="full">Event type
+              <select name="event_type" required>
+                <option value="league">League round</option>
+                <option value="pairs">Pairs golf</option>
+                <option value="social">Social event</option>
+              </select>
+            </label>
+            <label class="full" data-league-round>Round
+              <select name="round_number" required>
+                <option value="">Choose a round</option>
                 <option value="1">Round 1</option>
                 <option value="2">Round 2</option>
                 <option value="3">Round 3</option>
@@ -184,48 +134,61 @@
                 <option value="5">Round 5</option>
                 <option value="6">Round 6</option>
                 <option value="7">Round 7</option>
-              </select></label
-            ><label
-              >Price description<input
-                name="price"
-                placeholder="e.g. £45 per person" /></label
-            ><label>First tee time<input name="first_time" type="time" /></label
-            ><label
-              >Maximum players<input
-                name="max_players"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Leave blank for no limit" /></label
-            ><label class="full"
-              >Description<textarea name="description" rows="4"></textarea>
+              </select>
             </label>
+            <label>Event name<input name="name" required maxlength="200" /></label>
+            <label>Date<input name="date" type="date" required /></label>
+            <div class="full">
+              <p>Find the course to fill its details and prepare the hole view.</p>
+              <div class="actions">
+                <input id="courseQuery" aria-label="Find golf course" placeholder="e.g. The Warwickshire" />
+                <button type="button" class="secondary" id="findCourse">Find course</button>
+              </div>
+              <p id="courseLookupStatus" role="status"></p>
+              <div id="courseResults" class="course-results"></div>
+            </div>
+            <label>Course / venue name<input name="course_name" maxlength="160" /></label>
+            <label>Address<input name="address" maxlength="300" placeholder="Address and postcode" /></label>
+            <input type="hidden" name="place_id" />
+            <input type="hidden" name="latitude" />
+            <input type="hidden" name="longitude" />
+            <input type="hidden" name="location" />
+            <label>Course / venue website<input name="course_link" type="url" placeholder="Filled from course lookup" /></label>
+            <label>Course / venue telephone<input name="course_phone" type="tel" maxlength="40" placeholder="Filled from course lookup" /></label>
+            <label>Refreshments ready from<input name="refreshment_time" type="time" /></label>
+            <label>First tee time<input name="first_time" type="time" /></label>
+            <label>Member price (£)<input name="member_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="To be confirmed" /></label>
+            <label>Guest price (£)<input name="guest_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="To be confirmed" /></label>
+            <label>Maximum players<input name="max_players" type="number" min="1" step="1" placeholder="Leave blank for no limit" /></label>
+            <label>Estimated round duration (hours)<input name="round_hours" type="number" min="2" max="8" value="5" /></label>
+            <label class="full">Description<textarea name="description" rows="4"></textarea></label>
+            <div class="full event-cover-picker">
+              <label for="eventCoverFile">Cover photo</label>
+              <input id="eventCoverFile" name="cover_file" type="file" accept="image/jpeg,image/png,image/webp" />
+              <input name="cover_url" type="hidden" />
+              <p class="muted">Choose a landscape photo from your device. JPEG, PNG or WebP, up to 10 MB. An available course photo is shown if you do not upload one.</p>
+              <img id="eventCoverPreview" alt="Event cover preview" hidden style="width:100%;max-width:640px;max-height:280px;object-fit:cover;border-radius:16px" />
+              <button id="removeEventCover" type="button" class="secondary" hidden>Remove cover photo</button>
+              <p id="eventCoverStatus" role="status"></p>
+            </div>
+            <div class="full" data-event-extra-fields></div>
             <details class="full">
               <summary>Course links &amp; videos</summary>
               <div class="form-grid">
-                <label
-                  >Weather link<input name="weather_link" type="url" /></label
-                ><label
-                  >Video type<select name="video_type" id="videoType">
-                    <option value="">None</option>
-                    <option value="whole">Whole course</option>
-                    <option value="per-hole">By hole</option>
-                  </select></label
-                ><label
-                  >Course video (YouTube URL)<input
-                    name="video_link"
-                    type="url"
-                /></label>
+                <label>Weather link<input name="weather_link" type="url" /></label>
+                <label>Video type<select name="video_type" id="videoType">
+                  <option value="">None</option>
+                  <option value="whole">Whole course</option>
+                  <option value="per-hole">By hole</option>
+                </select></label>
+                <label>Course video (YouTube URL)<input name="video_link" type="url" /></label>
               </div>
               <div id="holeVideoInputs" class="form-grid" hidden></div>
             </details>
             <div class="actions full">
-              <button>Save event</button
-              ><button type="button" class="secondary" id="cancelEvent" hidden>
-                Cancel event</button
-              ><button type="button" class="danger" id="deleteEvent" hidden>
-                Delete event
-              </button>
+              <button>Save event</button>
+              <button type="button" class="secondary" id="cancelEvent" hidden>Cancel event</button>
+              <button type="button" class="danger" id="deleteEvent" hidden>Delete event</button>
             </div>
             <p class="full form-status" role="status"></p>
           </form>

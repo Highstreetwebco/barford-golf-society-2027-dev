@@ -1,6 +1,6 @@
 // Isolated 2027 services. Public requests validate the project API key;
 // organiser operations additionally validate a current GoTrue user and database role.
-import { prepareCourseMapping, buildCourseMapping } from "./course-mapping.ts";
+import { prepareCourseMapping } from "./course-mapping.ts";
 import { findCourseScorecards } from "./course-scorecard.ts";
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -11,6 +11,7 @@ const PUBLISHABLE = "sb_publishable_XLM39PjQf4XdTVfNHFOzAQ_i4re6w_c".replace(
 );
 const GOOGLE = Deno.env.get("GOOGLE_MAPS_API_KEY");
 const YOUTUBE = Deno.env.get("YOUTUBE_API_KEY") || GOOGLE;
+const courseCardCache = new Map<string, { at: number; result: Awaited<ReturnType<typeof findCourseScorecards>> }>();
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -282,7 +283,7 @@ Deno.serve(async (req) => {
     if (body.action === "prepare_course") {
       await admin(req);
       if (!(await budget("course-preparation", 86400, 40)))
-        return reply({ error: "Course preparation daily limit reached. Saved layouts are still available." }, 429);
+        return reply({ error: "Course preparation daily limit reached. Please try again tomorrow." }, 429);
       const p = await courseDetails(body.place_id);
       const course = {
         place_id: p.id,
@@ -290,12 +291,13 @@ Deno.serve(async (req) => {
         address: p.formattedAddress || "",
         latitude: p.location?.latitude,
         longitude: p.location?.longitude,
-        tee_name: String(body.tee_name || "Yellow").trim().slice(0, 80),
+        tee_name: "",
       };
       if (!Number.isFinite(course.latitude) || !Number.isFinite(course.longitude))
         return reply({ error: "This course did not supply a map location. Choose another course match." }, 422);
       // These credentials stay inside this Edge Function; they never enter its response.
-      const scorecards = (async () => {
+      const cached = courseCardCache.get(course.place_id);
+      const discovery = cached && Date.now() - cached.at < 180000 ? cached.result : await (async () => {
         let apiKey = Deno.env.get("UK_GOLF_API_KEY");
         if (!apiKey) {
           try { apiKey = (await db("integration_secrets?select=secret_value&name=eq.UK_GOLF_API_KEY&limit=1"))[0]?.secret_value; }
@@ -303,17 +305,28 @@ Deno.serve(async (req) => {
         }
         return findCourseScorecards(course, { apiKey });
       })();
-      const [mapping, cards] = await Promise.allSettled([
-        prepareCourseMapping(course, { scorecards: scorecards.then(value => value.cards, () => []) }), scorecards,
-      ]);
-      const draft = mapping.status === "fulfilled" ? mapping.value : buildCourseMapping(course, []);
-      if (mapping.status === "rejected")
-        draft.source.warnings.unshift("The automatic map provider could not be reached. Retry Find & prepare holes, or place the missing positions on the satellite map.");
-      return reply({
-        draft,
-        scorecards: cards.status === "fulfilled" ? cards.value.cards : [],
-        warnings: cards.status === "fulfilled" ? cards.value.warnings : ["Scorecard details could not be found. You can add them while reviewing the holes."],
-      });
+      if (discovery.cards.length) {
+        if (courseCardCache.size >= 20) courseCardCache.delete(courseCardCache.keys().next().value!);
+        courseCardCache.set(course.place_id, { at: Date.now(), result: discovery });
+      }
+      const candidates = await Promise.all(discovery.cards.map(async card => ({
+        key: await digest(JSON.stringify([card.source_url, card.course_name, card.tee_name])), card,
+      })));
+      const choices = candidates.map(({ key, card }) => ({ key, course_name: card.course_name, tee_name: card.tee_name }));
+      const base = { scorecards: choices, warnings: discovery.warnings, draft: null };
+      if (!candidates.length) return reply({ ...base, status: "unavailable", message: "A complete scorecard for this course could not be verified. No GPS layout has been created." });
+      const selected = body.scorecard_key
+        ? candidates.filter(c => c.key === body.scorecard_key)
+        : candidates.length === 1 ? candidates : [];
+      if (selected.length !== 1) return reply({ ...base, status: "choice_required", message: body.scorecard_key ? "The available scorecards have changed. Choose the course and tees again." : "Choose the course and tees you are playing so its 18 holes can be matched accurately." });
+      const chosen = selected[0];
+      try {
+        const draft = await prepareCourseMapping({ ...course, tee_name: chosen.card.tee_name, layout_name: chosen.card.course_name }, { scorecard: chosen.card });
+        if (draft.source.validation?.status !== "verified") throw new Error("The course map did not pass all position checks.");
+        return reply({ ...base, status: "ready", selected_key: chosen.key, draft: { ...draft, source: { ...draft.source, selected_scorecard: { course_name: chosen.card.course_name, tee_name: chosen.card.tee_name, source_url: chosen.card.source_url } } }, message: "All 18 numbered holes match mapped tee and green areas and the selected scorecard. Preview the maps, then confirm them." });
+      } catch (error) {
+        return reply({ ...base, status: "unavailable", selected_key: chosen.key, message: `${error instanceof Error ? error.message : "The course positions could not be verified."} No GPS layout has been created.` });
+      }
     }
     const eventId = Number(body.event_id);
     if (!Number.isSafeInteger(eventId) || eventId <= 0)

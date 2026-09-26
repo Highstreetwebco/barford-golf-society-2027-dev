@@ -2,13 +2,22 @@ import {createHoleMap,normaliseHole,coordinates,distanceMetres,yardsBetween} fro
 
 const MAX_FIX_AGE=15000,MAX_ACCURACY=35;
 let activeDialog;
-export function openHolePicker(event,b) {
+export function openHolePicker(event,b,preparedLayout=null) {
+  // A prepared map is only an organiser preview. Members always use the event
+  // RPC, which withholds coordinates until an organiser confirms the course.
+  const preview=!!preparedLayout&&b.state?.admin===true;
   if(activeDialog?.open){activeDialog.focus();return activeDialog;}
   const dialog=document.createElement("dialog");
   dialog.className="hole-dialog";
   dialog.setAttribute("aria-label","View hole");
   dialog.innerHTML=`<div class="hole-dialog-top"><div><span class="eyebrow">ON THE COURSE</span><h2>Choose your hole</h2><p>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-close>Close</button></div><div data-hole-loading role="status" class="hole-load">Loading the course…</div><section data-hole-picker hidden><p class="hole-picker-note">Choose a hole to open its satellite map and GPS distances.</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section><p class="hole-map-attribution" data-hole-source hidden></p><section data-hole-screen hidden><div class="hole-screen-heading"><div><h2 data-hole-title></h2><p data-hole-course></p></div><button type="button" class="secondary" data-hole-grid-back>All holes</button></div><div class="hole-stats" data-hole-stats></div><div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p><button type="button" class="hole-recentre" data-hole-fit>Fit hole</button></div><div class="hole-distance-panel"><p data-distance-origin>From mapped tee</p><div class="hole-distances" data-distances></div><div class="hole-target-distances" data-target-distances hidden></div></div><div class="hole-gps-controls"><button type="button" data-gps-toggle>Use my GPS</button><p data-gps-status role="status">GPS is off. Distances are from the mapped tee.</p></div><p class="hole-help">Tap the map to measure a target. Phone GPS distances are a guide. Your location stays on this device.</p><div class="hole-navigation"><button type="button" class="secondary" data-hole-prev>← Previous</button><span data-hole-count></span><button type="button" class="secondary" data-hole-next>Next →</button></div></section>`;
   document.body.append(dialog);
+  if(preview){
+    dialog.setAttribute("aria-label","Course map preview");
+    dialog.querySelector(".eyebrow").textContent="ADMIN PREVIEW";
+    dialog.querySelector(".hole-dialog-top h2").textContent="Course map preview";
+    dialog.querySelector(".hole-picker-note").textContent="Preview the discovered tee and green positions. Confirm the hole maps in event setup before members can use them.";
+  }
   activeDialog=dialog;
   dialog.showModal();
   const $=(selector)=>dialog.querySelector(selector);
@@ -61,7 +70,7 @@ export function openHolePicker(event,b) {
   };
   function grid(){
     $("[data-hole-picker]").hidden=false;$("[data-hole-screen]").hidden=true;
-    dialog.querySelector(".hole-dialog-top h2").textContent="Choose your hole";
+    dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Choose your hole";
     $("[data-hole-grid]").querySelector(`[data-hole="${selected?.number||1}"]`)?.focus();
   }
   async function showHole(number){
@@ -69,7 +78,7 @@ export function openHolePicker(event,b) {
     if(!hole?.reviewed||!hole.tee||!hole.green)return;
     selected=hole;target=null;
     $("[data-hole-picker]").hidden=true;$("[data-hole-screen]").hidden=false;
-    dialog.querySelector(".hole-dialog-top h2").textContent="Your hole view";
+    dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Your hole view";
     $("[data-hole-title]").textContent=`Hole ${number}`;
     $("[data-hole-course]").textContent=`${layout.name}${layout.tee_name?" · "+layout.tee_name+" tees":""}`;
     $("[data-hole-stats]").innerHTML=`<div><span>Par</span><strong>${b.escape(hole.par??"—")}</strong></div><div><span>Card yardage</span><strong>${b.escape(hole.yards??"—")}</strong></div><div><span>Stroke index</span><strong>${b.escape(hole.stroke_index??"—")}</strong></div>`;
@@ -102,9 +111,20 @@ export function openHolePicker(event,b) {
   window.addEventListener("pagehide",cleanup);
   (async()=>{
     try{
-      const {data,error}=await b.client.rpc("course_layout",{action:"event",payload:{event_id:event.id}});
-      if(error)throw error;if(closed)return;
-      layout=data?.layout;
+      if(preview){
+        const candidate=preparedLayout.holes?.map(normaliseHole)||[];
+        const numbers=new Set(candidate.map(h=>h.number));
+        const tees=new Set(candidate.map(h=>h.tee&&`${h.tee.lat},${h.tee.lng}`));
+        const greens=new Set(candidate.map(h=>h.green&&`${h.green.lat},${h.green.lng}`));
+        const validation=preparedLayout.source?.validation;
+        if(validation?.status!=="verified"||validation.mapped!==18||validation.tee_anchors!==18||validation.green_anchors!==18||candidate.length!==18||numbers.size!==18||tees.size!==18||greens.size!==18||candidate.some(h=>h.number<1||h.number>18||!Number.isInteger(h.number)||!h.tee||!h.green||distanceMetres(h.tee,h.green)<30))throw new Error("The course map is not fully verified.");
+        layout={...preparedLayout,holes:candidate.map(h=>({...h,reviewed:true}))};
+      }else{
+        const {data,error}=await b.client.rpc("course_layout",{action:"event",payload:{event_id:event.id}});
+        if(error)throw error;
+        layout=data?.layout;
+      }
+      if(closed)return;
       const source = $("[data-hole-source]");
       if (layout?.source?.attribution) {
         source.hidden = false;
@@ -117,7 +137,7 @@ export function openHolePicker(event,b) {
       $("[data-hole-picker]").hidden=false;
       const ready=holes.filter(h=>h.reviewed&&h.tee&&h.green).length;
       $("[data-hole-grid]").innerHTML=holes.map(h=>{const available=h.reviewed&&h.tee&&h.green;return `<button type="button" data-hole="${h.number}" ${available?"":"disabled"} aria-label="Hole ${h.number}${available?"":" — not ready"}"><strong>${h.number}</strong><small>${available?`Par ${b.escape(h.par??"—")}`:"Not ready"}</small></button>`;}).join("");
-      $("[data-hole-readiness]").textContent=ready===18?`${layout.name} · All 18 holes ready`:ready?`${ready} of 18 holes ready. The remaining holes are being checked by an organiser.`:"The course hole maps have not been set up yet. Please ask an organiser.";
+      $("[data-hole-readiness]").textContent=preview?`${layout.name} · 18 discovered hole maps · Preview only`:ready===18?`${layout.name} · All 18 holes ready`:ready?`${ready} of 18 holes ready. The remaining holes are being checked by an organiser.`:"The course hole maps have not been set up yet. Please ask an organiser.";
       $("[data-hole-grid]").onclick=click=>{const button=click.target.closest("[data-hole]");if(button&&!button.disabled)showHole(Number(button.dataset.hole));};
     }catch(error){if(!closed)$("[data-hole-loading]").textContent="The course could not load. Close this window and try again.";}
   })();

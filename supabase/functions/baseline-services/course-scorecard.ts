@@ -2,7 +2,7 @@
 // returning choices; callers still ask the organiser which layout/tees to use.
 type Course = { name: string; latitude: number; longitude: number; address?: string };
 type Hole = { number: number; par: number; yards: number; stroke_index: number };
-export type DiscoveredCard = { tee_name: string; holes: Hole[]; source_url: string; course_name: string };
+export type DiscoveredCard = { tee_name: string; holes: Hole[]; source_url: string; course_name: string; selection_key?: string };
 type Result = { cards: DiscoveredCard[]; warnings: string[] };
 type Options = { fetcher?: typeof fetch; signal?: AbortSignal; apiKey?: string };
 type Item = Record<string, any>;
@@ -33,6 +33,18 @@ const nearby = (x: Item, course: Course) => {
     && distance(point, { lat: course.latitude, lng: course.longitude }) <= 2000;
 };
 const sameName = (name: unknown, course: Course) => normalise(name).length >= 3 && normalise(name) === normalise(course.name);
+// Providers list a resort's separate courses as, for example, "Warwickshire |
+// Earls Course". Require an exact venue stem and verified nearby coordinates;
+// do not accept arbitrary prefix/name similarity (e.g. North Warwickshire).
+const sameVenue = (name: unknown, course: Course) => sameName(name, course)
+  || sameName(String(name || '').split(/\s*\|\s*|\s+[–—]\s+/)[0], course);
+const holeCounts = (x: Item): number[] => ['holes', 'hole_count', 'holeCount', 'holesCount', 'holes_count', 'number_of_holes', 'numberOfHoles', 'num_holes', 'numHoles']
+  .flatMap(key => typeof x?.[key] === 'number' ? [x[key]] : typeof x?.[key] === 'string' && /^\d{1,2}(?:\s*holes?)?$/i.test(x[key].trim()) ? [Number(x[key].match(/^\d+/)[0])] : []);
+const eighteen = (x: Item, requireCount = false) => { const counts = holeCounts(x); return (!requireCount || counts.length > 0) && counts.every(n => n === 18); };
+const offersEighteen = (x: Item) => Array.isArray(x.courses) && x.courses.length
+  ? x.courses.some((layout: Item) => eighteen(layout, true)) : eighteen(x);
+const idsMatch = (x: Item, keys: string[], expected: string) => keys.every(key => x?.[key] == null || idOf(x[key]) === expected);
+export const scorecardSelectionKey = (card: DiscoveredCard) => `${card.source_url}|${card.course_name}|${card.tee_name}`;
 const valid = (holes: Hole[]) => holes.length === 18
   && new Set(holes.map(h => h.number)).size === 18
   && new Set(holes.map(h => h.stroke_index)).size === 18
@@ -128,7 +140,7 @@ export async function findCourseScorecards(course: Course, options: Options = {}
     const club = clubs[0], clubId = idOf(club.id || club.club_id);
     if (!clubId) return [];
     const layouts = array(await get(`/clubs/${encodeURIComponent(clubId)}/courses`), ['courses', 'results', 'data'])
-      .filter(c => !c.holes && !c.hole_count || Number(c.holes || c.hole_count) === 18);
+      .filter(c => eighteen(c, true));
     if (layouts.length > 4) {
       result.warnings.push('This club has several course layouts. Select the course explicitly before importing a scorecard.');
       return [];
@@ -145,6 +157,13 @@ export async function findCourseScorecards(course: Course, options: Options = {}
           try {
             const payload = await get(path), root = payload?.data || payload;
             const card = root?.tee_set || root?.tee || root;
+            if (!eighteen(root) || !eighteen(card) || !eighteen(root.course || {})) return null;
+            if (!idsMatch(root, ['course_id', 'courseId', 'layout_id', 'layoutId'], courseId)
+              || !idsMatch(card, ['course_id', 'courseId', 'layout_id', 'layoutId'], courseId)
+              || !idsMatch(root.course || {}, ['id', 'course_id', 'courseId'], courseId)
+              || !idsMatch(root, ['tee_id', 'teeId', 'tee_set_id', 'teeSetId'], teeId)
+              || !idsMatch(card, ['tee_id', 'teeId', 'tee_set_id', 'teeSetId'], teeId)
+              || !idsMatch(card, ['id'], teeId)) return null;
             const holes = mapHoles({ ...card, holes: root?.holes || card?.holes });
             if (!valid(holes)) return null;
             return { tee_name: teeLabel({ ...tee, ...card }), holes, source_url: UK_HOST + path,
@@ -167,13 +186,16 @@ export async function findCourseScorecards(course: Course, options: Options = {}
       method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; BarfordGolfScorecard/1.0)' },
       body: JSON.stringify({ key: normalise(course.name) }),
     });
+    const seen = new Set<string>();
     const matches = array(await search.json(), ['clubCards']).map(c => c.clubBrief)
-      .filter(c => c && sameName(c.name, course) && nearby(c, course));
-    if (matches.length !== 1) {
-      result.warnings.push(matches.length ? 'Several nearby clubs match this course; choose the exact course before importing.' : 'No exact nearby scorecard match was found. Hole positions can still be prepared separately.');
+      .filter(c => c && sameVenue(c.name, course) && nearby(c, course) && offersEighteen(c))
+      .filter(c => { const id = idOf(c.id); if (!id || seen.has(id)) return false; seen.add(id); return true; });
+    if (!matches.length || matches.length > 4 || new Set(matches.map(c => normalise(c.name))).size !== matches.length) {
+      result.warnings.push(matches.length ? 'Several indistinguishable nearby clubs match this course; choose the exact course before importing.' : 'No exact nearby 18-hole scorecard match was found. Hole positions can still be prepared separately.');
       return [];
     }
-    const match = matches[0], clubId = idOf(match.id);
+    async function readClub(match: Item): Promise<DiscoveredCard[]> {
+    const clubId = idOf(match.id);
     if (!/^[a-zA-Z0-9-]+$/.test(clubId)) return [];
     const slug = String(match.name).toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const url = `${BIRDIES_HOST}/golf-courses/club/${encodeURIComponent(clubId)}/${slug}`;
@@ -181,7 +203,8 @@ export async function findCourseScorecards(course: Course, options: Options = {}
     const encoded = html.match(/<astro-island[^>]*component-export="Scorecard"[^>]*props="([^"]+)"/);
     if (!encoded) throw new Error('Scorecard page format unavailable');
     const club = decodeAstro(JSON.parse(decodeEntities(encoded[1])))?.profile?.club;
-    if (!club || !sameName(club.name, course) || (club.id && idOf(club.id) !== clubId)) throw new Error('Course identity could not be verified');
+    if (!club || !sameVenue(club.name, course) || normalise(club.name) !== normalise(match.name)
+      || (club.id && idOf(club.id) !== clubId) || !offersEighteen(club)) throw new Error('Course identity could not be verified');
     const holes = Array.isArray(club.holes) ? club.holes : [], tees = Array.isArray(club.tees) ? club.tees : [];
     const layouts: Item[] = Array.isArray(club.courses) ? club.courses : [];
     const holeSets: Item[] = Array.isArray(club.holeSets) ? club.holeSets : [];
@@ -189,7 +212,7 @@ export async function findCourseScorecards(course: Course, options: Options = {}
     // Never assume that the first 18 holes belong to a selected layout.
     const choices: Array<{ name: string; indexes: number[]; tees: number[] }> = [];
     for (const layout of layouts) {
-      if (Number(layout.holeCount) !== 18 || !Array.isArray(layout.holeSetIndexes)) continue;
+      if (!eighteen(layout, true) || !Array.isArray(layout.holeSetIndexes)) continue;
       const sets = layout.holeSetIndexes.map((i: number) => Number.isInteger(i) && i >= 0 ? holeSets[i] : null);
       if (!sets.length || sets.some((s: Item) => !s || !Array.isArray(s.holeIndexes) || !Array.isArray(s.teeIndexes))) continue;
       const indexes = sets.flatMap((s: Item) => s.holeIndexes);
@@ -202,6 +225,7 @@ export async function findCourseScorecards(course: Course, options: Options = {}
       return [];
     }
     const cards: DiscoveredCard[] = [];
+    const excluded = new Map<string, string[]>();
     for (const choice of choices) for (const index of choice.tees) {
       const tee = tees[index];
       if (!['MALE', 'FEMALE'].includes(String(tee.gender).toUpperCase()) || !teeLabel(tee)) continue;
@@ -210,17 +234,31 @@ export async function findCourseScorecards(course: Course, options: Options = {}
         par: Number(female ? h.ladiesPar : h.menPar), stroke_index: Number(female ? h.ladiesHandicap : h.menHandicap) }; });
       if (valid(mapped)) cards.push({ tee_name: teeLabel(tee), holes: mapped, source_url: url,
         course_name: club.name + (choice.name && normalise(choice.name) !== normalise(club.name) ? ' · ' + choice.name : '') });
+      else excluded.set(choice.name, [...excluded.get(choice.name) || [], teeLabel(tee)]);
     }
+    for (const [name, labels] of excluded) result.warnings.push(`${name}: ${labels.join(', ')} unavailable because the source scorecards contain missing, invalid or repeated values.`);
     if (!cards.length) result.warnings.push('The scorecard source did not contain valid par, yardage and stroke indexes for all 18 holes.');
     return cards;
+    }
+    const found = await Promise.allSettled(matches.map(readClub));
+    if (found.some(x => x.status === 'rejected')) result.warnings.push('A course layout could not be loaded. Retry to check all layouts before choosing your tees.');
+    return found.flatMap(x => x.status === 'fulfilled' ? x.value : []);
   }
   try {
-    try { result.cards = await ukCards(); }
-    catch { result.warnings.push('The UK scoring service was unavailable; trying the alternative scorecard source.'); }
+    try { result.cards = await birdiesCards(); }
+    catch { result.warnings.push('The primary scorecard service was unavailable; trying the UK scoring provider.'); }
     if (!result.cards.length && !deadline.signal.aborted) {
-      try { result.cards = await birdiesCards(); }
+      try { result.cards = await ukCards(); }
       catch { result.warnings.push('Automatic scorecard lookup is temporarily unavailable. You can retry without losing the course map.'); }
     }
+    const unique = new Map<string, DiscoveredCard[]>();
+    for (const card of result.cards) { const key = scorecardSelectionKey(card); unique.set(key, [...unique.get(key) || [], card]); }
+    result.cards = [...unique].flatMap(([key, group]) => {
+      if (group.some(card => JSON.stringify(card.holes) !== JSON.stringify(group[0].holes))) {
+        result.warnings.push('Conflicting scorecards were returned for the same course and tees; that choice was excluded.'); return [];
+      }
+      return [{ ...group[0], selection_key: key }];
+    });
     if (result.cards.length > 1) result.warnings.push('Choose the course layout and tees being played before using this scorecard.');
     return result;
   } finally { clearTimeout(timer); options.signal?.removeEventListener('abort', abort); }

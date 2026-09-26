@@ -1784,9 +1784,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       .getByLabel("Event name", { exact: true })
       .fill("Another Golf Day");
     await page.getByLabel("Date", { exact: true }).fill("2027-07-30");
+    await page.getByLabel("Round", { exact: true }).selectOption("1");
     await page.getByRole("button", { name: "Save event", exact: true }).click();
     await page.getByText("Event saved.", { exact: true }).waitFor();
-    assert(model.events.some((ev) => ev.name === "Another Golf Day"));
+    assert(model.events.some((ev) => ev.name === "Another Golf Day" && ev.round_number === 1));
     report.push({
       page: "organiser-events-and-tee-times",
       width: 390,

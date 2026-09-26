@@ -1,5 +1,5 @@
 import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
-import { mountHoleSetup } from "./hole-admin.js?v=2027-event-setup-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-accurate-gps-1";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import {
   operationTabs,
@@ -10,7 +10,7 @@ import {
   mountEventFields,
   eventFields,
   updateEventType,
-} from "./event-fields.js?v=2027-event-setup-1";
+} from "./event-fields.js?v=2027-accurate-gps-1";
 import {
   showLeagueTab,
   canLeaveLeague,
@@ -184,7 +184,7 @@ async function init() {
         round_hours: Number(f.get("round_hours") || 5),
         date: f.get("date"),
         location: String(f.get("course_name") || f.get("address") || f.get("location") || "").trim(),
-        price: String(f.get("price")).trim() || null,
+        price: null,
         first_time: f.get("first_time") || null,
         max_players: f.get("max_players") ? Number(f.get("max_players")) : null,
         description: f.get("description"),
@@ -277,7 +277,7 @@ async function init() {
       });
       if (token !== courseGeneration) return;
       status.textContent = result.places.length
-        ? "Choose your course. Its contact details and saved hole layouts will be loaded."
+        ? "Choose your course. Its contact details and available course maps will be looked up."
         : "No matching courses found.";
       const area = document.getElementById("courseResults");
       area.innerHTML = result.places

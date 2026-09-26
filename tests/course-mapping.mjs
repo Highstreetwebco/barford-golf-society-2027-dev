@@ -5,7 +5,10 @@ const course = { place_id: 'mapping-fixture', name: 'Test Golf Club', latitude: 
 const boundary = { id: 10, tags: { leisure: 'golf_course', name: 'Test Golf Club' }, geometry: [{ lat: 51.99, lon: -1.02 }, { lat: 52.02, lon: -1.02 }, { lat: 52.02, lon: -0.98 }, { lat: 51.99, lon: -0.98 }, { lat: 51.99, lon: -1.02 }] };
 const way = (number, extras = {}) => ({ id: 100 + number, tags: { golf: 'hole', ref: String(number), par: String(3 + number % 3), handicap: String(number), ...extras }, geometry: [{ lat: 52 + number * .0002, lon: -1 }, { lat: 52 + number * .0002 + .001, lon: -.999 }] });
 const all = Array.from({ length: 18 }, (_, i) => way(i + 1));
-let draft = buildCourseMapping(course, [boundary, ...all]);
+const footprint = (number, kind, lat, lon) => ({ id: 1000 + number * 2 + (kind === 'green' ? 1 : 0), tags: { golf: kind }, geometry: [{ lat: lat - .00004, lon: lon - .00004 }, { lat: lat + .00004, lon: lon - .00004 }, { lat: lat + .00004, lon: lon + .00004 }, { lat: lat - .00004, lon: lon + .00004 }, { lat: lat - .00004, lon: lon - .00004 }] });
+const footprints = all.flatMap((w, i) => [footprint(i + 1, 'tee', w.geometry[0].lat, w.geometry[0].lon), footprint(i + 1, 'green', w.geometry[1].lat, w.geometry[1].lon)]);
+const complete = [boundary, ...all, ...footprints];
+let draft = buildCourseMapping(course, complete);
 assert.equal(draft.source.coverage.mapped, 18);
 assert.equal(draft.source.coverage.par, 18);
 assert.equal(draft.source.coverage.stroke_index, 18);
@@ -15,33 +18,47 @@ assert.equal(draft.source.attribution, '© OpenStreetMap contributors');
 assert.equal(draft.source.boundary_id, 10);
 assert.ok(Math.abs(distanceMetres({ lat: 0, lng: 0 }, { lat: 0, lng: 1 }) - 111195) < 2);
 
-draft = buildCourseMapping(course, [boundary, ...all, { ...way(1), id: 900 }]);
-assert.equal(draft.source.coverage.mapped, 17);
-assert.equal(draft.holes[0].tee, null, 'Duplicate numbering must not silently choose another course');
-assert.ok(draft.source.warnings.some(w => w.includes('More than one route')));
-draft = buildCourseMapping(course, [boundary, way(1, { ref: '1;10' }), way(2, { ref: '19' }), way(3, { handicap: '1' }), way(4, { handicap: '1' })]);
-assert.equal(draft.source.coverage.mapped, 2);
-assert.equal(draft.source.coverage.stroke_index, 0, 'Conflicting SI values stay unknown');
-assert.equal(draft.holes[0].tee, null);
-draft = buildCourseMapping(course, [boundary, { ...way(1), geometry: [{ lat: 0, lon: 0 }, { lat: 0.001, lon: 0 }] }]);
-assert.equal(draft.source.coverage.mapped, 0, 'Far-away geometry must not be imported');
-draft = buildCourseMapping({ ...course, latitude: 52.03 }, [boundary, ...all]);
-assert.equal(draft.source.coverage.mapped, 0, 'Unmatched nearby boundary is not guessed');
-draft = buildCourseMapping(course, [boundary, { ...boundary, id: 11, tags: { leisure: 'golf_course', name: 'Test Golf Club' } }, ...all]);
-assert.equal(draft.source.coverage.mapped, 0, 'Ambiguous course boundaries must block automatic mapping');
+assert.equal(draft.source.validation.status, 'verified');
+assert.equal(draft.source.validation.tee_anchors, 18);
+assert.equal(draft.source.validation.green_anchors, 18);
+assert.equal(draft.source.validation.tee_colour_confirmed, false);
+assert.equal(draft.source.validation.evidence.length, 18);
+assert.throws(() => buildCourseMapping(course, [...complete, { ...way(1), id: 900 }]), e => e.code === 'HOLE_ROUTES_AMBIGUOUS');
+assert.throws(() => buildCourseMapping(course, [boundary, ...all.slice(0, 17), ...footprints]), e => e.code === 'HOLE_ROUTES_INCOMPLETE');
+assert.throws(() => buildCourseMapping(course, [boundary, ...all]), e => e.code === 'HOLE_ANCHORS_UNCONFIRMED', 'Route endpoints alone are insufficient evidence');
+assert.throws(() => buildCourseMapping(course, [...complete, { ...footprints[0], id: 9999 }]), e => e.code === 'HOLE_ANCHORS_UNCONFIRMED', 'Overlapping tee polygons are ambiguous');
+assert.throws(() => buildCourseMapping(course, complete.filter(e => e.id !== footprints[5].id)), e => e.code === 'HOLE_ANCHORS_UNCONFIRMED');
+assert.throws(() => buildCourseMapping(course, [boundary, { ...way(1), geometry: [{ lat: 0, lon: 0 }, { lat: 0.001, lon: 0 }] }]), e => e.code === 'HOLE_ROUTES_INCOMPLETE');
+assert.throws(() => buildCourseMapping({ ...course, latitude: 52.03 }, complete), e => e.code === 'COURSE_BOUNDARY_UNCONFIRMED');
+assert.throws(() => buildCourseMapping(course, [boundary, { ...boundary, id: 11 }, ...all, ...footprints]), e => e.code === 'COURSE_BOUNDARY_UNCONFIRMED');
+assert.throws(() => buildCourseMapping(course, [...all, ...footprints]), e => e.code === 'COURSE_BOUNDARY_UNCONFIRMED');
+const named = all.map(w => ({ ...w, tags: { ...w.tags, 'course:name': 'Earls' } }));
+const kings = all.map(w => ({ ...w, id: w.id + 500, tags: { ...w.tags, name: `${w.tags.ref}, Kings` } }));
+assert.throws(() => buildCourseMapping(course, [boundary, ...named, ...kings, ...footprints]), e => e.code === 'COURSE_CHOICE_REQUIRED');
+assert.equal(buildCourseMapping({ ...course, layout_name: 'Test Golf Club Earls' }, [boundary, ...named, ...kings, ...footprints]).source.validation.course_name, 'Earls');
+assert.equal(buildCourseMapping({ ...course, layout_name: 'Test Golf Club Earls' }, [boundary, ...named, ...kings, ...footprints]).name, 'Test Golf Club · Earls');
+assert.throws(() => buildCourseMapping({ ...course, layout_name: 'Castle' }, [boundary, ...named, ...kings, ...footprints]), e => e.code === 'COURSE_CHOICE_REQUIRED');
 
 const card = { tee_name: 'Yellow', source_url: 'https://example.org/scorecard', holes: Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: 3 + (i + 1) % 3, yards: 100 + i * 20, stroke_index: i + 1 })) };
 const shifted = all.map((w, i) => ({ ...w, tags: { ...w.tags, ref: String((i + 9) % 18 + 1) } }));
-draft = buildCourseMapping(course, [boundary, ...shifted], card);
+draft = buildCourseMapping(course, [boundary, ...shifted, ...footprints], card);
 assert.equal(draft.source.numbering_shift, 9, 'Strong unique scorecard evidence aligns the nines');
 assert.deepEqual(draft.holes[0].tee, { lat: all[0].geometry[0].lat, lng: all[0].geometry[0].lon });
 assert.equal(draft.holes[0].yards, 100);
 assert.equal(draft.source.coverage.yards, 18);
 assert.equal(draft.source.scorecard_url, card.source_url);
 assert.ok(draft.holes.every(h => h.reviewed === false), 'Good alignment is still a draft');
-draft = buildCourseMapping(course, [boundary, ...all], { ...card, holes: card.holes.slice(0, 17) });
-assert.equal(draft.source.coverage.yards, 0);
-assert.ok(draft.source.warnings.some(w => w.includes('incomplete or inconsistent')));
+assert.throws(() => buildCourseMapping(course, complete, { ...card, holes: card.holes.slice(0, 17) }), e => e.code === 'SCORECARD_INCOMPLETE');
+const uniquePars = [4, 3, 4, 5, 4, 5, 4, 3, 4, 5, 3, 4, 3, 4, 4, 4, 4, 5];
+const updatedSiCard = { ...card, holes: card.holes.map((h, i) => ({ ...h, par: uniquePars[i], stroke_index: (i + 3) % 18 + 1 })) };
+const olderSiRoutes = all.map((w, i) => ({ ...w, tags: { ...w.tags, par: String(uniquePars[i]) } }));
+const siUpdated = buildCourseMapping(course, [boundary, ...olderSiRoutes, ...footprints], updatedSiCard);
+assert.equal(siUpdated.source.numbering_shift, 0, 'Updated tee stroke indexes must not falsely rotate a uniquely matching par sequence');
+assert.equal(siUpdated.source.validation.order_evidence, 'unique_18_hole_par_sequence');
+assert.equal(siUpdated.holes[0].stroke_index, updatedSiCard.holes[0].stroke_index);
+assert.ok(siUpdated.source.warnings.some(w => w.includes('stroke indexes differ')));
+const contradictoryCard = { ...updatedSiCard, holes: updatedSiCard.holes.map((h, i) => ({ ...h, par: i === 0 ? 3 : h.par })) };
+assert.throws(() => buildCourseMapping(course, [boundary, ...olderSiRoutes, ...footprints], contradictoryCard), e => e.code === 'HOLE_ORDER_UNCONFIRMED');
 
 let requests = 0;
 const fetcher = async (url, options) => {
@@ -49,7 +66,7 @@ const fetcher = async (url, options) => {
   assert.equal(url, 'https://overpass-api.de/api/interpreter');
   assert.equal(options.redirect, 'error');
   assert.ok(options.body.get('data').includes('[timeout:12]'));
-  return Response.json({ elements: [boundary, ...all] });
+  return Response.json({ elements: complete });
 };
 const fetched = await prepareCourseMapping(course, { fetcher, scorecards: Promise.resolve([card]) });
 assert.equal(fetched.source.coverage.yards, 18);
@@ -62,24 +79,24 @@ await assert.rejects(() => prepareCourseMapping({ ...course, place_id: 'bad-http
 const noExactTee = await prepareCourseMapping({ ...course, place_id: 'red-choice', tee_name: 'Red' }, { fetcher, scorecards: Promise.resolve([card]) });
 assert.equal(noExactTee.source.coverage.yards, 0, 'A different tee card must never be applied automatically');
 const endpoints = [];
-const fallback = await prepareCourseMapping({ ...course, place_id: 'fallback' }, { fetcher: async url => { endpoints.push(url); return endpoints.length === 1 ? new Response('', { status: 503 }) : Response.json({ elements: [boundary, ...all] }); } });
+const fallback = await prepareCourseMapping({ ...course, place_id: 'fallback' }, { fetcher: async url => { endpoints.push(url); return endpoints.length === 1 ? new Response('', { status: 503 }) : Response.json({ elements: complete }); } });
 assert.equal(fallback.source.coverage.mapped, 18);
 assert.deepEqual(endpoints.slice(0, 2), ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter']);
 assert.ok(endpoints[2].startsWith('https://api.openstreetmap.org/api/0.6/map?bbox='));
 
-const xmlFixture = `<?xml version="1.0"?><osm version="0.6">
- <node id="1" lat="52.0002" lon="-1"/><node id="2" lat="52.0012" lon="-.999"/>
- <node id="3" lat="52.0005" lon="-.9995"/>
- <way id="100"><nd ref="1"/><nd ref="3"/><nd ref="2"/><tag k="golf" v="hole"/><tag k="ref" v="1"/><tag k="par" v="4"/><tag k="handicap" v="3"/></way>
- <way id="101"><nd ref="1"/><nd ref="999"/><tag k="golf" v="hole"/><tag k="ref" v="2"/></way>
- <way id="102"><nd ref="1"/><nd ref="2"/><tag k="highway" v="path"/></way>
- </osm>`;
-// OSM normally writes leading zeroes; use the real wire representation here.
-const actualXml = xmlFixture.replaceAll('lon="-.', 'lon="-0.');
+const xmlParts = ['<?xml version="1.0"?><osm version="0.6">'];
+let nodeId = 1;
+for (const element of complete) {
+  const refs = element.geometry.map(p => { const id = nodeId++; xmlParts.push(`<node id="${id}" lat="${p.lat}" lon="${p.lon}"/>`); return id; });
+  xmlParts.push(`<way id="${element.id}">${refs.map(id => `<nd ref="${id}"/>`).join('')}${Object.entries(element.tags).map(([k, v]) => `<tag k="${k}" v="${v}"/>`).join('')}</way>`);
+}
+xmlParts.push('<way id="9000"><nd ref="1"/><nd ref="999999"/><tag k="golf" v="hole"/><tag k="ref" v="2"/></way>');
+xmlParts.push('</osm>');
+const actualXml = xmlParts.join('');
 const parsedXml = parseOsmXml(actualXml);
-assert.equal(parsedXml.length, 1, 'Missing-node ways and unrelated paths must be discarded');
-assert.equal(parsedXml[0].tags.ref, '1');
-assert.equal(parsedXml[0].geometry.length, 3);
+assert.equal(parsedXml.length, complete.length, 'Missing-node ways must be discarded');
+assert.equal(parsedXml.filter(e => e.tags.golf === 'tee').length, 18);
+assert.equal(parsedXml.filter(e => e.tags.golf === 'green').length, 18);
 const xmlEndpoints = [];
 const xmlDraft = await prepareCourseMapping({ ...course, place_id: 'xml-rescue' }, { fetcher: async (url, options) => {
   xmlEndpoints.push(url);
@@ -87,9 +104,8 @@ const xmlDraft = await prepareCourseMapping({ ...course, place_id: 'xml-rescue' 
   return new Response('', { status: 406 });
 } });
 assert.equal(xmlEndpoints.length, 3);
-assert.equal(xmlDraft.source.coverage.mapped, 1, 'Official XML fallback rescues a failed Overpass lookup');
-assert.equal(xmlDraft.holes[0].par, 4);
-assert.equal(xmlDraft.holes[0].stroke_index, 3);
+assert.equal(xmlDraft.source.coverage.mapped, 18, 'Official XML fallback must return all confirmed holes');
+assert.equal(xmlDraft.source.validation.status, 'verified');
 assert.equal(xmlDraft.holes[0].reviewed, false);
 assert.throws(() => parseOsmXml('<!DOCTYPE osm [<!ENTITY x SYSTEM "file:///etc/passwd">]><osm></osm>'), /safely/);
 assert.throws(() => parseOsmXml('<osm><node id="1" lat="52" lon="-1"/>'), /safely/, 'Truncated XML cannot be accepted');

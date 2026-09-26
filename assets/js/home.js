@@ -67,7 +67,7 @@ else {
       const button = event.currentTarget;
       button.disabled = true;
       try {
-        const { openHolePicker } = await import('./hole-view.js?v=2027-event-setup-1');
+        const { openHolePicker } = await import('./hole-view.js?v=2027-accurate-gps-1');
         await openHolePicker(ev, b);
       } catch (error) { b.toast(error.message); }
       finally { button.disabled = false; }
