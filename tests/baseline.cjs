@@ -142,6 +142,73 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         return reply({ updated: true });
       }
     }
+    if (p.endsWith("/rpc/baseline_reservation_notices")) return reply([]);
+    if (p.endsWith("/rpc/baseline_manual_handicap")) {
+      model.manual = body;
+      const person = model.league.players.find((p) => p.id === body.who);
+      person.adjustments = body.remove
+        ? []
+        : [
+            {
+              round_number: body.from_round,
+              handicap: body.new_handicap,
+              reason: body.reason,
+            },
+          ];
+      model.league.revision++;
+      return reply(model.league);
+    }
+    if (p.endsWith("/rpc/baseline_operations")) {
+      model.operationCalls ||= [];
+      model.operationCalls.push(body);
+      model.ops ||= {
+        settings: {
+          bank_instructions: "Transfer to the society account",
+          membership_fee: null,
+          guest_policy: "Organisers approve guest handicaps.",
+        },
+        charges: [],
+        guests: [],
+        changes: [],
+        pairs: [],
+        players: [],
+        accounts: [{ id: uid, name: "Test Member", category: "member" }],
+        items: [],
+        tasks: [],
+        buggies: [],
+        handicap_history: [],
+      };
+      const q = body.payload || {};
+      if (body.action === "report_payment")
+        model.ops.charges.find((c) => c.id === q.id).reported = true;
+      if (body.action === "save_charge")
+        Object.assign(
+          model.ops.charges.find((c) => c.id === q.id),
+          q,
+          { revision: q.revision + 1 },
+        );
+      if (body.action === "confirm_buggy")
+        model.buggy.confirmed_at = q.confirmed ? "2027-06-20T10:00:00Z" : null;
+      if (body.action === "invite_guest")
+        model.ops.guests.push({ ...q, id: "guest-test", status: "pending" });
+      if (body.action === "settings") Object.assign(model.ops.settings, q);
+      if (body.action === "task") model.ops.tasks.push(q);
+      if (body.action === "pair")
+        model.ops.pairs = [
+          {
+            id: 1,
+            first_user: uid,
+            second_user: q.partner_id,
+            status: q.partner_id ? "requested" : "looking",
+          },
+        ];
+      if (body.action === "seen_changes") model.ops.changes = [];
+      return reply(
+        body.action === "member" || body.action === "admin"
+          ? model.ops
+          : { saved: true },
+      );
+    }
     if (p.endsWith("/rpc/baseline_event_tee_groups"))
       return reply(
         model.teeView || {
@@ -315,7 +382,11 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           !u.searchParams.get("id") ||
           "eq." + ev.id === u.searchParams.get("id"),
       );
-      return reply(result);
+      return reply(
+        req.headers()["accept"]?.includes("vnd.pgrst.object")
+          ? result[0]
+          : result,
+      );
     }
     if (p.endsWith("/rpc/baseline_event_counts"))
       return reply(
@@ -538,14 +609,14 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("button", { name: "Save RSVP", exact: true })
         .click();
       await page
-        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .getByRole("button", { name: "Change booking", exact: true })
         .waitFor();
       assert.equal(model.payloads.length, 1);
       assert(!("name" in model.payloads[0]));
       assert(!("user_id" in model.payloads[0]));
       assert.equal(model.responses.length, 1);
       await page
-        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .getByRole("button", { name: "Change booking", exact: true })
         .click();
       await form
         .getByRole("radio", { name: "Yes, please", exact: true })
@@ -560,7 +631,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       assert.equal(model.responses.length, 1);
       assert.equal(model.payloads[1].preferred_time, "End");
       await page
-        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .getByRole("button", { name: "Change booking", exact: true })
         .click();
       await form
         .getByRole("radio", { name: "Not this time", exact: true })
@@ -575,7 +646,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       assert.equal(model.payloads[2].attending, false);
       model.wait = true;
       await page
-        .getByRole("button", { name: "Edit RSVP", exact: true })
+        .getByRole("button", { name: "Change booking", exact: true })
         .click();
       await form
         .getByRole("radio", { name: "Yes, I’m playing", exact: true })
@@ -1505,6 +1576,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       .getByRole("button", { name: "Publish tee times", exact: true })
       .click();
     await page
+      .locator("dialog")
+      .getByRole("button", { name: "Publish tee times", exact: true })
+      .click();
+    await page
       .getByText("Tee times published. Members can view them on the event.", {
         exact: true,
       })
@@ -1531,6 +1606,177 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       status: "passed",
     });
     await context.close();
+    // Operations: member transfers and social forms; admin override and record management.
+    for (const width of [390, 1365]) {
+      const context = await browser.newContext({
+          viewport: { width, height: 960 },
+          serviceWorkers: "block",
+        }),
+        model = await mocks(context, { signedIn: true, admin: true }),
+        page = await context.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      page.on("dialog", (d) => d.accept());
+      model.events = [
+        {
+          ...fixture,
+          event_type: "social",
+          name: "Presentation evening",
+          arrival_time: "19:00",
+          refreshment_time: "19:30",
+          included: "Dinner and presentation",
+          cancellation_terms: "Contact the organiser before cancelling.",
+          member_price: 12,
+          guest_price: 12,
+        },
+      ];
+      model.league = {
+        revision: 1,
+        players: [
+          {
+            id: uid,
+            name: "Test Member",
+            starting_handicap: 30,
+            adjustments: [],
+          },
+        ],
+        rounds: [],
+      };
+      model.ops = {
+        settings: {
+          bank_instructions: "Society transfer details",
+          membership_fee: 20,
+          guest_policy: "Organiser approval required",
+        },
+        charges: [
+          {
+            id: 1,
+            user_id: uid,
+            event_id: 999,
+            scope: "event:999",
+            name: "Test Member",
+            label: "Presentation evening",
+            category: "member",
+            amount: 12,
+            received: 0,
+            reported: false,
+            revision: 0,
+          },
+        ],
+        guests: [],
+        changes: [],
+        pairs: [],
+        players: [],
+        accounts: [{ id: uid, name: "Test Member", category: "member" }],
+        items: [],
+        tasks: [],
+        buggies: [],
+        handicap_history: [],
+      };
+      await page.goto(base + "event.html?id=999");
+      await page
+        .getByRole("button", { name: "Save your RSVP", exact: true })
+        .click();
+      await page
+        .getByRole("radio", { name: "Yes, I’m attending", exact: true })
+        .check();
+      assert.equal(await page.locator("[data-playing]").isVisible(), false);
+      assert.equal(await page.locator("[data-weather]").count(), 0);
+      await page.getByLabel("I accept the cancellation terms").check();
+      await page
+        .locator(".rsvp-form")
+        .getByRole("button", { name: "Save RSVP", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Withdraw", exact: true })
+        .waitFor();
+      assert.equal(model.payloads.at(-1).buggy, false);
+      assert.equal(model.payloads.at(-1).accept_terms, true);
+      await page
+        .getByRole("button", { name: "I’ve sent the transfer", exact: true })
+        .click();
+      await page
+        .getByText("Transfer reported — awaiting organiser confirmation.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(model.ops.charges[0].received, 0);
+      await page.screenshot({
+        path: path.join(out, `operations-social-payment-${width}.png`),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Withdraw", exact: true }).click();
+      await page
+        .getByRole("heading", { name: "Not playing", exact: true })
+        .waitFor();
+      await page.goto(base + "admin.html");
+      await page
+        .getByRole("button", {
+          name: "Manual handicap adjustments",
+          exact: true,
+        })
+        .click();
+      await page.locator("#adminOp-adjustments [name=new_handicap]").fill("24");
+      await page
+        .locator("#adminOp-adjustments [name=reason]")
+        .fill("Committee agreed exceptional cut after review");
+      await page
+        .getByRole("button", { name: "Save adjustment", exact: true })
+        .click();
+      await page
+        .getByText("Future-round handicap updated.", { exact: true })
+        .waitFor();
+      assert.equal(model.manual.from_round, 2);
+      assert.equal(model.manual.new_handicap, 24);
+      assert.equal(model.league.players[0].starting_handicap, 30);
+      await page.screenshot({
+        path: path.join(out, `operations-handicap-${width}.png`),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Payments", exact: true }).click();
+      await page.locator('[data-charge="1"] [name=received]').fill("12");
+      await page
+        .getByRole("button", { name: "Save payment record", exact: true })
+        .click();
+      await page
+        .getByText("Payment settings saved.", { exact: true })
+        .waitFor();
+      assert.equal(Number(model.ops.charges[0].received), 12);
+      await page.screenshot({
+        path: path.join(out, `operations-admin-payments-${width}.png`),
+        fullPage: true,
+      });
+      await page
+        .getByRole("button", { name: "Event details", exact: true })
+        .click();
+      await page.getByLabel("Choose an event").selectOption("999");
+      await page
+        .getByRole("button", { name: "Event checklist", exact: true })
+        .click();
+      await page
+        .locator('[data-task="Course confirmed"] [name=owner]')
+        .fill("Tim");
+      await page.locator('[data-task="Course confirmed"] [name=done]').check();
+      await page.locator('[data-task="Course confirmed"] button').click();
+      await page
+        .locator('[data-task="Course confirmed"] [role=status]')
+        .getByText("Saved.", { exact: true })
+        .waitFor();
+      assert.equal(model.ops.tasks[0].owner, "Tim");
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      assert.deepEqual(errors, []);
+      report.push({
+        page: "operations-social-payments-future-handicap-checklist",
+        width,
+        status: "passed",
+      });
+      await context.close();
+    }
     fs.writeFileSync(
       path.join(out, "checks.json"),
       JSON.stringify(report, null, 2),
@@ -1543,6 +1789,177 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       `${report.length} checks passed: mobile/desktop pages, account signup/sign-in/out, RSVP editing/waiting list, reservations and organiser tee publication.`,
     );
   } finally {
+    // Operations: member transfers and social forms; admin override and record management.
+    for (const width of [390, 1365]) {
+      const context = await browser.newContext({
+          viewport: { width, height: 960 },
+          serviceWorkers: "block",
+        }),
+        model = await mocks(context, { signedIn: true, admin: true }),
+        page = await context.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      page.on("dialog", (d) => d.accept());
+      model.events = [
+        {
+          ...fixture,
+          event_type: "social",
+          name: "Presentation evening",
+          arrival_time: "19:00",
+          refreshment_time: "19:30",
+          included: "Dinner and presentation",
+          cancellation_terms: "Contact the organiser before cancelling.",
+          member_price: 12,
+          guest_price: 12,
+        },
+      ];
+      model.league = {
+        revision: 1,
+        players: [
+          {
+            id: uid,
+            name: "Test Member",
+            starting_handicap: 30,
+            adjustments: [],
+          },
+        ],
+        rounds: [],
+      };
+      model.ops = {
+        settings: {
+          bank_instructions: "Society transfer details",
+          membership_fee: 20,
+          guest_policy: "Organiser approval required",
+        },
+        charges: [
+          {
+            id: 1,
+            user_id: uid,
+            event_id: 999,
+            scope: "event:999",
+            name: "Test Member",
+            label: "Presentation evening",
+            category: "member",
+            amount: 12,
+            received: 0,
+            reported: false,
+            revision: 0,
+          },
+        ],
+        guests: [],
+        changes: [],
+        pairs: [],
+        players: [],
+        accounts: [{ id: uid, name: "Test Member", category: "member" }],
+        items: [],
+        tasks: [],
+        buggies: [],
+        handicap_history: [],
+      };
+      await page.goto(base + "event.html?id=999");
+      await page
+        .getByRole("button", { name: "Save your RSVP", exact: true })
+        .click();
+      await page
+        .getByRole("radio", { name: "Yes, I’m attending", exact: true })
+        .check();
+      assert.equal(await page.locator("[data-playing]").isVisible(), false);
+      assert.equal(await page.locator("[data-weather]").count(), 0);
+      await page.getByLabel("I accept the cancellation terms").check();
+      await page
+        .locator(".rsvp-form")
+        .getByRole("button", { name: "Save RSVP", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Withdraw", exact: true })
+        .waitFor();
+      assert.equal(model.payloads.at(-1).buggy, false);
+      assert.equal(model.payloads.at(-1).accept_terms, true);
+      await page
+        .getByRole("button", { name: "I’ve sent the transfer", exact: true })
+        .click();
+      await page
+        .getByText("Transfer reported — awaiting organiser confirmation.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(model.ops.charges[0].received, 0);
+      await page.screenshot({
+        path: path.join(out, `operations-social-payment-${width}.png`),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Withdraw", exact: true }).click();
+      await page
+        .getByRole("heading", { name: "Not playing", exact: true })
+        .waitFor();
+      await page.goto(base + "admin.html");
+      await page
+        .getByRole("button", {
+          name: "Manual handicap adjustments",
+          exact: true,
+        })
+        .click();
+      await page.locator("#adminOp-adjustments [name=new_handicap]").fill("24");
+      await page
+        .locator("#adminOp-adjustments [name=reason]")
+        .fill("Committee agreed exceptional cut after review");
+      await page
+        .getByRole("button", { name: "Save adjustment", exact: true })
+        .click();
+      await page
+        .getByText("Future-round handicap updated.", { exact: true })
+        .waitFor();
+      assert.equal(model.manual.from_round, 2);
+      assert.equal(model.manual.new_handicap, 24);
+      assert.equal(model.league.players[0].starting_handicap, 30);
+      await page.screenshot({
+        path: path.join(out, `operations-handicap-${width}.png`),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Payments", exact: true }).click();
+      await page.locator('[data-charge="1"] [name=received]').fill("12");
+      await page
+        .getByRole("button", { name: "Save payment record", exact: true })
+        .click();
+      await page
+        .getByText("Payment settings saved.", { exact: true })
+        .waitFor();
+      assert.equal(Number(model.ops.charges[0].received), 12);
+      await page.screenshot({
+        path: path.join(out, `operations-admin-payments-${width}.png`),
+        fullPage: true,
+      });
+      await page
+        .getByRole("button", { name: "Event details", exact: true })
+        .click();
+      await page.getByLabel("Choose an event").selectOption("999");
+      await page
+        .getByRole("button", { name: "Event checklist", exact: true })
+        .click();
+      await page
+        .locator('[data-task="Course confirmed"] [name=owner]')
+        .fill("Tim");
+      await page.locator('[data-task="Course confirmed"] [name=done]').check();
+      await page.locator('[data-task="Course confirmed"] button').click();
+      await page
+        .locator('[data-task="Course confirmed"] [role=status]')
+        .getByText("Saved.", { exact: true })
+        .waitFor();
+      assert.equal(model.ops.tasks[0].owner, "Tim");
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      assert.deepEqual(errors, []);
+      report.push({
+        page: "operations-social-payments-future-handicap-checklist",
+        width,
+        status: "passed",
+      });
+      await context.close();
+    }
     fs.writeFileSync(
       path.join(out, "checks.json"),
       JSON.stringify(report, null, 2),

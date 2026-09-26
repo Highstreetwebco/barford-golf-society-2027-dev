@@ -1,9 +1,19 @@
 import {
+  operationTabs,
+  showOperations,
+} from "./operations-admin.js?v=2027-operations-1";
+import { operation } from "./operations.js?v=2027-operations-1";
+import {
+  mountEventFields,
+  eventFields,
+  updateEventType,
+} from "./event-fields.js?v=2027-operations-1";
+import {
   showLeagueTab,
   canLeaveLeague,
-} from "./league-admin.js?v=2027-groups-1";
-import { loadAccounts } from "./account-admin.js?v=2027-groups-1";
-import { packPlayers } from "./tee-groups.js?v=2027-groups-1";
+} from "./league-admin.js?v=2027-operations-1";
+import { loadAccounts } from "./account-admin.js?v=2027-operations-1";
+import { packPlayers } from "./tee-groups.js?v=2027-operations-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),
@@ -17,13 +27,32 @@ const form = document.getElementById("eventForm"),
 if (!b.state.admin) {
   gate.innerHTML = `<h2>Organiser access</h2><p>${b.state.user ? "Your account does not have organiser access." : "Sign in with your organiser account to manage the society."}</p><a class="button section" href="account.html?next=admin.html">${b.state.user ? "My account" : "Sign in"}</a>`;
 } else {
+  for (const [tab, title] of Object.entries(operationTabs)) {
+    const button = document.createElement("button");
+    button.dataset.tab = tab;
+    button.textContent = title;
+    document.querySelector(".admin-tabs").append(button);
+    const panel = document.createElement("section");
+    panel.id = "adminOp-" + tab;
+    panel.className = "panel";
+    panel.hidden = true;
+    document.getElementById("adminAccounts").before(panel);
+  }
+  mountEventFields(form);
   const ready = await init();
   if (ready) {
     gate.hidden = true;
     content.hidden = false;
   }
   const initialTab = new URLSearchParams(location.search).get("tab");
-  if (["scoring", "scorecards", "handicaps"].includes(initialTab))
+  if (
+    [
+      "scoring",
+      "scorecards",
+      "handicaps",
+      ...Object.keys(operationTabs),
+    ].includes(initialTab)
+  )
     document.querySelector(`[data-tab="${initialTab}"]`)?.click();
 }
 async function init() {
@@ -68,6 +97,8 @@ async function init() {
         document.getElementById("eventToolbar").hidden = [
           "accounts",
           "handicaps",
+          "adjustments",
+          "committee",
         ].includes(button.dataset.tab);
         document
           .querySelectorAll("[data-tab]")
@@ -95,7 +126,11 @@ async function init() {
                 }[tab],
             ).hidden = tab !== button.dataset.tab),
         );
+        for (const tab of Object.keys(operationTabs))
+          document.getElementById("adminOp-" + tab).hidden =
+            tab !== button.dataset.tab;
         showLeagueTab(button.dataset.tab, selected);
+        showOperations(button.dataset.tab, selected);
       }),
   );
   form.onsubmit = (ev) => {
@@ -105,6 +140,7 @@ async function init() {
         name = String(f.get("name")).trim();
       if (!name) throw new Error("Enter an event name.");
       const updates = {
+        ...eventFields(form),
         name,
         round_number: f.get("round_number")
           ? Number(f.get("round_number"))
@@ -254,7 +290,13 @@ async function fillEvent() {
     : "Cancel event";
   if (selected?.first_time && /^\d{2}:\d{2}$/.test(selected.first_time))
     document.getElementById("teeStart").value = selected.first_time;
+  document.getElementById("teeGap").value = selected?.tee_interval || 8;
+  updateEventType(form);
   await loadResponses();
+  await showOperations(
+    document.querySelector("[data-tab].active")?.dataset.tab,
+    selected,
+  );
   await showLeagueTab(
     document.querySelector("[data-tab].active")?.dataset.tab,
     selected,
@@ -319,6 +361,8 @@ async function loadResponses() {
 }
 async function generate() {
   if (!selected) return b.toast("Choose an event first.");
+  if (selected.event_type === "social")
+    return b.toast("Social events do not use tee groups.");
   await loadResponses();
   const players = rows.filter((r) => r.attending && !r.reserve);
   if (!players.length) return b.toast("There are no confirmed players yet.");
@@ -327,7 +371,11 @@ async function generate() {
   if (!start || gap < 1 || gap > 60)
     return b.toast("Enter a start time and a gap from 1 to 60 minutes.");
   const [h, m] = start.split(":").map(Number);
-  const packed = packPlayers(players);
+  const pairData = await operation("admin", { event_id: selected.id });
+  const packed = packPlayers(
+    players,
+    pairData.pairs.filter((p) => p.status === "confirmed"),
+  );
   if (h * 60 + m + Math.max(0, packed.length - 1) * gap >= 1440)
     return b.toast(
       "The tee times would run into the next day. Adjust the start time or gap.",
@@ -348,6 +396,8 @@ async function generate() {
 }
 async function loadGroups() {
   if (!selected) return b.toast("Choose an event first.");
+  if (selected.event_type === "social")
+    return b.toast("Social events do not use tee groups.");
   await loadResponses();
   const { data, error } = await c
     .from("tee_times")
@@ -433,6 +483,28 @@ async function saveGroups() {
   const button = document.getElementById("saveTees");
   button.disabled = true;
   try {
+    const old = await c
+      .from("tee_times")
+      .select("*")
+      .eq("event_id", selected.id);
+    if (old.error) throw old.error;
+    const moves = [];
+    for (const g of groups)
+      for (const id of g.players) {
+        const prev = old.data.find((t) =>
+          t.players.some((p) => p.user_id === id),
+        );
+        if (
+          prev &&
+          (prev.tee_time !== g.time ||
+            JSON.stringify(prev.players.map((p) => p.user_id).sort()) !==
+              JSON.stringify([...g.players].sort()))
+        )
+          moves.push(
+            `${rows.find((r) => r.user_id === id)?.name}: ${prev.tee_time} → ${g.time}${prev.tee_time === g.time ? " (group changed)" : ""}`,
+          );
+      }
+    if (!(await reviewPublication(moves, groups))) return;
     const { error } = await c.rpc("save_tee_times", {
       event: selected.id,
       groups: groups.filter((g) => g.players.length),
@@ -441,6 +513,43 @@ async function saveGroups() {
     document.getElementById("teeMessage").textContent =
       "Tee times published. Members can view them on the event.";
     b.toast("Tee times published.");
+    const refreshed = await c
+      .from("events")
+      .select("*")
+      .eq("id", selected.id)
+      .single();
+    if (!refreshed.error) selected = refreshed.data;
+    let copy = document.getElementById("copyTeeUpdate");
+    if (!copy) {
+      copy = document.createElement("button");
+      copy.id = "copyTeeUpdate";
+      copy.className = "secondary";
+      copy.textContent = "Copy latest tee update for WhatsApp";
+      document.getElementById("teeMessage").after(copy);
+    }
+    copy.onclick = async () => {
+      const lines = [
+        selected.name + " · " + b.date(selected.date),
+        "Latest tee groups — UK times",
+        ...groups
+          .filter((g) => g.players.length)
+          .map(
+            (g) =>
+              g.time +
+              " — " +
+              g.players
+                .map((id) => rows.find((r) => r.user_id === id)?.name)
+                .join(", "),
+          ),
+        new URL("event.html?id=" + selected.id, location.href).href,
+      ];
+      try {
+        await navigator.clipboard.writeText(lines.join("\n"));
+        b.toast("Copied. Review and paste into your society chat.");
+      } catch {
+        document.getElementById("teeMessage").textContent = lines.join("\n");
+      }
+    };
   } catch (error) {
     document.getElementById("teeMessage").textContent = error.message;
   } finally {
@@ -461,10 +570,26 @@ async function loadEnquiries() {
     ? data
         .map(
           (row) =>
-            `<div class="panel"><strong>${e(row.name)}</strong><p>${e(row.email)} · ${e(row.phone)}</p><button class="secondary" data-enquiry="${row.id}">Mark handled</button></div>`,
+            `<div class="panel"><strong>${e(row.name)}</strong><p>${e(row.email)} · ${e(row.phone)}</p><button data-approve-enquiry="${row.id}">Approve name for signup</button><button class="secondary" data-enquiry="${row.id}">Mark handled</button></div>`,
         )
         .join("")
     : '<p class="muted">No outstanding enquiries. New members can create their own accounts.</p>';
+  area.querySelectorAll("[data-approve-enquiry]").forEach(
+    (btn) =>
+      (btn.onclick = async () => {
+        btn.disabled = true;
+        try {
+          await operation("approve_enquiry", {
+            id: Number(btn.dataset.approveEnquiry),
+          });
+          await loadEnquiries();
+          b.toast("Name approved. Ask the applicant to create their account.");
+        } catch (error) {
+          b.toast(error.message);
+          btn.disabled = false;
+        }
+      }),
+  );
   area.querySelectorAll("[data-enquiry]").forEach(
     (button) =>
       (button.onclick = async () => {
@@ -510,4 +635,24 @@ async function loadMemberRecovery() {
       b.toast("Name released. The member can now create their account.");
     });
   };
+}
+
+function reviewPublication(moves, groups) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.innerHTML = `<h2>Review tee publication</h2><p>${groups.filter((g) => g.players.length).length} groups · ${groups.reduce((n, g) => n + g.players.length, 0)} players</p>${moves.length ? `<p>${moves.length} existing players affected:</p><ul>${moves.map((x) => `<li>${e(x)}</li>`).join("")}</ul>` : "<p>No existing player times or groups changed.</p>"}<p>Members will see the current sheet and a notice if their group changes. No messages are sent automatically.</p><div class="actions"><button data-publish>Publish tee times</button><button class="secondary" data-back>Back to editing</button></div>`;
+    document.body.append(dialog);
+    const finish = (value) => {
+      dialog.close();
+      dialog.remove();
+      resolve(value);
+    };
+    dialog.querySelector("[data-publish]").onclick = () => finish(true);
+    dialog.querySelector("[data-back]").onclick = () => finish(false);
+    dialog.oncancel = (event) => {
+      event.preventDefault();
+      finish(false);
+    };
+    dialog.showModal();
+  });
 }

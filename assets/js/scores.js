@@ -1,4 +1,4 @@
-import { rulesHTML } from "./league-rules.js?v=2027-groups-1";
+import { rulesHTML } from "./league-rules.js?v=2027-operations-1";
 const b = await window.barfordReady,
   e = b.escape;
 const area = document.getElementById("leagueBoard");
@@ -92,7 +92,7 @@ async function load() {
       .map((p) => {
         const s = p.scores.find((s) => s.round === n);
         return s
-          ? `<tr><th scope="row">${e(p.name)}${s.winner ? " 🏆" : ""}</th><td>${s.handicap ?? "Not set"}</td><td>${s.points ?? "DNP"}</td><td>${s.adjustment === null ? "—" : s.adjustment > 0 ? "+" + s.adjustment : s.adjustment}</td><td>${s.next_handicap ?? "Not set"}</td></tr>`
+          ? `<tr><th scope="row">${e(p.name)}${s.winner ? " 🏆" : ""}</th><td>${s.handicap ?? "Not set"}</td><td>${s.points ?? "DNP"}</td><td>${s.adjustment === null ? "—" : s.adjustment > 0 ? "+" + s.adjustment : s.adjustment}</td><td>${s.next_handicap ?? "Not set"}${s.committee_adjusted ? " (committee adjustment)" : ""}</td></tr>`
           : "";
       })
       .join("")}</tbody></table></div>`;

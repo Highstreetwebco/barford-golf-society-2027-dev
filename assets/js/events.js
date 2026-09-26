@@ -1,10 +1,14 @@
-import { mountMemberTees } from "./member-tees.js?v=2027-groups-1";
+import {
+  mountEventOperations,
+  eventBrief,
+} from "./operations.js?v=2027-operations-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-operations-1";
 import {
   mountExperience,
   mountBuggy,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-groups-1";
+} from "./event-experience.js?v=2027-operations-1";
 const b = await window.barfordReady;
 const { client: c, state, escape: e } = b;
 let events = [],
@@ -24,7 +28,7 @@ const status = (r) =>
   r?.reserve
     ? "On the waiting list"
     : r?.attending
-      ? "You’re playing"
+      ? "You’re booked"
       : "Not playing";
 function youtube(value) {
   try {
@@ -55,7 +59,7 @@ async function load() {
       c
         .from("rsvps")
         .select(
-          "id,event_id,user_id,name,attending,reserve,buggy,preferred_time,created_at,requested_at",
+          "id,event_id,user_id,name,attending,reserve,buggy,preferred_time,flexibility,terms_snapshot,created_at,requested_at",
         )
         .order("requested_at"),
     );
@@ -117,7 +121,7 @@ async function render() {
       const holes = Object.entries(ev.per_hole_videos || {}).filter(([, url]) =>
         youtube(url),
       );
-      return `<article class="panel event-card" id="event-${ev.id}"><div class="event-top"><div class="date-block"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div><div class="event-title"><p class="eyebrow">${e(d.toLocaleDateString("en-GB", { weekday: "long" }))} · ${e(ev.first_time || "Tee time to follow")}</p><h2>${e(ev.name)}</h2><p>${e(ev.location)}</p></div>${ev.price ? `<div class="event-price">${e(ev.price)}</div>` : ""}</div><div class="event-meta"><span>${e(slots)}</span><span>${ev.cancelled ? '<span class="status-pill cancelled">Cancelled</span>' : r ? `<span class="status-pill ${r.reserve ? "waiting" : ""}">${status(r)}</span>` : closed ? "Event complete" : "RSVP when you’re ready"}</span></div><div class="event-body"><div id="response-${ev.id}">${r ? `<div class="saved-response"><div><h3>${status(r)}</h3>${r.attending || r.reserve ? `<p>${r.buggy ? "Buggy requested" : "Walking"} · ${e(r.preferred_time ? r.preferred_time + " tee time preference" : "No tee time preference")}</p>` : ""}</div>${!closed ? `<button class="secondary" data-rsvp="${ev.id}">Edit RSVP</button>` : ""}</div>` : !closed ? `<div class="actions"><button data-rsvp="${ev.id}">${state.user ? "Save your RSVP" : "Sign in to RSVP"}</button></div>` : ""}</div><div id="form-${ev.id}" hidden></div><details class="event-details" open><summary>Event details &amp; players</summary>${roster(ev)}</details></div></article>`;
+      return `<article class="panel event-card" id="event-${ev.id}"><div class="event-top"><div class="date-block"><b>${d.getDate()}</b><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span></div><div class="event-title"><p class="eyebrow">${e(d.toLocaleDateString("en-GB", { weekday: "long" }))} · ${e(ev.first_time || "Tee time to follow")}</p><h2>${e(ev.name)}</h2><p>${e(ev.location)}</p></div>${ev.price ? `<div class="event-price">${e(ev.price)}</div>` : ""}</div><div class="event-meta"><span>${e(slots)}</span><span>${ev.cancelled ? '<span class="status-pill cancelled">Cancelled</span>' : r ? `<span class="status-pill ${r.reserve ? "waiting" : ""}">${status(r)}</span>` : closed ? "Event complete" : "RSVP when you’re ready"}</span></div><div class="event-body"><div id="response-${ev.id}">${r ? `<div class="saved-response"><div><h3>${status(r)}</h3>${r.attending || r.reserve ? `<p>${ev.event_type === "social" ? "Attendance saved" : `${r.buggy ? "Buggy requested" : "Walking"} · ${e(r.preferred_time ? r.preferred_time + " tee time preference" : "No tee time preference")}`}</p>` : ""}</div>${!closed ? `<button class="secondary" data-rsvp="${ev.id}">Change booking</button>${r.attending || r.reserve ? `<button class="secondary" data-withdraw="${ev.id}">Withdraw</button>` : ""}` : ""}</div>` : !closed ? `<div class="actions"><button data-rsvp="${ev.id}">${state.user ? "Save your RSVP" : "Sign in to RSVP"}</button></div>` : ""}</div><div id="form-${ev.id}" hidden></div><details class="event-details" open><summary>Event details &amp; players</summary>${roster(ev)}</details></div></article>`;
     })
     .join("");
   if (dedicated && visible[0]) {
@@ -173,7 +177,25 @@ async function render() {
       ).then(() => updateSlots(ev, document.getElementById("eventExperience")));
     }
     await updateSlots(ev, document.getElementById("eventExperience"));
-    await mountBuggy(document.getElementById("buggyPanel"), ev);
+    if (ev.event_type !== "social")
+      await mountBuggy(document.getElementById("buggyPanel"), ev);
+    else document.getElementById("buggyPanel").hidden = true;
+    let brief = document.getElementById("dayBrief");
+    if (!brief) {
+      brief = document.createElement("div");
+      brief.id = "dayBrief";
+      document.getElementById("eventExperience").after(brief);
+    }
+    brief.innerHTML = eventBrief(ev);
+    let ops = document.getElementById("eventOperations");
+    if (!ops) {
+      ops = document.createElement("section");
+      ops.id = "eventOperations";
+      ops.className = "panel section";
+      list.after(ops);
+    }
+    if (!ops.contains(document.activeElement))
+      await mountEventOperations(ops, ev);
     const teeArea = document.getElementById("memberTees-" + ev.id);
     if (teeArea) await mountMemberTees(teeArea, ev.id);
   }
@@ -183,6 +205,32 @@ async function render() {
       (button) =>
         (button.onclick = () => openForm(Number(button.dataset.rsvp))),
     );
+  list.querySelectorAll("[data-withdraw]").forEach(
+    (btn) =>
+      (btn.onclick = async () => {
+        const id = Number(btn.dataset.withdraw),
+          ev = events.find((x) => x.id === id);
+        if (
+          !confirm(
+            "Withdraw from " +
+              ev.name +
+              "? Any fee or refund will be reviewed by an organiser.",
+          )
+        )
+          return;
+        btn.disabled = true;
+        const { error } = await c.rpc("submit_rsvp", {
+          payload: { event_id: id, attending: false },
+        });
+        if (error) {
+          b.toast(error.message);
+          btn.disabled = false;
+          return;
+        }
+        await load();
+        b.toast("Withdrawal saved.");
+      }),
+  );
   list.querySelectorAll("[data-hole]").forEach(
     (sel) =>
       (sel.onchange = () => {
@@ -200,7 +248,8 @@ function roster(ev) {
     waiting = rows.filter((r) => r.reserve),
     groups = tees.filter((t) => t.event_id === ev.id);
   let html = "";
-  if (dedicated)
+  if (ev.event_type === "social") html += "";
+  else if (dedicated)
     html += `<section id="memberTees-${ev.id}" class="section">Loading tee groups…</section>`;
   else if (ev.tee_times_dirty)
     html +=
@@ -219,13 +268,13 @@ function roster(ev) {
     html +=
       '<p class="muted">Tee times will appear here once the organisers publish them.</p>';
   html +=
-    `<h3 class="section">Who’s playing <span class="muted">(${playing.length})</span></h3>` +
+    `<h3 class="section">${ev.event_type === "social" ? "Who’s attending" : "Who’s playing"} <span class="muted">(${playing.length})</span></h3>` +
     (playing.length
       ? '<ul class="roster">' +
         playing
           .map(
             (r) =>
-              `<li>${e(r.name)}<span>${r.buggy ? "Buggy" : "Walking"}</span></li>`,
+              `<li>${e(r.name)}<span>${ev.event_type === "social" ? "Attending" : r.buggy ? "Buggy" : "Walking"}</span></li>`,
           )
           .join("") +
         "</ul>"
@@ -251,9 +300,12 @@ async function openForm(id) {
   document.getElementById("response-" + id).hidden = true;
   area.innerHTML = `<form class="rsvp-form"><h3>${r ? "Update your RSVP" : "Your RSVP"}</h3><p class="identity">For ${e(state.profile?.full_name || "your account")} · <a href="account.html">My details</a></p>${radio(
     "attending",
-    "Playing?",
+    ev.event_type === "social" ? "Attending?" : "Playing?",
     [
-      ["yes", "Yes, I’m playing"],
+      [
+        "yes",
+        ev.event_type === "social" ? "Yes, I’m attending" : "Yes, I’m playing",
+      ],
       ["no", "Not this time"],
     ],
     r ? (r.attending || r.reserve ? "yes" : "no") : null,
@@ -275,10 +327,17 @@ async function openForm(id) {
       ["End", "End"],
     ],
     r?.preferred_time || "",
-  )}<small>We’ll do our best to match your preference. A buggy request is subject to availability.</small></div><div class="actions"><button type="submit">${r ? "Save changes" : "Save RSVP"}</button><button type="button" class="secondary" data-cancel>Cancel</button></div><p class="form-status" role="status"></p></form>`;
+  )}<label class="check"><input type="checkbox" name="flexibility" ${r?.flexibility === "walk" ? "checked" : ""}> Happy to walk if there is an odd number of buggy players</label><small>We’ll do our best to match your preference. A buggy request is subject to availability.</small></div>${ev.cancellation_terms ? `<div data-terms><p class="notice preserve-lines">${e(ev.cancellation_terms)}</p><label class="check"><input type="checkbox" name="accept_terms" ${r?.terms_snapshot === ev.cancellation_terms ? "checked" : ""}> I accept the cancellation terms</label></div>` : ""}<div class="actions"><button type="submit">${r ? "Save changes" : "Save RSVP"}</button><button type="button" class="secondary" data-cancel>Cancel</button></div><p class="form-status" role="status"></p></form>`;
   const form = area.querySelector("form");
   const toggle = () => {
-    const off = form.elements.attending.value === "no";
+    const off =
+      form.elements.attending.value === "no" || ev.event_type === "social";
+    const terms = form.querySelector("[name=accept_terms]");
+    if (terms) {
+      terms.required = form.elements.attending.value === "yes";
+      form.querySelector("[data-terms]").hidden =
+        form.elements.attending.value === "no";
+    }
     const choices = area.querySelector("[data-playing]");
     choices.hidden = off;
     choices.querySelectorAll("input").forEach((i) => (i.disabled = off));
@@ -301,6 +360,8 @@ async function openForm(id) {
         attending: f.get("attending") === "yes",
         buggy: f.get("buggy") === "yes",
         preferred_time: f.get("preferred_time") || null,
+        flexibility: f.get("flexibility") ? "walk" : null,
+        accept_terms: f.get("accept_terms") === "on",
       };
       const { data, error } = await c.rpc("submit_rsvp", { payload });
       if (error) throw error;
@@ -372,7 +433,25 @@ setInterval(async () => {
       )
         await load();
       else {
-        await mountBuggy(document.getElementById("buggyPanel"), ev);
+        if (ev.event_type !== "social")
+          await mountBuggy(document.getElementById("buggyPanel"), ev);
+        else document.getElementById("buggyPanel").hidden = true;
+        let brief = document.getElementById("dayBrief");
+        if (!brief) {
+          brief = document.createElement("div");
+          brief.id = "dayBrief";
+          document.getElementById("eventExperience").after(brief);
+        }
+        brief.innerHTML = eventBrief(ev);
+        let ops = document.getElementById("eventOperations");
+        if (!ops) {
+          ops = document.createElement("section");
+          ops.id = "eventOperations";
+          ops.className = "panel section";
+          list.after(ops);
+        }
+        if (!ops.contains(document.activeElement))
+          await mountEventOperations(ops, ev);
         const teeArea = document.getElementById("memberTees-" + ev.id);
         if (teeArea) await mountMemberTees(teeArea, ev.id);
       }

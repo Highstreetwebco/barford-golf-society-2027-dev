@@ -1,4 +1,4 @@
-import { photoUrls } from "./member-photos.js?v=2027-groups-1";
+import { photoUrls } from "./member-photos.js?v=2027-operations-1";
 const b = await window.barfordReady,
   e = b.escape;
 const rendered = new WeakMap();
@@ -30,6 +30,9 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
   if (rendered.get(area) === key) return own?.tee_time || null;
   rendered.set(area, key);
   const expanded = area.querySelector(".all-tee-groups")?.open;
+  const publication = data.published_at
+    ? `<p class="muted">Published ${b.escape(new Date(data.published_at).toLocaleString("en-GB", { timeZone: "Europe/London" }))} UK time · Version ${data.revision}</p>`
+    : "";
   const warning = data.provisional
     ? '<p class="notice">Handicaps are provisional until earlier rounds are published.</p>'
     : "";
@@ -49,8 +52,8 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
       .join("")}</ul></section>`;
   }
   area.innerHTML = home
-    ? `<h2>Your tee group</h2>${warning}${own ? card(own) : "<p>You are not assigned to a published tee group for this event.</p>"}<details class="all-tee-groups"><summary class="button secondary">View all tee groups</summary><div class="tee-grid section">${data.groups.map(card).join("")}</div></details>`
-    : `<h3>Tee times &amp; playing groups</h3>${warning}<div class="tee-grid">${data.groups.map(card).join("")}</div>`;
+    ? `<h2>Your tee group</h2>${publication}${warning}${own ? card(own) : "<p>You are not assigned to a published tee group for this event.</p>"}<details class="all-tee-groups"><summary class="button secondary">View all tee groups</summary><div class="tee-grid section">${data.groups.map(card).join("")}</div></details>`
+    : `<h3>Tee times &amp; playing groups</h3>${publication}${warning}<div class="tee-grid">${data.groups.map(card).join("")}</div>`;
   if (expanded && area.querySelector(".all-tee-groups"))
     area.querySelector(".all-tee-groups").open = true;
   for (const button of area.querySelectorAll("[data-portrait]"))

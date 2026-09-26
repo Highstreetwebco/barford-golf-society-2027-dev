@@ -23,7 +23,7 @@ do $$declare answer jsonb;begin
  if answer::text like '%07000000001%' or answer::text like '%example.invalid%' then raise exception 'Contact data leaked';end if;
  answer:=public.baseline_event_tee_groups((select id from public.baseline_events where round_number=7));
  if answer#>>'{groups,0,players,0,handicap}' is not null or answer#>>'{groups,0,players,0,handicap_secret}'<>'true' then raise exception 'Secret round adjustment leaked via next-round tee group';end if;
- if (select count(*) from storage.objects where bucket_id='baseline-profile-images')<>2 then raise exception 'Active members cannot read portraits';end if;
+ if (select count(*) from storage.objects where bucket_id='baseline-profile-images' and (storage.foldername(name))[1] in (select member::text from qa_tee union all select other::text from qa_tee))<>2 then raise exception 'Active members cannot read portraits';end if;
  begin insert into storage.objects(bucket_id,name) values('baseline-profile-images',(select other::text||'/cccccccc-cccc-cccc-cccc-cccccccccccc.jpg' from qa_tee));raise exception 'Cross-member upload allowed';exception when insufficient_privilege then null;end;
 end $$;
 reset role;

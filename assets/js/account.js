@@ -1,9 +1,10 @@
+import { mountPayments } from "./operations.js?v=2027-operations-1";
 import {
   photoPickerHTML,
   wirePhotoPicker,
   savePhoto,
   mountPhotoEditor,
-} from "./member-photos.js?v=2027-groups-1";
+} from "./member-photos.js?v=2027-operations-1";
 const b = await window.barfordReady;
 const { raw, state, escape: e, submit } = b;
 const isSignup = location.pathname.endsWith("signup.html");
@@ -32,6 +33,15 @@ if (isSignup) {
   selector.onchange = () =>
     (document.getElementById("fullName").value =
       roster.find((m) => m.id === selector.value)?.name || "");
+  const invited = new URLSearchParams(location.search).get("member");
+  if (invited && roster.some((m) => m.id === invited && !m.claimed)) {
+    selector.value = invited;
+    selector.onchange();
+  }
+  const help = document.createElement("p");
+  help.innerHTML =
+    '<a href="about.html#join">My name isn’t listed / I’m new to the society</a>';
+  selector.after(help);
   const photoArea = document.createElement("div");
   photoArea.className = "form-stack";
   photoArea.innerHTML = photoPickerHTML();
@@ -115,6 +125,12 @@ if (isSignup) {
     }
 
     area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Username (your name)</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" ${linked ? "readonly" : ""} required>${state.user.email?.endsWith("@members.barford2027.invalid") ? "" : `<label for="profileEmail">Existing account email</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly>`}<label for="profilePhone">Mobile number</label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="25" required value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Visible to organisers and your assigned buggy partner.</small><button>Save details</button><p class="form-status" role="status"></p></form><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
+    const payments = document.createElement("section");
+    payments.id = "payments";
+    payments.className = "panel section full";
+    area.append(payments);
+    await mountPayments(payments);
+    if (location.hash === "#payments") payments.scrollIntoView();
     const photoEditor = document.createElement("section");
     photoEditor.className = "panel section";
     area.querySelector("section").after(photoEditor);

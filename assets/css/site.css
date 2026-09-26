@@ -2128,3 +2128,118 @@ td button {
   background: var(--surface);
   border-top: 1px solid var(--line);
 }
+
+/* Committee operations and clear member status. */
+.preserve-lines {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.brief-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+.brief-grid dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+.brief-grid dd {
+  margin: 6px 0 0;
+}
+.payment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border, #dcded3);
+}
+.payment-card:last-of-type {
+  margin-bottom: 20px;
+}
+.payment-card h3 {
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+.payment-card p {
+  margin: 5px 0;
+}
+.payment-card strong {
+  font-size: 1.25rem;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.check input[type="checkbox"] {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  margin: 0;
+}
+.booking-status h2 {
+  margin: 8px 0;
+}
+.admin-tabs {
+  flex-wrap: wrap !important;
+  gap: 6px;
+}
+.admin-tabs button {
+  font-size: 0.86rem;
+}
+.full {
+  grid-column: 1/-1;
+}
+.form-grid details {
+  min-width: 0;
+}
+.install-help {
+  margin-top: 30px;
+}
+.panel details > summary {
+  cursor: pointer;
+}
+dialog {
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+@media (max-width: 600px) {
+  .payment-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .payment-card button {
+    width: 100%;
+  }
+  .brief-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-tabs {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-tabs button {
+    white-space: normal;
+    text-align: left;
+    padding: 12px;
+    min-height: 48px;
+  }
+  .response-row input,
+  .response-row select {
+    min-width: 0;
+  }
+  #adminOp-adjustments .form-grid,
+  #adminOp-payments .form-grid,
+  #adminOp-guests .form-grid,
+  #adminOp-committee .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+#teeMessage {
+  white-space: pre-line;
+}

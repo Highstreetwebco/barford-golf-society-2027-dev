@@ -12,8 +12,8 @@
     <title>About us | Barford Golf Society</title>
     <link rel="icon" href="icon-logo.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-groups-1" />
-    <script src="assets/js/baseline.js?v=2027-groups-1" defer></script>
+    <link rel="stylesheet" href="assets/css/site.css?v=2027-operations-1" />
+    <script src="assets/js/baseline.js?v=2027-operations-1" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -91,6 +91,39 @@
           <a class="button" href="signup.html">Create an account</a>
         </aside>
       </div>
+      <section class="panel section" id="join">
+        <h2>My name isn’t listed / join the society</h2>
+        <p>
+          Existing member with an account? Sign in instead. If your name is
+          missing or you’re joining for the first time, ask an organiser to add
+          you below.
+        </p>
+        <form id="joinForm" class="form-grid">
+          <label
+            >Full name<input
+              name="name"
+              required
+              maxlength="150"
+              autocomplete="name" /></label
+          ><label
+            >Mobile<input
+              name="phone"
+              type="tel"
+              required
+              minlength="10"
+              maxlength="25"
+              autocomplete="tel" /></label
+          ><label
+            >Email for the organiser’s reply<input
+              name="email"
+              type="email"
+              required
+              maxlength="254"
+              autocomplete="email" /></label
+          ><button>Request to join</button>
+          <p class="full" role="status"></p>
+        </form>
+      </section>
     </main>
     <footer class="site-footer">
       <div>
@@ -112,5 +145,6 @@
         Please enable JavaScript to sign in and use the member features.
       </p></noscript
     >
+    <script type="module" src="assets/js/join.js?v=2027-operations-1"></script>
   </body>
 </html>

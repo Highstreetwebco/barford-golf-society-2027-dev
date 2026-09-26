@@ -1,11 +1,23 @@
 // Keep buggy partners together; tee preferences are best-effort around these pairs.
-export function packPlayers(players) {
+export function packPlayers(players, playingPairs = []) {
   const rank = (p) => ({ First: 0, Middle: 1, End: 2 })[p.preferred_time] ?? 1;
   const ordered = [...players].sort(
     (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name),
   );
-  const buggy = ordered.filter((p) => p.buggy);
-  const units = ordered.filter((p) => !p.buggy).map((p) => [p]);
+  const paired = new Set(),
+    units = [];
+  for (const pair of playingPairs) {
+    const a = ordered.find((p) => p.user_id === pair.first_user),
+      b = ordered.find((p) => p.user_id === pair.second_user);
+    if (a && b && !paired.has(a.user_id) && !paired.has(b.user_id)) {
+      units.push([a, b]);
+      paired.add(a.user_id);
+      paired.add(b.user_id);
+    }
+  }
+  const remaining = ordered.filter((p) => !paired.has(p.user_id));
+  const buggy = remaining.filter((p) => p.buggy);
+  units.push(...remaining.filter((p) => !p.buggy).map((p) => [p]));
   for (let i = 0; i < buggy.length; i += 2) units.push(buggy.slice(i, i + 2));
   const mean = (unit) => unit.reduce((n, p) => n + rank(p), 0) / unit.length;
   units.sort(

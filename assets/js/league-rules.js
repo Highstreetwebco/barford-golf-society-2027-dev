@@ -50,10 +50,14 @@ export function roundAverage(entries) {
 }
 export function handicapAt(player, round, rounds) {
   let h = player.starting_handicap;
-  for (const r of [...rounds].sort((a, b) => a.round_number - b.round_number)) {
-    if (r.round_number >= round || !r.published_entries) continue;
-    const result = r.results?.find((x) => x.user_id === player.id);
-    if (result) h = result.next_handicap;
+  for (let n = 1; n <= round; n++) {
+    const manual = player.adjustments?.find((x) => x.round_number === n);
+    if (manual) h = manual.handicap;
+    if (n < round) {
+      const r = rounds.find((x) => x.round_number === n && x.published_entries);
+      const result = r?.results?.find((x) => x.user_id === player.id);
+      if (result) h = result.next_handicap;
+    }
   }
   return h;
 }
@@ -75,5 +79,5 @@ export const rulesHTML = `<details class="panel section league-rules"><summary>S
 ]
   .map(([d, a]) => `<tr><td>${d}</td><td>${a}</td></tr>`)
   .join("")}</tbody></table></div>
-<p>Multiply by the player’s round handicap band: up to 9 × 0.5; over 9 to 18 × 0.75; over 18 to 28 × 1; over 28 × 1.25. Round to a whole shot (half values towards positive infinity), then limit the change to −3 through +2. Handicaps cannot go below zero. There is no extra winner’s cut.</p>
+<p>Multiply by the player’s round handicap band: up to 9 × 0.5; over 9 to 18 × 0.75; over 18 to 28 × 1; over 28 × 1.25. Round to a whole shot (half values towards positive infinity), then limit the change to −3 through +2. Handicaps cannot go below zero. There is no extra winner’s cut. Starting handicaps are capped at 36; later handicaps may rise above 36. Recorded committee decisions can set a handicap from a future round, after which normal adjustments continue.</p>
 <p>Rounds 6 and 7, and their effect on totals, wins and handicap history, remain private to admins. Starting handicap or score corrections recalculate all subsequent published rounds.</p></details>`;

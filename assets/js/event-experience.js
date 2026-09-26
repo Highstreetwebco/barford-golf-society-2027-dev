@@ -1,3 +1,4 @@
+import { operation, stamp } from "./operations.js?v=2027-operations-1";
 const b = await window.barfordReady;
 const e = b.escape;
 export const londonToday = () =>
@@ -141,6 +142,20 @@ export function calendar(ev, ownTime) {
 }
 export async function mountExperience(area, ev, ownTime) {
   area.innerHTML = `<div class="course-cover"><div class="cover-placeholder"><span class="eyebrow">YOUR NEXT ROUND</span><strong>${e(ev.course_name || ev.location || ev.name)}</strong><span>Course photograph will appear when available</span></div></div><div class="experience-grid"><section class="panel"><p class="eyebrow">THE DAY AT A GLANCE</p><h2>${e(ev.course_name || ev.location || ev.name)}</h2><dl class="event-facts"><div><dt>Date</dt><dd>${e(b.date(ev.date))}</dd></div><div><dt>First tee</dt><dd>${e(ev.first_time || "To be confirmed")}</dd></div>${ownTime ? `<div><dt>Your tee time</dt><dd>${e(ownTime)}</dd></div>` : ""}<div><dt>Availability</dt><dd data-live-slots>Checking places…</dd></div>${ev.price ? `<div><dt>Price</dt><dd>${e(ev.price)}</dd></div>` : ""}</dl><p class="address">${e(ev.address || ev.location || "Course address to follow")}</p><div data-directions>${directions(ev)}</div><div class="actions"><button class="secondary" data-calendar>Add to phone calendar</button><a data-google-calendar target="_blank" rel="noopener">Google Calendar ↗</a></div><small>A calendar copy won’t update automatically when the event changes.</small></section><section class="panel" data-weather><p class="eyebrow">WEATHER FOR YOUR ROUND</p><h2>Looking ahead.</h2><p>Loading forecast…</p></section><section class="panel" data-course><p class="eyebrow">GET TO KNOW THE COURSE</p><h2>What to expect</h2><p class="event-description">${e(ev.description || "The organiser will add details about the golf day here.")}</p><div data-course-live></div>${b.safeUrl(ev.course_link) ? `<a href="${b.safeUrl(ev.course_link)}" target="_blank" rel="noopener">Course website ↗</a>` : ""}</section><section class="panel" data-video><p class="eyebrow">A LOOK AROUND</p><h2>Course preview</h2><div data-video-content>Finding a course video…</div></section></div>`;
+  if (ev.event_type === "social") {
+    area.querySelector("[data-weather]").remove();
+    area.querySelector("[data-video]").remove();
+    area.querySelector("[data-course] .eyebrow").textContent =
+      "ABOUT THE EVENT";
+    area.querySelector("[data-course] .event-description").textContent =
+      ev.description || "Event details will be confirmed by the organisers.";
+    area.querySelector(".course-cover .eyebrow").textContent =
+      "YOUR NEXT EVENT";
+    area.querySelector(".cover-placeholder span:last-child").textContent = "";
+    area.querySelectorAll("dt").forEach((dt) => {
+      if (dt.textContent === "First tee") dt.textContent = "Starts at";
+    });
+  }
   const cal = calendar(ev, ownTime);
   area.querySelector("[data-google-calendar]").href = cal.google;
   area.querySelector("[data-calendar]").onclick = () => {
@@ -162,6 +177,7 @@ export async function mountExperience(area, ev, ownTime) {
     };
   };
   if (ev.cover_url) showCover(ev.cover_url, e(ev.cover_credit || ""));
+  if (ev.event_type === "social") return;
   const video = area.querySelector("[data-video-content]"),
     id = videoId(ev.video_link);
   const renderVideo = (id, title, channel) => {
@@ -321,7 +337,36 @@ export async function mountBuggy(area, ev) {
       "<p>The organisers will pair you with another buggy player when tee times are published. If there’s an odd number, they’ll arrange your buggy separately.</p>";
     return;
   }
-  area.innerHTML += `<p>Your partner is <strong>${e(data.partner_name)}</strong>.</p><p class="notice">${data.booking_name ? (data.booking_me ? "You’re booking the buggy. Your partner can see this." : `${e(data.booking_name)} is booking the buggy.`) : "Neither partner has taken responsibility for booking yet."}</p>${data.partner_phone ? `<p>Need to contact your partner? <a href="tel:${e(data.partner_phone.replace(/[^+0-9]/g, ""))}">${e(data.partner_phone)}</a></p>` : "<p>Your partner has not added a mobile number. Contact an organiser.</p>"}<form class="form-stack">${!data.booking_name ? "<button>I’ll book the buggy</button>" : data.booking_me ? '<button class="secondary">Release booking responsibility</button>' : ""}<p role="status"></p></form><small>This records who will contact the course. It does not make or pay for a buggy booking.</small>`;
+  area.innerHTML += `<p>Your partner is <strong>${e(data.partner_name)}</strong>.</p><p class="notice">${data.confirmed_at ? `Booking confirmed with the course · ${e(stamp(data.confirmed_at))}` : data.booking_name ? (data.booking_me ? "You’re booking the buggy. Your partner can see this." : `${e(data.booking_name)} is booking the buggy.`) : "Neither partner has taken responsibility for booking yet."}</p>${data.partner_phone ? `<p>Need to contact your partner? <a href="tel:${e(data.partner_phone.replace(/[^+0-9]/g, ""))}">${e(data.partner_phone)}</a></p>` : "<p>Your partner has not added a mobile number. Contact an organiser.</p>"}<form class="form-stack">${!data.booking_name ? "<button>I’ll book the buggy</button>" : data.booking_me ? '<button class="secondary">Release booking responsibility</button>' : ""}<p role="status"></p></form><small>This records who will contact the course. It does not make or pay for a buggy booking.</small>`;
+  if (data.booking_me) {
+    const confirmButton = document.createElement("button");
+    confirmButton.className = "secondary";
+    confirmButton.type = "button";
+    confirmButton.textContent = data.confirmed_at
+      ? "Reservation cancelled — mark unconfirmed"
+      : "I’ve booked it with the course";
+    area.append(confirmButton);
+    confirmButton.onclick = async () => {
+      confirmButton.disabled = true;
+      try {
+        await operation("confirm_buggy", {
+          event_id: ev.id,
+          confirmed: !data.confirmed_at,
+        });
+        await mountBuggy(area, ev);
+      } catch (error) {
+        b.toast(error.message);
+        confirmButton.disabled = false;
+      }
+    };
+  }
+  if (ev.course_phone) {
+    const call = document.createElement("a");
+    call.className = "button secondary";
+    call.href = "tel:" + ev.course_phone.replace(/[^+0-9]/g, "");
+    call.textContent = "Call course to reserve buggy";
+    area.append(call);
+  }
   area.querySelector("form").onsubmit = (event) => {
     event.preventDefault();
     b.submit(event.target, async () => {
