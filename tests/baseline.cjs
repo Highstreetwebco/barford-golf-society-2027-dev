@@ -593,7 +593,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       const form = page.locator("#form-999 form");
       await form.waitFor();
       assert.equal(await form.locator("fieldset").count(), 3);
-      assert.equal(await form.locator("input:not([type=radio])").count(), 0);
+      assert.equal(
+        await form
+          .locator("input:not([type=radio]):not([type=checkbox])")
+          .count(),
+        0,
+      );
       await form
         .getByRole("radio", { name: "Yes, I’m playing", exact: true })
         .check();

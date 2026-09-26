@@ -329,7 +329,7 @@ async function loadResponses() {
     rows
       .map(
         (r) =>
-          `<form class="response-row" data-member="${r.user_id}"><div><strong>${e(r.name)}</strong><small>${e(r.baseline_rsvp_contacts?.phone || "No phone number saved")}</small></div><label>Status<select name="status"><option value="playing" ${r.attending ? "selected" : ""}>Playing</option><option value="waiting" ${r.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!r.attending && !r.reserve ? "selected" : ""}>Not playing</option></select></label><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${r.buggy ? "selected" : ""}>Yes</option></select></label><label>Tee preference<select name="preferred_time">${["First", "Middle", "End"].map((x) => `<option ${r.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><button>Save</button><p class="form-status full" role="status"></p></form>`,
+          `<form class="response-row" data-member="${r.user_id}"><div><strong>${e(r.name)}</strong><small>${e(r.baseline_rsvp_contacts?.phone || "No phone number saved")}</small></div><label>Status<select name="status"><option value="playing" ${r.attending ? "selected" : ""}>Playing</option><option value="waiting" ${r.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!r.attending && !r.reserve ? "selected" : ""}>Not playing</option></select></label><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${r.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${r.flexibility === "walk" ? "checked" : ""}> Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map((x) => `<option ${r.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><button>Save</button><p class="form-status full" role="status"></p></form>`,
       )
       .join("");
   area.querySelectorAll("form").forEach(
@@ -345,7 +345,8 @@ async function loadResponses() {
               attending: f.get("status") !== "no",
               reserve: f.get("status") === "waiting",
               buggy: f.get("buggy") === "yes",
-              preferred_time: f.get("preferred_time"),
+              preferred_time: f.get("preferred_time") || null,
+              flexibility: f.get("flexibility") ? "walk" : null,
             },
           });
           if (error) throw error;
@@ -440,7 +441,7 @@ function renderGroups() {
           .map((id) => {
             const r = rows.find((r) => r.user_id === id);
             if (!r) return "";
-            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"} · ${e(r.preferred_time || "No tee time")} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
+            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"}${r.flexibility === "walk" ? " (can walk if needed)" : ""} · ${e(r.preferred_time || "No tee time")} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
           })
           .join(
             "",

@@ -32,6 +32,11 @@ export async function showOperations(tab, event) {
     if (tab === "payments") payments(area, data, event);
     if (tab === "guests") guests(area, data, event);
     if (tab === "checklist") {
+      const countResult = await b.client.rpc("event_counts");
+      data.counts = countResult.data?.find((x) => x.event_id === event?.id) || {
+        playing: 0,
+        waiting: 0,
+      };
       checklist(area, data, event);
       if (event)
         await reservationNotices(
@@ -273,7 +278,7 @@ function checklist(area, data, event) {
     "Scorecards prepared",
     "Prizes assigned",
   ];
-  area.innerHTML = `<h2>${e(event.name)} · Event checklist</h2><div data-reservation-notices></div><p>Places committed to the ${event.event_type === "social" ? "venue" : "course"}: <strong>${event.committed_places || 0}</strong>. This is separate from the live RSVP count; update it in Event details when you agree numbers.</p><div class="stack">${tasks
+  area.innerHTML = `<h2>${e(event.name)} · Event checklist</h2><div data-reservation-notices></div><p class="notice">${data.counts?.playing || 0} confirmed · ${data.counts?.waiting || 0} waiting</p><p>Places committed to the ${event.event_type === "social" ? "venue" : "course"}: <strong>${event.committed_places || 0}</strong>. This is separate from the live RSVP count; update it in Event details when you agree numbers.</p><div class="stack">${tasks
     .filter(
       (t) =>
         event.event_type !== "social" ||
