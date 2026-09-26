@@ -1,4 +1,5 @@
-import { guestAction } from "./guest-invites.js?v=2027-club-1";
+import { mountFinance } from "./finance-admin.js?v=2027-results-1";
+import { guestAction } from "./guest-invites.js?v=2027-results-1";
 import {
   operation,
   field,
@@ -6,8 +7,8 @@ import {
   bindForms,
   stamp,
   reservationNotices,
-} from "./operations.js?v=2027-club-1";
-import { handicapAt } from "./league-rules.js?v=2027-club-1";
+} from "./operations.js?v=2027-results-1";
+import { handicapAt } from "./league-rules.js?v=2027-results-1";
 const b = await window.barfordReady,
   e = b.escape;
 let token = 0;
@@ -45,7 +46,15 @@ export async function showOperations(tab, event) {
           event.id,
         );
     }
-    if (tab === "committee") committee(area, data);
+    if (tab === "committee") {
+      area.innerHTML =
+        '<div id="expenseWorkspace"></div><details class="panel section"><summary>Prize stock</summary><div id="prizeWorkspace"></div></details>';
+      committee(area.querySelector("#prizeWorkspace"), {
+        ...data,
+        items: data.items.filter((x) => x.kind === "prize"),
+      });
+      await mountFinance(area.querySelector("#expenseWorkspace"));
+    }
   } catch (err) {
     area.innerHTML = `<p class="notice">${e(err.message)}</p>`;
   }
@@ -319,13 +328,10 @@ function committee(area, data) {
     `${select(
       "kind",
       "Type",
-      [
-        ["expense", "Expense / reimbursement"],
-        ["prize", "Prize stock"],
-      ],
-      x.kind || "expense",
+      [["prize", "Prize stock"]],
+      x.kind || "prize",
     )}${field("Description", "description", x.description, "text", 'required maxlength="300"')}${field("Owner / held by", "owner", x.owner, "text", 'maxlength="150"')}${field("Cost (£)", "amount", x.amount ?? 0, "number", 'required min="0" step="0.01"')}${field("Quantity", "quantity", x.quantity ?? 1, "number", 'required min="0" step="1"')}${textfield("Notes", "note", x.note)}${x.id ? `<label class="check"><input type="checkbox" name="done" ${x.done ? "checked" : ""}> ${x.kind === "expense" ? "Reimbursed" : "No longer held / allocated"}</label>` : ""}<button>${x.id ? "Save item" : "Add item"}</button><p class="full" role="status"></p>`;
-  area.innerHTML = `<h2>Expenses & prize stock</h2><p>Private committee records. Record what was bought, who holds it, and whether reimbursement is complete.</p><details><summary>Add an expense or prize</summary><form class="form-grid section">${edit()}</form></details><div class="stack section">${data.items.length ? data.items.map((x) => `<details class="panel"><summary>${e(x.description)} · ${x.kind === "expense" ? b.money(x.amount) : x.quantity + " in stock"} · ${e(x.owner)}${x.done ? " · Complete" : ""}</summary><form data-item="${x.id}" data-revision="${x.revision}" class="form-grid section">${edit(x)}</form></details>`).join("") : "<p>No expenses or stock recorded yet.</p>"}</div>`;
+  area.innerHTML = `<h2>Prize stock</h2><p>Private committee records. Record what was bought, who holds it, and whether reimbursement is complete.</p><details><summary>Add a prize</summary><form class="form-grid section">${edit()}</form></details><div class="stack section">${data.items.length ? data.items.map((x) => `<details class="panel"><summary>${e(x.description)} · ${x.kind === "expense" ? b.money(x.amount) : x.quantity + " in stock"} · ${e(x.owner)}${x.done ? " · Complete" : ""}</summary><form data-item="${x.id}" data-revision="${x.revision}" class="form-grid section">${edit(x)}</form></details>`).join("") : "<p>No expenses or stock recorded yet.</p>"}</div>`;
   area
     .querySelectorAll("[data-item] select[name=kind]")
     .forEach((s) => (s.disabled = true));

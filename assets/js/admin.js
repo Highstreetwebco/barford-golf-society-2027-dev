@@ -1,19 +1,21 @@
+import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
 import {
   operationTabs,
   showOperations,
-} from "./operations-admin.js?v=2027-club-1";
-import { operation } from "./operations.js?v=2027-club-1";
+} from "./operations-admin.js?v=2027-results-1";
+import { operation } from "./operations.js?v=2027-results-1";
 import {
   mountEventFields,
   eventFields,
   updateEventType,
-} from "./event-fields.js?v=2027-club-1";
+} from "./event-fields.js?v=2027-results-1";
 import {
   showLeagueTab,
   canLeaveLeague,
-} from "./league-admin.js?v=2027-club-1";
-import { loadAccounts } from "./account-admin.js?v=2027-club-1";
-import { packPlayers } from "./tee-groups.js?v=2027-club-1";
+  updateHandicapSetup,
+} from "./league-admin.js?v=2027-results-1";
+import { loadAccounts } from "./account-admin.js?v=2027-results-1";
+import { packPlayers } from "./tee-groups.js?v=2027-results-1";
 const b = await window.barfordReady;
 const { client: c, escape: e } = b;
 const gate = document.getElementById("adminGate"),
@@ -38,6 +40,19 @@ if (!b.state.admin) {
     panel.hidden = true;
     document.getElementById("adminAccounts").before(panel);
   }
+  async function refreshIndicators() {
+    if (document.hidden) return;
+    const [league, expenses] = await Promise.allSettled([
+      c.rpc("league_admin"),
+      finance("summary"),
+    ]);
+    if (league.status === "fulfilled" && !league.value.error)
+      updateHandicapSetup(league.value.data);
+    if (expenses.status === "fulfilled") expenseBadge(expenses.value.pending);
+  }
+  refreshIndicators();
+  setInterval(refreshIndicators, 30000);
+  window.addEventListener("focus", refreshIndicators);
   mountEventFields(form);
   const ready = await init();
   if (ready) {

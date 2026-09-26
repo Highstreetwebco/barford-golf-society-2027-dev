@@ -1,13 +1,20 @@
-import { guestAction } from "./guest-invites.js?v=2027-club-1";
-import { mountEventOperations } from "./operations.js?v=2027-club-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-club-1";
+import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
+import { guestAction } from "./guest-invites.js?v=2027-results-1";
+import { mountEventOperations } from "./operations.js?v=2027-results-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
 import {
   mountExperience,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-club-1";
+} from "./event-experience.js?v=2027-results-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
+const personal = document.getElementById("personalResults");
+mountPersonalResults(personal, b);
+window.addEventListener("focus", () => mountPersonalResults(personal, b));
+setInterval(() => {
+  if (!document.hidden) mountPersonalResults(personal, b);
+}, 30000);
 if (b.state.user) {
   const a = document.getElementById("homeAccount");
   a.textContent = "My account";

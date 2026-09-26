@@ -1,14 +1,14 @@
 import {
   mountEventOperations,
   eventBrief,
-} from "./operations.js?v=2027-club-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-club-1";
+} from "./operations.js?v=2027-results-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
 import {
   mountExperience,
   mountBuggy,
   updateSlots,
   londonToday,
-} from "./event-experience.js?v=2027-club-1";
+} from "./event-experience.js?v=2027-results-1";
 const b = await window.barfordReady;
 const { client: c, state, escape: e } = b;
 let events = [],

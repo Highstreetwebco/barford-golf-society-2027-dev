@@ -1950,3 +1950,202 @@ body.dark-mode {
     height: 100px;
   }
 }
+
+/* Compact round results and committee finance workflow. */
+.standings-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.standing-card {
+  border: 1px solid var(--line);
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  min-width: 0;
+}
+.standing-card.is-you {
+  border-color: var(--green);
+  box-shadow: inset 4px 0 var(--green);
+}
+.standing-heading {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.standing-heading > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.standing-heading h3 {
+  overflow-wrap: anywhere;
+  font-size: 1.15rem;
+}
+.standing-heading p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rank-number {
+  background: var(--soft);
+  color: var(--green);
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.standing-total {
+  text-align: right;
+  flex-shrink: 0;
+}
+.standing-total strong {
+  font-size: 1.7rem;
+  display: block;
+  line-height: 1.2;
+}
+.standing-total small {
+  font-size: 10px;
+}
+.round-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 0 0;
+  margin: 18px 0 0;
+  border-top: 1px solid var(--line);
+}
+.round-metrics dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.round-metrics dd {
+  font-size: 1.3rem;
+  font-weight: 750;
+  margin: 5px 0 0;
+}
+.round-metrics dd small {
+  font-size: 11px;
+  font-weight: 500;
+}
+.metric-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+.secret-rounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  font-size: 12px;
+}
+.personal-highlights,
+.finance-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.personal-highlights > div,
+.finance-totals > div {
+  background: var(--soft);
+  padding: 17px;
+  border-radius: 12px;
+}
+.personal-highlights small,
+.finance-totals small {
+  display: block;
+  font-size: 11px;
+}
+.personal-highlights strong,
+.finance-totals strong {
+  display: block;
+  font-size: 1.65rem;
+  margin-top: 6px;
+}
+.personal-highlights strong small {
+  display: inline;
+  font-size: 12px;
+}
+.finance-totals span {
+  font-size: 12px;
+}
+.notification-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  background: #b93432;
+  color: #fff;
+  border-radius: 30px;
+  font-size: 11px;
+  margin-left: 5px;
+  padding: 0 5px;
+}
+.receipt-preview {
+  max-width: 240px;
+  max-height: 300px;
+  object-fit: contain;
+}
+.receipt-dialog {
+  width: min(760px, calc(100% - 24px));
+  padding: 24px;
+}
+.receipt-dialog img {
+  width: 100%;
+  max-height: 65dvh;
+  object-fit: contain;
+  margin-top: 18px;
+}
+.expense-card .section-heading {
+  align-items: flex-start;
+}
+.expense-card h3 {
+  overflow-wrap: anywhere;
+}
+#roundResults {
+  margin-top: 25px;
+}
+#leagueRound {
+  max-width: 320px;
+}
+@media (max-width: 600px) {
+  .standing-card {
+    padding: 16px;
+  }
+  .standing-heading {
+    gap: 10px;
+  }
+  .standing-heading h3 {
+    font-size: 1rem;
+  }
+  .standing-total strong {
+    font-size: 1.4rem;
+  }
+  .round-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .personal-highlights {
+    gap: 7px;
+  }
+  .personal-highlights > div {
+    padding: 11px 9px;
+  }
+  .personal-highlights strong {
+    font-size: 1.3rem;
+  }
+  .finance-totals {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .finance-totals > div {
+    padding: 15px;
+  }
+  #personalResults .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

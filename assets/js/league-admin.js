@@ -1,10 +1,10 @@
-import { openScoreWizard } from "./score-wizard.js?v=2027-club-1";
+import { openScoreWizard } from "./score-wizard.js?v=2027-results-1";
 import {
   adjustment,
   roundAverage,
   handicapAt,
   rulesHTML,
-} from "./league-rules.js?v=2027-club-1";
+} from "./league-rules.js?v=2027-results-1";
 const b = await window.barfordReady,
   e = b.escape;
 let state,
@@ -98,8 +98,27 @@ function wireNext(inputs) {
     }),
   );
 }
+export function updateHandicapSetup(data) {
+  const button = document.querySelector('[data-tab="handicaps"]');
+  if (button)
+    button.hidden = !data.players.some((p) => p.starting_handicap == null);
+}
 function renderHandicaps(area) {
-  area.innerHTML = `<h2>Starting handicaps</h2><p>Set the season’s starting handicap for every registered player. Enter moves to the next name. Leave unknown handicaps blank.</p><p class="notice">Correcting a starting handicap recalculates every published round. These are starting values; event handicaps are calculated automatically.</p><form id="handicapForm"><div class="table-scroll"><table><thead><tr><th>Member</th><th>Starting HCP</th></tr></thead><tbody>${state.players.map((p) => `<tr><th scope="row"><label for="hcp-${p.id}">${e(p.name)}</label></th><td><input class="score-input" id="hcp-${p.id}" data-hcp="${p.id}" type="number" inputmode="decimal" min="0" max="36" step="0.1" value="${p.starting_handicap ?? ""}" aria-label="Starting handicap for ${e(p.name)}"></td></tr>`).join("")}</tbody></table></div><div class="actions section"><button ${state.players.length ? "" : "disabled"}>Save all starting handicaps</button><button type="button" class="secondary" id="reloadHandicaps">Reload</button></div><p class="form-status" role="status"></p></form>`;
+  updateHandicapSetup(state);
+  if (!state.players.some((p) => p.starting_handicap == null)) {
+    area.innerHTML =
+      "<h2>Starting handicaps complete</h2><p>Every registered player is ready. Use Manual handicap adjustments for committee decisions during the season. This setup returns if a new player needs a starting handicap.</p>";
+    return;
+  }
+  area.innerHTML = `<h2>Starting handicaps</h2><p>Set the starting handicap for players still awaiting setup. Enter moves to the next name. Leave unknown handicaps blank.</p><p class="notice">Once everyone is set, this setup disappears. Use Manual handicap adjustments for committee decisions during the season.</p><form id="handicapForm"><div class="table-scroll"><table><thead><tr><th>Member</th><th>Starting HCP</th></tr></thead><tbody>${state.players
+    .filter((p) => p.starting_handicap == null)
+    .map(
+      (p) =>
+        `<tr><th scope="row"><label for="hcp-${p.id}">${e(p.name)}</label></th><td><input class="score-input" id="hcp-${p.id}" data-hcp="${p.id}" type="number" inputmode="decimal" min="0" max="36" step="0.1" value="${p.starting_handicap ?? ""}" aria-label="Starting handicap for ${e(p.name)}"></td></tr>`,
+    )
+    .join(
+      "",
+    )}</tbody></table></div><div class="actions section"><button ${state.players.length ? "" : "disabled"}>Save all starting handicaps</button><button type="button" class="secondary" id="reloadHandicaps">Reload</button></div><p class="form-status" role="status"></p></form>`;
   const form = area.querySelector("form"),
     inputs = [...area.querySelectorAll("[data-hcp]")];
   inputs.forEach((i) => (i.oninput = () => (dirty = true)));
@@ -128,6 +147,7 @@ function renderHandicaps(area) {
       state = data;
       dirty = false;
       b.toast("Starting handicaps saved. Published rounds recalculated.");
+      renderHandicaps(area);
     });
   };
 }

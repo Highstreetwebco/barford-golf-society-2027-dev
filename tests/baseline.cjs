@@ -254,6 +254,50 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       model.league.revision++;
       return reply(model.league);
     }
+    if (p.endsWith("/rpc/baseline_finance")) {
+      model.expenses ||= [];
+      const q = body.payload || {};
+      if (body.action === "summary")
+        return reply({ pending: model.expenses.filter((x) => !x.done).length });
+      if (body.action === "list")
+        return reply({
+          items: model.expenses,
+          charges: model.ops?.charges || [],
+        });
+      if (body.action === "add") {
+        const x = {
+          ...q,
+          id: model.expenses.length + 1,
+          revision: 0,
+          done: false,
+          created_at: "2027-06-25T10:00:00Z",
+          created_by_name: "Test Member",
+        };
+        model.expenses.push(x);
+        return reply(x);
+      }
+      if (body.action === "paid") {
+        const x = model.expenses.find((x) => x.id === q.id);
+        Object.assign(x, {
+          done: true,
+          revision: x.revision + 1,
+          paid_at: "2027-06-25T12:00:00Z",
+          paid_by_name: "Test Member",
+        });
+        return reply(x);
+      }
+    }
+    if (p.startsWith("/storage/v1/object/sign/baseline-expense-receipts/"))
+      return reply({ signedURL: "/storage/v1/object/receipt-test.png" });
+    if (p.startsWith("/storage/v1/object/baseline-expense-receipts/")) {
+      model.receiptUploads = (model.receiptUploads || 0) + 1;
+      return reply({ Key: p.replace("/storage/v1/object/", "") });
+    }
+    if (p === "/storage/v1/object/receipt-test.png")
+      return route.fulfill({
+        contentType: "image/png",
+        body: fs.readFileSync(path.join(root, "icon-logo.png")),
+      });
     if (p.endsWith("/rpc/baseline_operations")) {
       model.operationCalls ||= [];
       model.operationCalls.push(body);
@@ -1113,7 +1157,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       const people = Array.from({ length: 6 }, (_, i) => ({
         id: `22222222-2222-4222-8222-${String(i + 1).padStart(12, "0")}`,
         name: `Player ${i + 1}`,
-        starting_handicap: 20,
+        starting_handicap: null,
       }));
       model.league = { revision: 1, players: people, rounds: [] };
       model.events = [
@@ -1151,6 +1195,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
           .evaluate((x) => x === document.activeElement),
         true,
       );
+      for (let n = 2; n <= 6; n++)
+        await page
+          .getByLabel(`Starting handicap for Player ${n}`, { exact: true })
+          .fill("20");
       await page
         .getByRole("button", { name: "Save all starting handicaps" })
         .click();
@@ -1160,6 +1208,19 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         })
         .waitFor();
       assert.equal(model.handicaps.entries[0].handicap, 18.5);
+      assert.equal(
+        await page.locator('[data-tab="handicaps"]').isVisible(),
+        false,
+      );
+      await page.reload();
+      await page.evaluate(() => window.barfordReady);
+      await page
+        .getByRole("heading", { name: "Society administration." })
+        .waitFor();
+      assert.equal(
+        await page.locator('[data-tab="handicaps"]').isVisible(),
+        false,
+      );
       await page
         .getByRole("button", { name: "Enter scores", exact: true })
         .click();
@@ -1307,14 +1368,13 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       };
       const mp = await member.newPage();
       await mp.goto(base + "scores.html");
-      await mp.locator(".league-table tbody tr").first().waitFor();
-      assert.equal(await mp.locator(".secret-score").count(), 4);
+      await mp.locator(".standing-card").first().waitFor();
+      assert.equal(await mp.locator(".secret-score").count(), 2);
       assert.equal(
         await mp
-          .locator(".league-table tbody tr")
+          .locator(".standing-card")
           .first()
-          .locator("td")
-          .nth(1)
+          .locator("[data-total]")
           .textContent(),
         "150",
       );
@@ -1357,12 +1417,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByText("Admin view · All seven rounds visible.", { exact: true })
         .waitFor();
       assert.equal(await mp.locator(".secret-score").count(), 0);
+      await mp.getByLabel("Choose round", { exact: true }).selectOption("7");
       assert.equal(
         await mp
-          .locator(".league-table tbody tr")
+          .locator(".standing-card")
           .first()
-          .locator("td")
-          .nth(1)
+          .locator("[data-total]")
           .textContent(),
         "170",
       );
@@ -2099,6 +2159,210 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         status: "passed",
       });
       await context.close();
+    }
+    for (const width of [320, 1365]) {
+      const ctx = await browser.newContext({
+        viewport: { width, height: 960 },
+        serviceWorkers: "block",
+        acceptDownloads: true,
+      });
+      const model = await mocks(ctx, { signedIn: true, admin: true }),
+        page = await ctx.newPage(),
+        errors = [];
+      page.on("pageerror", (err) => errors.push(err.message));
+      model.league = {
+        revision: 1,
+        players: [{ id: uid, name: "Test Member", starting_handicap: 20 }],
+        rounds: [],
+      };
+      await page.goto(base + "admin.html");
+      await page.locator('[data-tab="committee"]').click();
+      await page.getByText("Add an expense", { exact: true }).click();
+      await page
+        .getByLabel("Your name / claimant", { exact: true })
+        .fill("Test Member");
+      await page
+        .getByLabel("What is it for?", { exact: true })
+        .fill("=Prize purchases");
+      await page.getByLabel("Amount due (£)", { exact: true }).fill("27.50");
+      await page
+        .locator("input[name=receipt]")
+        .setInputFiles(path.join(root, "icon-logo.png"));
+      await page
+        .getByRole("button", { name: "Add expense", exact: true })
+        .click();
+      await page
+        .getByRole("heading", { name: "=Prize purchases", exact: true })
+        .waitFor();
+      assert.equal(model.receiptUploads, 1);
+      assert.equal(
+        await page
+          .locator('[data-tab="committee"] .notification-count')
+          .innerText(),
+        "1",
+      );
+      await page
+        .getByRole("button", { name: "View receipt", exact: true })
+        .click();
+      await page
+        .getByRole("heading", { name: "Expense receipt", exact: true })
+        .waitFor();
+      await page
+        .getByRole("button", { name: "Close receipt", exact: true })
+        .click();
+      const download = page.waitForEvent("download");
+      await page
+        .getByRole("button", { name: "Export expenses CSV", exact: true })
+        .click();
+      const file = await download;
+      await file.saveAs(path.join(out, `expenses-${width}.csv`));
+      const csv = fs.readFileSync(
+        path.join(out, `expenses-${width}.csv`),
+        "utf8",
+      );
+      assert.match(csv, /27.5/);
+      assert.match(csv, /'=Prize purchases/);
+      assert.match(csv, /Unpaid/);
+      page.once("dialog", (d) => d.accept());
+      await page
+        .getByRole("button", { name: "Mark paid", exact: true })
+        .click();
+      await page.getByText("Expense marked paid.", { exact: true }).waitFor();
+      assert.equal(
+        await page
+          .locator('[data-tab="committee"] .notification-count')
+          .count(),
+        0,
+      );
+      assert.equal(model.expenses[0].paid_by_name, "Test Member");
+      for (const name of ["Export income CSV", "Export finance summary"]) {
+        const pending = page.waitForEvent("download");
+        await page.getByRole("button", { name, exact: true }).click();
+        assert((await pending).suggestedFilename().endsWith(".csv"));
+      }
+      assert.equal(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      await page.screenshot({
+        path: path.join(out, `expense-paid-${width}.png`),
+        fullPage: true,
+      });
+      model.league.players.push({
+        id: "pending",
+        name: "New Player",
+        starting_handicap: null,
+      });
+      await page.reload();
+      await page
+        .locator('[data-tab="handicaps"]')
+        .waitFor({ state: "visible" });
+      assert.deepEqual(errors, []);
+      await ctx.close();
+      report.push({
+        page: "receipt-upload-paid-badge-finance-exports-and-new-player-setup",
+        width,
+        status: "passed",
+      });
+      const mc = await browser.newContext({
+        viewport: { width, height: 960 },
+        serviceWorkers: "block",
+      });
+      const mm = await mocks(mc, { signedIn: true }),
+        mp = await mc.newPage();
+      mm.board = {
+        visible_rounds: 5,
+        players: [
+          { id: uid, name: "Test Member", starting_handicap: 20 },
+          { id: "other", name: "Another Player", starting_handicap: 15 },
+        ],
+        rounds: [
+          {
+            round: 1,
+            average: 30,
+            results: [
+              {
+                user_id: uid,
+                points: 38,
+                handicap: 20,
+                adjustment: -2,
+                next_handicap: 18,
+                winner: true,
+              },
+              {
+                user_id: "other",
+                points: 25,
+                handicap: 15,
+                adjustment: 2,
+                next_handicap: 17,
+                winner: false,
+              },
+            ],
+          },
+          {
+            round: 6,
+            average: 99,
+            results: [
+              {
+                user_id: uid,
+                points: 99,
+                handicap: 18,
+                adjustment: -9,
+                next_handicap: 9,
+                winner: true,
+              },
+            ],
+          },
+        ],
+      };
+      await mp.goto(base + "index.html");
+      await mp
+        .locator("#personalResults")
+        .getByText("Round winner. Well played.", { exact: true })
+        .waitFor();
+      const text = await mp.locator("#personalResults").innerText();
+      assert.match(text, /38/);
+      assert.match(text, /-2/);
+      assert.match(text, /18/);
+      assert(!text.includes("99"));
+      await mp.screenshot({
+        path: path.join(out, `personal-results-${width}.png`),
+        fullPage: true,
+      });
+      await mp.goto(base + "scores.html");
+      await mp.locator(".standing-card").first().waitFor();
+      assert.equal(
+        await mp.locator(".standing-card [data-total]").first().innerText(),
+        "38",
+      );
+      assert.match(
+        await mp.locator(".standing-card").nth(1).innerText(),
+        /\+2/,
+      );
+      assert.equal(
+        await mp
+          .locator("#roundResults")
+          .evaluate((x) => x.scrollWidth > x.clientWidth + 2),
+        false,
+      );
+      assert.equal(
+        await mp.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth + 2,
+        ),
+        false,
+      );
+      await mp.screenshot({
+        path: path.join(out, `round-cards-${width}.png`),
+        fullPage: true,
+      });
+      await mc.close();
+      report.push({
+        page: "compact-round-results-personal-summary-and-secret-protection",
+        width,
+        status: "passed",
+      });
     }
     const { packPlayers } = await import(
       "data:text/javascript;base64," +
