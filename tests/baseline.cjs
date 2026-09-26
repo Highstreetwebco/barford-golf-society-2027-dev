@@ -1238,7 +1238,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       await dialog.getByLabel("Stableford points", { exact: true }).fill("40");
       await dialog
         .getByText(
-          "Round handicap: 20. Adjustment available after at least four played scores. It may range from −3 to +2.",
+          "Round handicap: 20. Adjustment available after at least four played scores. The final adjustment needs every score.",
           { exact: true },
         )
         .waitFor();
@@ -1301,7 +1301,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         .getByRole("heading", { name: "Complete round 1", exact: true })
         .waitFor();
       await dialog
-        .getByText("1 non-participants automatically marked DNP", {
+        .getByText("1 non-participant automatically marked DNP", {
           exact: true,
         })
         .click();

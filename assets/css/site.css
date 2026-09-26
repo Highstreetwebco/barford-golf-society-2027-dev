@@ -2121,3 +2121,10 @@ td button {
     padding: 16px;
   }
 }
+.score-wizard .wizard-final-actions {
+  position: sticky;
+  bottom: -22px;
+  padding: 14px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
