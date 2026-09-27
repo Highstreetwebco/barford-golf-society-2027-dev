@@ -73,5 +73,18 @@ export async function mountPersonalResults(area, b) {
   }
   const result = me.scores.find((s) => s.round === latest);
   const best = Math.max(0, ...me.scores.map((s) => s.points || 0));
+  const round = data.rounds.find((r) => r.round === latest);
+  const published = Date.parse(round?.published_at || "");
+  const fresh = Number.isFinite(published) && Date.now() >= published && Date.now() - published < 48 * 60 * 60 * 1000;
+  if (fresh) {
+    const players = ranked.map((p) => ({ player: p, score: p.scores.find((s) => s.round === latest) }))
+      .sort((a, b) => (b.score?.points ?? -1) - (a.score?.points ?? -1) || a.player.name.localeCompare(b.player.name));
+    area.classList.add("home-round-review");
+    document.getElementById("nextEvent")?.closest("section")?.before(area);
+    area.innerHTML = `<div class="section-heading"><div><p class="eyebrow">ROUND ${latest} · RESULTS PUBLISHED</p><h2>Your round review</h2></div><a href="scores.html">Full leaderboard →</a></div><div class="personal-highlights"><div><small>Your score</small><strong>${result?.points == null ? "DNP" : e(result.points) + "<small> pts</small>"}</strong></div><div><small>League position</small><strong>${me.rank}<small> / ${ranked.length}</small></strong></div><div><small>Best-five total</small><strong>${me.total}<small> pts</small></strong></div></div>${metricsHTML(result, e)}${result?.winner ? '<p class="metric-note"><strong>You won this round.</strong></p>' : ""}<div class="round-review-field"><div class="section-heading"><h3>Everyone’s round</h3><p class="muted">Round average: ${e(round.average ?? "—")} pts</p></div><ol class="round-review-list">${players.map(({ player, score }) => `<li class="${player.id === b.state.user.id ? "is-you" : ""}"><span><strong>${e(player.name)}${player.id === b.state.user.id ? " (you)" : ""}</strong>${score?.winner ? " <small>Winner</small>" : ""}</span><span>${score?.points == null ? "DNP" : e(score.points) + " pts"}</span></li>`).join("")}</ol></div>${data.visible_rounds < 7 ? '<p class="muted">Rounds 6 and 7 remain secret to members.</p>' : ""}`;
+    return;
+  }
+  area.classList.remove("home-round-review");
+  document.getElementById("nextEvent")?.closest("section")?.after(area);
   area.innerHTML = `<div class="section-heading"><div><p class="eyebrow">YOUR LATEST RESULTS · ROUND ${latest}</p><h2>${result?.winner ? "Round winner. Well played." : "Your season so far."}</h2></div><a href="scores.html">Full leaderboard →</a></div><div class="personal-highlights"><div><small>League position</small><strong>${me.rank}${ranked.filter((p) => p.rank === me.rank).length > 1 ? " equal" : ""}<small> / ${ranked.length}</small></strong></div><div><small>Best-five total</small><strong>${me.total}<small> pts</small></strong></div><div><small>Rounds played</small><strong>${me.played}<small> / ${latest}</small></strong></div></div>${metricsHTML(result, e)}<p class="metric-note">Best round: ${best ? best + " points" : "not played yet"} · ${me.total === ranked[0].total ? "Level with the leading points total" : ranked[0].total - me.total + " points behind the leader"}.</p>${data.visible_rounds < 7 ? '<p class="muted">Member standings and summaries include published rounds 1–5 only. Rounds 6 and 7 stay secret.</p>' : '<p class="muted">Admin view: includes published secret rounds.</p>'}`;
 }

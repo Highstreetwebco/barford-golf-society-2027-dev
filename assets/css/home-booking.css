@@ -66,6 +66,16 @@
 .home-day-hub { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 .home-day-hub > *, .home-day-hub [data-day-weather], .home-day-hub #homeTeeGroup { min-width: 0; max-width: 100%; }
 .home-day-hub .home-hole-action { margin: 0; }
+.home-round-review { border-color: #78b6a8; }
+.round-review-field { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+.round-review-field .section-heading { margin-bottom: 10px; }
+.round-review-field h3, .round-review-field p { margin: 0; }
+.round-review-list { list-style: none; padding: 0; margin: 0; }
+.round-review-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding: 11px 5px; }
+.round-review-list li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.round-review-list li > span:last-child { white-space: nowrap; font-weight: 800; }
+.round-review-list li.is-you { background: var(--soft); border-radius: 8px; padding-inline: 10px; }
+.round-review-list small { color: var(--muted); font-weight: 600; }
 .home-day-directions, .home-day-weather { padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .home-day-directions h3, .home-day-weather h2 { margin: 0 0 10px; font-size: 1.2rem; }
 .home-day-directions .address { margin: 0 0 10px; }

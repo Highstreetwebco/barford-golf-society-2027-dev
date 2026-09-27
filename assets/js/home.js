@@ -1,4 +1,4 @@
-import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
+import { mountPersonalResults } from "./league-view.js?v=2027-round-review-1";
 import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-simple-events-1";
 import { mountEventOperations } from "./operations.js?v=2027-payment-status-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
