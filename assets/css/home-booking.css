@@ -63,15 +63,32 @@
 .has-published-tee .home-member-grid:has(#homeOperations[hidden]) { display: none; }
 .has-published-tee .home-event-actions:empty { display: none; }
 .home-day-hub[hidden] { display: none; }
-.home-day-hub { display: grid; gap: 16px; }
+.home-day-hub { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.home-day-hub > *, .home-day-hub [data-day-weather], .home-day-hub #homeTeeGroup { min-width: 0; max-width: 100%; }
 .home-day-hub .home-hole-action { margin: 0; }
 .home-day-directions, .home-day-weather { padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .home-day-directions h3, .home-day-weather h2 { margin: 0 0 10px; font-size: 1.2rem; }
 .home-day-directions .address { margin: 0 0 10px; }
+.home-day-directions .event-links { margin-top: 10px; gap: 10px 16px; }
+.home-day-weather .weather-hours { max-width: 100%; }
 .home-day-hub #homeTeeGroup { margin: 0; }
 .is-event-day > .next-event-heading, .is-event-day > .next-event-facts, .is-event-day > .home-playing-list,
 .is-event-day .home-rsvp-confirmation, .is-event-day .home-event-fee,
 .is-event-day .home-rsvp-cutoff, .is-event-day .status-pill { display: none; }
+@media (max-width: 600px) {
+  .page-index.home-member .home-day-hub { gap: 10px; }
+  .home-day-directions, .home-day-weather { padding: 15px 14px; }
+  .home-day-directions .event-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .home-day-directions .event-links a { display: flex; justify-content: center; align-items: center; min-height: 42px; padding: 7px 5px; border: 1px solid var(--line); border-radius: 9px; text-align: center; font-size: .83rem; }
+  .home-day-weather .weather-summary { font-size: 1rem; line-height: 1.45; }
+  .home-day-weather .weather-hours { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; gap: 6px; margin: 12px 0; }
+  .home-day-weather .weather-hours > div { min-width: 0; padding: 8px 3px; gap: 3px; font-size: .8rem; }
+  .home-day-hub #homeTeeGroup { padding: 15px 12px; }
+  .home-day-hub .member-tee-card { padding: 12px; }
+  .home-day-hub .member-tee-players li { gap: 9px; }
+  .home-day-hub .portrait-button, .home-day-hub .portrait-initials { flex-basis: 44px; width: 44px; height: 44px; }
+  .home-day-hub .home-hole-action button { flex: 1 1 100%; }
+}
 .home-member-grid:has(#homeOperations[hidden]) { grid-template-columns: 1fr; }
 .rsvp-dialog {
   width: min(540px, calc(100% - 24px));
