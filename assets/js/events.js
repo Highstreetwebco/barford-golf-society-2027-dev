@@ -1,6 +1,6 @@
 import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
-import { openRsvp } from "./rsvp.js?v=2027-simple-events-1";
+import { openRsvp } from "./rsvp.js?v=2027-rsvp-cutoff-1";
 import {
   mountExperience,
   mountBuggy,

@@ -3,7 +3,7 @@ import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?
 import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
 import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
-import { openRsvp, rsvpClosed } from "./rsvp.js?v=2027-simple-events-1";
+import { openRsvp, rsvpClosed, rsvpChangeLocked } from "./rsvp.js?v=2027-rsvp-cutoff-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 const personal = document.getElementById("personalResults");
@@ -108,10 +108,12 @@ else {
   function renderActions() {
     const focusedAction = actions.contains(document.activeElement) ? (document.activeElement.hasAttribute("data-home-invite") ? "[data-home-invite]" : "[data-home-rsvp]") : null;
     const closed = rsvpClosed(ev);
+    const locked = rsvpChangeLocked(ev, response, b.state.admin);
+    const confirmation = response?.reserve ? "You’re on the waiting list" : response?.attending ? ev.event_type === "social" ? "You’re attending" : "You’re playing" : response ? "You’re not playing" : "";
     const guestClosed = closed || (ev.rsvp_deadline && ev.rsvp_deadline < londonToday());
     const canInvite = !!b.state.user && guestContext && guestContext.category !== "guest" && !guestClosed;
     const note = area.querySelector("[data-invite-note]");
-    actions.innerHTML = `${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change RSVP" : "RSVP"}</button>`}${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
+    actions.innerHTML = `<div class="home-rsvp-controls">${confirmation ? `<p class="home-rsvp-confirmation" role="status"><span aria-hidden="true">${response?.attending && !response.reserve ? "✓" : "•"}</span> ${b.escape(confirmation)}</p>` : ""}${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : locked ? '<p class="home-rsvp-cutoff">Online RSVP changes are closed within six days of the event. Contact the committee to change your RSVP.</p>' : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP"}</button>`}</div>${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
     note.hidden = !canInvite || ev.guest_price != null;
     note.textContent = "The organiser needs to confirm the guest price before invitations can be sent.";
     const rsvpButton = actions.querySelector("[data-home-rsvp]");
@@ -181,7 +183,8 @@ else {
     };
   }
   updateFacts();
-  renderActions();
+  if (b.state.user) actions.innerHTML = '<p class="muted">Checking your RSVP…</p>';
+  else renderActions();
   refreshHoleAction();
   const initialRefresh = Promise.all([refreshBooking(), updateSlots(ev, area)]);
   if (location.hash === "#rsvp") await openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });

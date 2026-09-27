@@ -1,6 +1,12 @@
 // One member RSVP flow, shared by the homepage and older event links.
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
 export const rsvpClosed = (event) => event.cancelled || event.date < today();
+export const rsvpChangeLocked = (event, response, admin = false) => {
+  if (!response || admin) return false;
+  const cutoff = new Date(`${event.date}T00:00:00Z`);
+  cutoff.setUTCDate(cutoff.getUTCDate() - 6);
+  return today() >= cutoff.toISOString().slice(0, 10);
+};
 let opening = false;
 
 function radio(e, name, legend, options, selected) {
@@ -59,6 +65,10 @@ export async function openRsvp(ev, b, { onSaved } = {}) {
       Object.assign(ev, current.data);
       if (rsvpClosed(ev)) {
         dialog.querySelector("[role=status]").textContent = ev.cancelled ? "This event has been cancelled." : "Bookings for this event are closed.";
+        return;
+      }
+      if (rsvpChangeLocked(ev, r, b.state.admin)) {
+        dialog.querySelector("[role=status]").textContent = "Online RSVP changes close six days before the event. Contact the committee to change your RSVP.";
         return;
       }
       if (guests.data.category === "guest" && !(guests.data.bookings || []).some((booking) => Number(booking.event_id) === Number(ev.id))) {
