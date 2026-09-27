@@ -10,7 +10,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
   const dialog=document.createElement("dialog");
   dialog.className="hole-dialog";
   dialog.setAttribute("aria-label","View hole");
-  dialog.innerHTML=`<div class="hole-dialog-top"><div><span class="eyebrow">ON THE COURSE</span><h2>Choose your hole</h2><p>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-close>Close</button></div><div data-hole-loading role="status" class="hole-load">Loading the course…</div><section data-hole-picker hidden><p class="hole-picker-note">Choose a hole to open its satellite map and GPS distances.</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section><p class="hole-map-attribution" data-hole-source hidden></p><section data-hole-screen hidden><div class="hole-screen-heading"><div><h2 data-hole-title></h2><p data-hole-course></p></div><button type="button" class="secondary" data-hole-grid-back>All holes</button></div><div class="hole-stats" data-hole-stats></div><div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p><button type="button" class="hole-recentre" data-hole-fit>Fit hole</button></div><div class="hole-distance-panel"><p data-distance-origin>From mapped tee</p><div class="hole-distances" data-distances></div><div class="hole-target-distances" data-target-distances hidden></div></div><div class="hole-gps-controls"><button type="button" data-gps-toggle>Use my GPS</button><p data-gps-status role="status">GPS is off. Distances are from the mapped tee.</p></div><p class="hole-help">Tap the map to measure a target. Phone GPS distances are a guide. Your location stays on this device.</p><div class="hole-navigation"><button type="button" class="secondary" data-hole-prev>← Previous</button><span data-hole-count></span><button type="button" class="secondary" data-hole-next>Next →</button></div></section>`;
+  dialog.innerHTML=`<div class="hole-dialog-top"><div><span class="eyebrow">ON THE COURSE</span><h2>Choose your hole</h2><p>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-close>Close</button></div><div data-hole-loading role="status" class="hole-load">Loading the course…</div><section data-hole-picker hidden><p class="hole-picker-note">Choose a hole to open its satellite map and GPS distances.</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section><p class="hole-map-attribution" data-hole-source hidden></p><section data-hole-screen hidden><div class="hole-screen-heading"><div><h2 data-hole-title></h2><p data-hole-course></p></div><button type="button" class="secondary" data-hole-grid-back>All holes</button></div><div class="hole-stats" data-hole-stats></div><div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p><button type="button" class="hole-recentre" data-hole-fit>Fit hole</button></div><div class="hole-distance-panel"><p data-distance-origin>From mapped tee</p><div class="hole-distances" data-distances></div><div class="hole-target-distances" data-target-distances hidden></div></div><div class="hole-gps-controls"><button type="button" data-gps-toggle>Use my GPS</button><button type="button" class="secondary" data-find-green>Find green with camera</button><p data-gps-status role="status">GPS is off. Distances are from the mapped tee.</p></div><p class="hole-help">Tap the map to measure a target. Phone GPS distances are a guide. Your location stays on this device.</p><div class="hole-navigation"><button type="button" class="secondary" data-hole-prev>← Previous</button><span data-hole-count></span><button type="button" class="secondary" data-hole-next>Next →</button></div></section>`;
   document.body.append(dialog);
   if(preview){
     dialog.setAttribute("aria-label","Course map preview");
@@ -21,7 +21,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
   activeDialog=dialog;
   dialog.showModal();
   const $=(selector)=>dialog.querySelector(selector);
-  let layout,holes=[],selected,controller,mapPromise,closed=false;
+  let layout,holes=[],selected,controller,mapPromise,closed=false,greenFinder=null;
   let watch=null,watchGeneration=0,wanted=false,fix=null,target=null;
   function gpsStatus(message){$("[data-gps-status]").textContent=message;}
   function clearPosition(){fix=null;controller?.setPosition(null);updateDistances();}
@@ -68,6 +68,14 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(wanted){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Use my GPS";gpsStatus("GPS is off. Distances are from the mapped tee.");}
     else beginGPS();
   };
+  $("[data-find-green]").onclick=async()=>{
+    if(!selected?.reviewed||!selected.green)return;
+    const hole=selected;
+    try {
+      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-1");
+      if(!closed&&selected===hole)greenFinder=openGreenFinder(hole,layout.name,holes.filter(h=>h.reviewed&&h.tee&&h.green));
+    } catch { gpsStatus("The camera direction view could not load. Use the satellite map instead."); }
+  };
   function grid(){
     $("[data-hole-picker]").hidden=false;$("[data-hole-screen]").hidden=true;
     dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Choose your hole";
@@ -77,6 +85,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     const hole=holes.find(h=>h.number===number);
     if(!hole?.reviewed||!hole.tee||!hole.green)return;
     selected=hole;target=null;
+    if(greenFinder?.open)greenFinder.close();
     $("[data-hole-picker]").hidden=true;$("[data-hole-screen]").hidden=false;
     dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Your hole view";
     $("[data-hole-title]").textContent=`Hole ${number}`;
@@ -85,6 +94,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     $("[data-hole-count]").textContent=`${number} / 18`;
     $("[data-hole-prev]").disabled=!holes.some(h=>h.number<number&&h.reviewed&&h.tee&&h.green);
     $("[data-hole-next]").disabled=!holes.some(h=>h.number>number&&h.reviewed&&h.tee&&h.green);
+    $("[data-find-green]").hidden=preview;
     updateDistances();
     if(controller){controller.setHole(hole);controller.setPosition(validFix()?fix.point:null);return;}
     if(mapPromise)return;
@@ -105,7 +115,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
   $("[data-hole-close]").onclick=()=>dialog.close();
   function visibility(){if(document.hidden){stopWatching();if(wanted)gpsStatus("GPS paused while the screen is hidden.");}else if(wanted)beginGPS();}
   const freshness=setInterval(()=>{if(fix&&!validFix()){clearPosition();gpsStatus("GPS signal is out of date. Waiting for a fresh location…");}},3000);
-  function cleanup(){if(closed)return;closed=true;wanted=false;stopWatching();clearInterval(freshness);document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pagehide",cleanup);controller?.destroy();dialog.remove();activeDialog=null;}
+  function cleanup(){if(closed)return;closed=true;if(greenFinder?.open)greenFinder.close();wanted=false;stopWatching();clearInterval(freshness);document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pagehide",cleanup);controller?.destroy();dialog.remove();activeDialog=null;}
   dialog.addEventListener("close",cleanup);
   document.addEventListener("visibilitychange",visibility);
   window.addEventListener("pagehide",cleanup);
