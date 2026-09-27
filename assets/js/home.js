@@ -175,7 +175,7 @@ else {
     holeArea.querySelector("button").onclick = async (event) => {
       const button = event.currentTarget;
       button.disabled = true;
-      try { const { openHolePicker } = await import("./hole-view.js?v=2027-green-finder-test-2"); await openHolePicker(ev, b); }
+      try { const { openHolePicker } = await import("./hole-view.js?v=2027-green-finder-test-3"); await openHolePicker(ev, b); }
       catch (error) { b.toast(error.message); }
       finally { button.disabled = false; }
     };

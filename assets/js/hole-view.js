@@ -30,7 +30,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
   function updateDistances(){
     if(!selected||closed)return;
     const live=validFix(),origin=live?fix.point:selected.tee;
-    $("[data-distance-origin]").textContent=live?`From your GPS location · accuracy ±${Math.round(fix.accuracy)} m`:"From mapped tee · GPS not active";
+    $("[data-distance-origin]").textContent=live?`TEST MODE · From your GPS location · accuracy ±${Math.round(fix.accuracy)} m`:"From mapped tee · tap Use my GPS to test";
     $("[data-distance-origin]").classList.toggle("is-live",live);
     $("[data-distances]").innerHTML=[["front","Front"],["green","Centre"],["back","Back"]].filter(([key])=>selected[key]).map(([key,label])=>`<div><span>${label}</span><strong data-distance="${key}">${yardsBetween(origin,selected[key])??"—"}</strong><small>yards</small></div>`).join("");
     const targetPanel=$("[data-target-distances]");targetPanel.hidden=!target;
@@ -50,9 +50,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
       const point=coordinates({lat:result.coords.latitude,lng:result.coords.longitude}),accuracy=Number(result.coords.accuracy),timestamp=Number(result.timestamp);
       if(!point||!Number.isFinite(accuracy)||accuracy<0||!Number.isFinite(timestamp)||timestamp>Date.now()+5000||Date.now()-timestamp>MAX_FIX_AGE){clearPosition();gpsStatus("GPS signal is out of date. Waiting for a fresh location…");return;}
       if(accuracy>MAX_ACCURACY){clearPosition();gpsStatus(`GPS accuracy is ±${Math.round(accuracy)} m. Waiting for a stronger signal…`);return;}
-      const nearby=holes.some(h=>h.reviewed&&[h.tee,h.green].filter(Boolean).some(p=>distanceMetres(point,p)<=2000));
-      if(!nearby){clearPosition();gpsStatus("You appear to be away from this course. Showing distances from the mapped tee.");return;}
-      fix={point,accuracy,timestamp};controller?.setPosition(point);updateDistances();gpsStatus(`GPS is live · accuracy ±${Math.round(accuracy)} m. Distances update as you move.`);
+      fix={point,accuracy,timestamp};controller?.setPosition(point);updateDistances();gpsStatus(`TEST MODE · GPS is live even away from the course · accuracy ±${Math.round(accuracy)} m. Distances update as you move.`);
     },error=>{
       if(closed||!wanted||generation!==watchGeneration)return;
       clearPosition();
@@ -72,7 +70,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(!selected?.reviewed||!selected.green)return;
     const hole=selected;
     try {
-      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-test-2");
+      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-test-3");
       if(!closed&&selected===hole)greenFinder=openGreenFinder(hole,layout.name);
     } catch { gpsStatus("The camera direction view could not load. Use the satellite map instead."); }
   };
