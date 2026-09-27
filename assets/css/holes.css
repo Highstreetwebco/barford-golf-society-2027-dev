@@ -7,6 +7,12 @@
 @media(max-width:600px){.hole-prepare-box{padding:13px}.hole-scorecard-choice{padding:13px}.hole-scorecard-choice h3{font-size:1rem}.hole-admin-dialog .section-heading:has([data-review-count]){align-items:flex-start;flex-wrap:wrap;gap:4px}.hole-admin-dialog [data-review-count]{font-size:.65rem}.hole-setup [data-course-prepare]{width:100%;min-height:45px}}
 
 .hole-gps-controls [data-find-green]{margin-top:8px}
+.hole-gps-controls{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;padding:14px 18px;background:#e5f2f0}
+.hole-gps-controls [data-find-green]{margin:0}
+.hole-gps-controls [data-gps-status]{grid-column:1/-1;margin:0;font-size:.76rem;line-height:1.4;color:#315764}
+.hole-map-actions{position:absolute;top:10px;right:10px;z-index:3;display:flex;gap:5px}
+.hole-map-actions button{position:static!important;min-width:40px;min-height:40px;border:1px solid #c9dddf;border-radius:10px;background:#fff;color:#133d45;font-size:1.1rem;box-shadow:0 3px 10px #0003}
+.hole-map-actions .hole-recentre{font-size:.72rem}
 .green-finder{box-sizing:border-box;width:min(520px,100%);max-width:100%;max-height:100dvh;margin:auto;padding:0;border:0;border-radius:20px;background:#102d30;color:#fff;overflow:auto;box-shadow:0 24px 80px #061a1ccc}
 .green-finder::backdrop{background:#071b1ed9}
 .green-finder [hidden]{display:none!important}
@@ -22,4 +28,4 @@
 .finder-info{padding:16px 18px calc(16px + env(safe-area-inset-bottom));line-height:1.4}
 .finder-test-label{margin:0 0 6px;color:#ffdf73;font-size:.7rem;font-weight:800;letter-spacing:.06em}
 .finder-info>strong{font-size:1.2rem;color:#ffdf73}.finder-info [role=status]{min-height:2.3em;margin:8px 0 12px;font-size:.84rem;color:#e1eee9}.finder-info button{width:100%}.finder-caution{margin:12px 0 0;color:#acc9c5;font-size:.72rem}
-@media(max-width:600px){.green-finder{height:100dvh;border-radius:0;display:flex;flex-direction:column}.finder-camera{flex:1;min-height:180px;max-height:none;aspect-ratio:auto}.finder-info{flex-shrink:0}.hole-gps-controls [data-find-green]{width:100%}}
+@media(max-width:600px){.green-finder{height:100dvh;border-radius:0;display:flex;flex-direction:column}.finder-camera{flex:1;min-height:180px;max-height:none;aspect-ratio:auto}.finder-info{flex-shrink:0}.hole-gps-controls{grid-template-columns:1fr 1fr;padding:12px}.hole-gps-controls button{width:100%;white-space:normal;font-size:.72rem}.hole-gps-controls [data-find-green]{width:100%}}

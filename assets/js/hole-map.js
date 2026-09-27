@@ -124,6 +124,7 @@ export async function createHoleMap(element,{center,onClick,onError}={}) {
     setPosition(point){position=coordinates(point);redraw();},
     setTarget(point){target=coordinates(point);redraw();},
     fitHole,
+    rotate(degrees){map.setHeading(((map.getHeading()||0)+degrees+360)%360);},
     destroy(){destroyed=true;clear();click.remove();failures.delete(report);maps.event.clearInstanceListeners(map);element.replaceChildren();},
   };
 }

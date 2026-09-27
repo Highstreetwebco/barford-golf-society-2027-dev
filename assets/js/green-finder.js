@@ -1,4 +1,4 @@
-import { coordinates, yardsBetween } from "./hole-map.js?v=2027-holes-1";
+import { coordinates, yardsBetween } from "./hole-map.js?v=2027-green-finder-test-4";
 
 export function bearingTo(from, to) {
   const a = coordinates(from), b = coordinates(to);
@@ -110,7 +110,7 @@ export function openGreenFinder(hole, courseName) {
         if (closed) return;
         const point = coordinates({ lat: result.coords.latitude, lng: result.coords.longitude });
         const age = Date.now() - result.timestamp;
-        if (!point || !Number.isFinite(result.coords.accuracy) || result.coords.accuracy > 35 || age < 0 || age > 15000) {
+        if (!point || !Number.isFinite(result.coords.accuracy) || result.coords.accuracy > 150 || age < 0 || age > 15000) {
           position = null; update(); return;
         }
         position = point; accuracy = result.coords.accuracy; lastFix = result.timestamp; update();
