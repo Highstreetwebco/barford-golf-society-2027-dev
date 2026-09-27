@@ -10,7 +10,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
   const dialog=document.createElement("dialog");
   dialog.className="hole-dialog";
   dialog.setAttribute("aria-label","View hole");
-  dialog.innerHTML=`<div class="hole-dialog-top"><div><span class="eyebrow">ON THE COURSE</span><h2>Choose your hole</h2><p>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-close>Close</button></div><div data-hole-loading role="status" class="hole-load">Loading the course…</div><section data-hole-picker hidden><p class="hole-picker-note">Choose a hole to open its satellite map and GPS distances.</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section><p class="hole-map-attribution" data-hole-source hidden></p><section data-hole-screen hidden><div class="hole-screen-heading"><div><h2 data-hole-title></h2><p data-hole-course></p></div><button type="button" class="secondary" data-hole-grid-back>All holes</button></div><div class="hole-stats" data-hole-stats></div><div class="hole-gps-controls"><button type="button" data-gps-toggle>Use my GPS</button><button type="button" class="secondary" data-find-green>Find green with camera</button><p data-gps-status role="status">GPS is off. Distances are from the mapped tee.</p></div><div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p><div class="hole-map-actions"><button type="button" data-hole-rotate-left aria-label="Rotate map left">↶</button><button type="button" data-hole-rotate-right aria-label="Rotate map right">↷</button><button type="button" class="hole-recentre" data-hole-fit>Fit hole</button></div></div><div class="hole-distance-panel"><p data-distance-origin>From mapped tee</p><div class="hole-distances" data-distances></div><div class="hole-target-distances" data-target-distances hidden></div></div><p class="hole-help">Tap the map to measure a target. Phone GPS distances are a guide. Your location stays on this device.</p><div class="hole-navigation"><button type="button" class="secondary" data-hole-prev>← Previous</button><span data-hole-count></span><button type="button" class="secondary" data-hole-next>Next →</button></div></section>`;
+  dialog.innerHTML=`<div class="hole-dialog-top"><div><span class="eyebrow">ON THE COURSE</span><h2>Choose your hole</h2><p>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-close>Close</button></div><div data-hole-loading role="status" class="hole-load">Loading the course…</div><section data-hole-picker hidden><p class="hole-picker-note">Tap a hole, then choose the satellite map or camera direction guide.</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section><p class="hole-map-attribution" data-hole-source hidden></p><section data-hole-screen hidden><div class="hole-screen-heading"><div><h2 data-hole-title></h2><p data-hole-course></p></div><button type="button" class="secondary" data-hole-grid-back>All holes</button></div><div class="hole-stats" data-hole-stats></div><div class="hole-mode-choices"><div class="hole-mode-intro"><strong>Find the green</strong><span>Choose the view that helps your shot.</span></div><button type="button" class="hole-mode-camera" data-find-green><span aria-hidden="true">◎</span><span><strong>Camera direction</strong><small>Point your phone towards the green centre</small></span><span aria-hidden="true">→</span></button><div class="hole-mode-map"><strong>Satellite map & distances</strong><span>See the hole, then use your location for live yardages.</span></div><div class="hole-gps-controls"><button type="button" data-gps-toggle>Use my location for distances</button><p data-gps-status role="status">Showing distances from the mapped tee. Tap the button for your live position.</p></div></div><div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p><div class="hole-map-actions"><button type="button" data-hole-rotate-left aria-label="Rotate map left">↶</button><button type="button" data-hole-rotate-right aria-label="Rotate map right">↷</button><button type="button" class="hole-recentre" data-hole-fit>Fit hole</button></div></div><div class="hole-distance-panel"><p data-distance-origin>From mapped tee</p><div class="hole-distances" data-distances></div><div class="hole-target-distances" data-target-distances hidden></div></div><p class="hole-help">Tap anywhere on the map to measure a shot. ↶ ↷ rotate the map; Fit hole recentres it. Yardages and camera direction are guides.</p><div class="hole-navigation"><button type="button" class="secondary" data-hole-prev>← Previous</button><span data-hole-count></span><button type="button" class="secondary" data-hole-next>Next →</button></div></section>`;
   document.body.append(dialog);
   if(preview){
     dialog.setAttribute("aria-label","Course map preview");
@@ -30,7 +30,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
   function updateDistances(){
     if(!selected||closed)return;
     const live=validFix(),origin=live?fix.point:selected.tee;
-    $("[data-distance-origin]").textContent=live?`TEST MODE · From your GPS location · accuracy ±${Math.round(fix.accuracy)} m`:"From mapped tee · tap Use my GPS to test";
+    $("[data-distance-origin]").textContent=live?`TEST MODE · From your GPS location · accuracy ±${Math.round(fix.accuracy)} m`:"From mapped tee · turn on your location for live distances";
     $("[data-distance-origin]").classList.toggle("is-live",live);
     $("[data-distances]").innerHTML=[["front","Front"],["green","Centre"],["back","Back"]].filter(([key])=>selected[key]).map(([key,label])=>`<div><span>${label}</span><strong data-distance="${key}">${yardsBetween(origin,selected[key])??"—"}</strong><small>yards</small></div>`).join("");
     const targetPanel=$("[data-target-distances]");targetPanel.hidden=!target;
@@ -43,7 +43,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(!window.isSecureContext){wanted=false;gpsStatus("GPS needs a secure connection. Open the website using HTTPS.");return;}
     stopWatching();
     const generation=watchGeneration;
-    $("[data-gps-toggle]").textContent="Stop GPS";
+    $("[data-gps-toggle]").textContent="Stop live distances";
     gpsStatus("Finding your location… Move into the open for the best signal.");
     try { const nextWatch=navigator.geolocation.watchPosition(result=>{
       if(closed||!wanted||document.hidden||generation!==watchGeneration)return;
@@ -54,28 +54,28 @@ export function openHolePicker(event,b,preparedLayout=null) {
     },error=>{
       if(closed||!wanted||generation!==watchGeneration)return;
       clearPosition();
-      if(error.code===1){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Try GPS again";gpsStatus("Location access was denied. Allow location for this website in your browser settings, then try again.");}
+      if(error.code===1){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Try location again";gpsStatus("Location access was denied. Allow location for this website in your browser settings, then try again.");}
       else {gpsStatus(error.code===3?"GPS timed out. Waiting for a fresh signal…":"Your location is unavailable. Waiting for a fresh signal…");}
     },{enableHighAccuracy:true,maximumAge:0,timeout:12000});
       if(generation===watchGeneration&&wanted&&!document.hidden)watch=nextWatch;
       else navigator.geolocation.clearWatch(nextWatch);
     }
-    catch {wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Try GPS again";gpsStatus("This browser blocked location access. Check this website’s location permission, then try again.");}
+    catch {wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Try location again";gpsStatus("This browser blocked location access. Check this website’s location permission, then try again.");}
   }
   $("[data-gps-toggle]").onclick=()=>{
-    if(wanted){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Use my GPS";gpsStatus("GPS is off. Distances are from the mapped tee.");}
+    if(wanted){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Use my location for distances";gpsStatus("Showing distances from the mapped tee. Tap the button for your live position.");}
     else beginGPS();
   };
   $("[data-find-green]").onclick=async()=>{
     if(!selected?.reviewed||!selected.green)return;
     const hole=selected;
     try {
-      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-vertical-1");
+      const {openGreenFinder}=await import("./green-finder.js?v=2027-hole-ux-1");
       if(!closed&&selected===hole)greenFinder=openGreenFinder(hole,layout.name);
     } catch { gpsStatus("The camera direction view could not load. Use the satellite map instead."); }
   };
   function grid(){
-    $("[data-hole-picker]").hidden=false;$("[data-hole-screen]").hidden=true;
+    $("[data-hole-picker]").hidden=false;$("[data-hole-screen]").hidden=true;dialog.scrollTop=0;
     dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Choose your hole";
     $("[data-hole-grid]").querySelector(`[data-hole="${selected?.number||1}"]`)?.focus();
   }
@@ -84,7 +84,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(!hole?.reviewed||!hole.tee||!hole.green)return;
     selected=hole;target=null;
     if(greenFinder?.open)greenFinder.close();
-    $("[data-hole-picker]").hidden=true;$("[data-hole-screen]").hidden=false;
+    $("[data-hole-picker]").hidden=true;$("[data-hole-screen]").hidden=false;dialog.scrollTop=0;
     dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Your hole view";
     $("[data-hole-title]").textContent=`Hole ${number}`;
     $("[data-hole-course]").textContent=`${layout.name}${layout.tee_name?" · "+layout.tee_name+" tees":""}`;

@@ -1,4 +1,4 @@
-import { openHolePicker } from './hole-view.js?v=2027-green-finder-vertical-1';
+import { openHolePicker } from './hole-view.js?v=2027-hole-ux-1';
 
 const point = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
 export function completeCourseMap(layout) {

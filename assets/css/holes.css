@@ -31,3 +31,13 @@
 @media(max-width:600px){.green-finder{height:100dvh;border-radius:0;display:flex;flex-direction:column}.finder-camera{flex:1;min-height:180px;max-height:none;aspect-ratio:auto}.finder-info{flex-shrink:0}.hole-gps-controls{grid-template-columns:1fr 1fr;padding:12px}.hole-gps-controls button{width:100%;white-space:normal;font-size:.72rem}.hole-gps-controls [data-find-green]{width:100%}}
 
 .finder-elevation{margin:0 0 5px;font-size:.78rem;color:#d7e8df}.finder-elevation-credit{display:block;margin:0 0 8px;color:#cce1dc;font-size:.67rem}
+
+.hole-mode-choices{padding:14px 20px 16px;background:#eef6f4;border-top:1px solid #d6e5e4}
+.hole-mode-intro{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:10px}.hole-mode-intro strong{font-size:1rem;color:#123e45}.hole-mode-intro span{font-size:.74rem;color:#527078}
+.hole-mode-camera{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:12px 15px!important;border:0;border-radius:15px;background:#126d69;color:#fff;text-align:left;box-shadow:0 4px 0 #0c4d4b}
+.hole-mode-camera>span:first-child{display:grid;place-items:center;width:40px;height:40px;flex:none;border:1px solid #ffffff99;border-radius:50%;font-size:1.55rem}
+.hole-mode-camera>span:nth-child(2){display:grid;gap:2px;flex:1}.hole-mode-camera strong{font-size:.94rem}.hole-mode-camera small{font-size:.68rem;color:#d6f5ee;line-height:1.3}.hole-mode-camera>span:last-child{font-size:1.3rem}
+.hole-mode-map{display:grid;gap:3px;margin-top:16px;padding-top:14px;border-top:1px solid #cadfda}.hole-mode-map strong{font-size:.91rem;color:#153f4c}.hole-mode-map span{font-size:.73rem;color:#4c6971}
+.hole-mode-choices .hole-gps-controls{display:block;padding:10px 0 0;background:transparent}.hole-mode-choices .hole-gps-controls button{width:100%;min-height:44px;background:#fff;color:#125d60;border:1px solid #a5cfc9;border-radius:11px;box-shadow:none}
+.hole-mode-choices .hole-gps-controls [data-gps-status]{display:block;margin:7px 0 0;font-size:.72rem;color:#395f64}
+@media(max-width:600px){.hole-mode-choices{padding:13px}.hole-mode-intro{display:grid;gap:2px}.hole-mode-camera{min-height:66px}.hole-mode-map{margin-top:13px}.hole-screen-heading{padding-bottom:8px}.hole-stats{padding-bottom:10px}.hole-map-canvas{max-height:42dvh;min-height:240px}.hole-map-actions{top:8px;right:8px}.hole-map-actions button{min-width:36px;min-height:36px}}
