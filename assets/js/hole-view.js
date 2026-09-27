@@ -70,7 +70,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(!selected?.reviewed||!selected.green)return;
     const hole=selected;
     try {
-      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-test-4");
+      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-vertical-1");
       if(!closed&&selected===hole)greenFinder=openGreenFinder(hole,layout.name);
     } catch { gpsStatus("The camera direction view could not load. Use the satellite map instead."); }
   };

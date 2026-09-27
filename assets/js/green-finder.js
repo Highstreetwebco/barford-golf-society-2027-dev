@@ -1,4 +1,4 @@
-import { coordinates, yardsBetween } from "./hole-map.js?v=2027-green-finder-test-4";
+import { coordinates, distanceMetres, yardsBetween } from "./hole-map.js?v=2027-green-finder-test-4";
 
 export function bearingTo(from, to) {
   const a = coordinates(from), b = coordinates(to);
@@ -18,12 +18,13 @@ export function openGreenFinder(hole, courseName) {
   const dialog = document.createElement("dialog");
   dialog.className = "green-finder";
   dialog.setAttribute("aria-label", `Find green centre for hole ${hole.number}`);
-  dialog.innerHTML = `<div class="finder-head"><div><small data-finder-course></small><h2>Find the green centre</h2></div><button type="button" class="secondary" data-finder-close>Close</button></div><div class="finder-camera"><video autoplay muted playsinline aria-label="Live camera view"></video><div class="finder-marker" hidden aria-hidden="true"><span>◇</span><strong>GREEN CENTRE</strong></div><p class="finder-arrow" hidden></p><p class="finder-prompt">Point your phone around to find the direction of the mapped green centre.</p></div><div class="finder-info"><p class="finder-test-label">TEST MODE · Works away from the course</p><strong data-finder-distance>GPS distance pending</strong><p role="status" data-finder-status>Camera, location and compass access are needed. Your position and camera stay on this phone.</p><button type="button" data-finder-start>Start direction view</button><p class="finder-caution">Direction guide only. Check the satellite map and your surroundings before playing. The pin may be elsewhere on the green.</p></div>`;
+  dialog.innerHTML = `<div class="finder-head"><div><small data-finder-course></small><h2>Find the green centre</h2></div><button type="button" class="secondary" data-finder-close>Close</button></div><div class="finder-camera"><video autoplay muted playsinline aria-label="Live camera view"></video><div class="finder-marker" hidden aria-hidden="true"><span>◇</span><strong>GREEN CENTRE</strong></div><p class="finder-arrow" hidden></p><p class="finder-prompt">Point your phone around to find the direction of the mapped green centre.</p></div><div class="finder-info"><p class="finder-test-label">TEST MODE · Works away from the course</p><p class="finder-elevation" data-finder-elevation>Vertical position pending · hold phone upright</p><small class="finder-elevation-credit" data-finder-credit hidden>Terrain elevation: Google Maps</small><strong data-finder-distance>GPS distance pending</strong><p role="status" data-finder-status>Camera, location and compass access are needed. Your position and camera stay on this phone.</p><button type="button" data-finder-start>Start direction view</button><p class="finder-caution">Direction guide only. Check the satellite map and your surroundings before playing. The pin may be elsewhere on the green.</p></div>`;
   document.body.append(dialog);
   dialog.showModal();
   const $ = (selector) => dialog.querySelector(selector);
   $("[data-finder-course]").textContent = `${courseName || "Course"} · Hole ${hole.number}`;
   let stream = null, watch = null, heading = null, position = null, accuracy = null;
+  let pitch = null, verticalAngle = null, elevationPending = false, elevationAttempted = false;
   let lastFix = 0, closed = false, started = false;
   const freshness = setInterval(() => { if (started && !closed) update(); }, 3000);
   const status = (message) => { $("[data-finder-status]").textContent = message; };
@@ -42,19 +43,33 @@ export function openGreenFinder(hole, courseName) {
       return;
     }
     const delta = angleTo(bearingTo(position, hole.green), heading);
+    const offCourse = yards >= 2187;
+    const targetAngle = Number.isFinite(verticalAngle) ? verticalAngle : offCourse ? 0 : null;
+    const verticalReady = Number.isFinite(pitch) && Number.isFinite(targetAngle);
+    const verticalDelta = verticalReady ? targetAngle - pitch : null;
+    $("[data-finder-elevation]").textContent = verticalReady
+      ? Number.isFinite(verticalAngle)
+        ? `Terrain angle ${verticalAngle > 1 ? "uphill" : verticalAngle < -1 ? "downhill" : "near level"} · ${Math.round(Math.abs(verticalAngle))}° · approximate`
+        : "TEST: level-height reference only · green height unknown"
+      : "Vertical position unavailable · horizontal direction only";
     const halfView = 28; // Approximate horizontal camera view; phones vary.
-    if (Math.abs(delta) <= halfView) {
+    if (Math.abs(delta) <= halfView && (!verticalReady || Math.abs(verticalDelta) <= 25)) {
       marker.hidden = false;
       marker.style.left = `${50 + delta / halfView * 42}%`;
-      status("Turn slowly. This marker points towards the mapped green centre, with GPS and compass uncertainty.");
+      marker.style.top = verticalReady ? `${50 - verticalDelta / 25 * 38}%` : "42%";
+      status(Number.isFinite(verticalAngle) ? "Approximate green-centre direction and height. Terrain and phone sensors may shift the marker." : verticalReady ? "Off-course tilt test: marker follows phone tilt using a level reference, not the green height." : "Horizontal direction only. Terrain height or phone tilt is unavailable.");
     } else {
       arrow.hidden = false;
-      arrow.textContent = `${delta < 0 ? "← Turn left" : "Turn right →"} · ${Math.round(Math.abs(delta))}° to green centre`;
-      status("The green centre is outside your camera view. Follow the arrow, then check the map.");
+      arrow.textContent = Math.abs(delta) > halfView
+        ? `${delta < 0 ? "← Turn left" : "Turn right →"} · ${Math.round(Math.abs(delta))}° to green centre`
+        : `${verticalDelta > 0 ? "↑ Tilt up" : "↓ Tilt down"} · approximate green-centre height`;
+      status("The green centre is outside your camera view. Follow the cue, then check the map.");
     }
   }
   function orientation(event) {
     if (closed || !started) return;
+    // Portrait only: with the rear camera, beta 90° points near the horizon.
+    pitch = window.innerHeight >= window.innerWidth && Number.isFinite(event.beta) ? event.beta - 90 : null;
     if (Number.isFinite(event.webkitCompassHeading) &&
         (!Number.isFinite(event.webkitCompassAccuracy) || event.webkitCompassAccuracy <= 40)) {
       heading = event.webkitCompassHeading;
@@ -62,6 +77,25 @@ export function openGreenFinder(hole, courseName) {
       heading = (360 - event.alpha + (screen.orientation?.angle || 0) + 360) % 360;
     } else return;
     update();
+  }
+  async function loadTerrainHeight(point) {
+    if (elevationPending || elevationAttempted || distanceMetres(point, hole.green) > 2000) return;
+    elevationAttempted = elevationPending = true;
+    try {
+      const { loadGoogleMaps } = await import("./hole-map.js?v=2027-green-finder-test-4");
+      const maps = await loadGoogleMaps();
+      const { ElevationService } = await maps.importLibrary("elevation");
+      const { results } = await new ElevationService().getElevationForLocations({ locations: [point, hole.green] });
+      if (closed || results?.length !== 2 || results.some(r => !Number.isFinite(r.elevation) || !Number.isFinite(r.resolution) || r.resolution > 30)) return;
+      const distance = distanceMetres(point, hole.green);
+      if (distance < 30) return;
+      // Both terrain samples use the same vertical datum. Approximate eye height is 1.6m.
+      verticalAngle = Math.atan2(results[1].elevation - results[0].elevation - 1.6, distance) * 180 / Math.PI;
+      $("[data-finder-credit]").hidden = false;
+      update();
+    } catch {
+      if (!closed) $("[data-finder-elevation]").textContent = "Terrain elevation unavailable · horizontal direction only";
+    } finally { elevationPending = false; }
   }
   function cleanup() {
     if (closed) return;
@@ -114,6 +148,7 @@ export function openGreenFinder(hole, courseName) {
           position = null; update(); return;
         }
         position = point; accuracy = result.coords.accuracy; lastFix = result.timestamp; update();
+        if (accuracy <= 35) loadTerrainHeight(point);
       }, (error) => {
         position = null; update();
         status(error.code === 1 ? "Location access was denied. Use the satellite map instead." : "GPS could not find your position. Move into the open or use the map.");
