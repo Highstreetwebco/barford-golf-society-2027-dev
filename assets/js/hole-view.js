@@ -72,8 +72,8 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(!selected?.reviewed||!selected.green)return;
     const hole=selected;
     try {
-      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-1");
-      if(!closed&&selected===hole)greenFinder=openGreenFinder(hole,layout.name,holes.filter(h=>h.reviewed&&h.tee&&h.green));
+      const {openGreenFinder}=await import("./green-finder.js?v=2027-green-finder-test-2");
+      if(!closed&&selected===hole)greenFinder=openGreenFinder(hole,layout.name);
     } catch { gpsStatus("The camera direction view could not load. Use the satellite map instead."); }
   };
   function grid(){

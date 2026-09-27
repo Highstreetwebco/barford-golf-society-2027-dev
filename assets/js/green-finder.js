@@ -1,4 +1,4 @@
-import { coordinates, distanceMetres, yardsBetween } from "./hole-map.js?v=2027-holes-1";
+import { coordinates, yardsBetween } from "./hole-map.js?v=2027-holes-1";
 
 export function bearingTo(from, to) {
   const a = coordinates(from), b = coordinates(to);
@@ -13,12 +13,12 @@ export function bearingTo(from, to) {
 
 export const angleTo = (bearing, heading) => ((bearing - heading + 540) % 360) - 180;
 
-export function openGreenFinder(hole, courseName, nearbyHoles = []) {
+export function openGreenFinder(hole, courseName) {
   if (!hole?.reviewed || !coordinates(hole.green)) return;
   const dialog = document.createElement("dialog");
   dialog.className = "green-finder";
   dialog.setAttribute("aria-label", `Find green centre for hole ${hole.number}`);
-  dialog.innerHTML = `<div class="finder-head"><div><small data-finder-course></small><h2>Find the green centre</h2></div><button type="button" class="secondary" data-finder-close>Close</button></div><div class="finder-camera"><video autoplay muted playsinline aria-label="Live camera view"></video><div class="finder-marker" hidden aria-hidden="true"><span>◇</span><strong>GREEN CENTRE</strong></div><p class="finder-arrow" hidden></p><p class="finder-prompt">Point your phone around to find the direction of the mapped green centre.</p></div><div class="finder-info"><strong data-finder-distance>GPS distance pending</strong><p role="status" data-finder-status>Camera, location and compass access are needed. Your position and camera stay on this phone.</p><button type="button" data-finder-start>Start direction view</button><p class="finder-caution">Direction guide only. Check the satellite map and your surroundings before playing. The pin may be elsewhere on the green.</p></div>`;
+  dialog.innerHTML = `<div class="finder-head"><div><small data-finder-course></small><h2>Find the green centre</h2></div><button type="button" class="secondary" data-finder-close>Close</button></div><div class="finder-camera"><video autoplay muted playsinline aria-label="Live camera view"></video><div class="finder-marker" hidden aria-hidden="true"><span>◇</span><strong>GREEN CENTRE</strong></div><p class="finder-arrow" hidden></p><p class="finder-prompt">Point your phone around to find the direction of the mapped green centre.</p></div><div class="finder-info"><p class="finder-test-label">TEST MODE · Works away from the course</p><strong data-finder-distance>GPS distance pending</strong><p role="status" data-finder-status>Camera, location and compass access are needed. Your position and camera stay on this phone.</p><button type="button" data-finder-start>Start direction view</button><p class="finder-caution">Direction guide only. Check the satellite map and your surroundings before playing. The pin may be elsewhere on the green.</p></div>`;
   document.body.append(dialog);
   dialog.showModal();
   const $ = (selector) => dialog.querySelector(selector);
@@ -35,7 +35,8 @@ export function openGreenFinder(hole, courseName, nearbyHoles = []) {
       if (started) status("Move into the open and wait for a fresh GPS fix. Use the satellite map if it stays unavailable.");
       return;
     }
-    $("[data-finder-distance]").textContent = `${yardsBetween(position, hole.green)} yards to green centre · GPS ±${Math.round(accuracy)} m`;
+    const yards = yardsBetween(position, hole.green);
+    $("[data-finder-distance]").textContent = `${yards >= 1760 ? `${(yards / 1760).toFixed(1)} miles` : `${yards} yards`} to green centre · GPS ±${Math.round(accuracy)} m`;
     if (heading == null) {
       status("Compass direction unavailable. Your GPS distance is shown, but the camera marker cannot be positioned reliably.");
       return;
@@ -105,13 +106,11 @@ export function openGreenFinder(hole, courseName, nearbyHoles = []) {
         window.addEventListener("deviceorientation", orientation);
         window.addEventListener("deviceorientationabsolute", orientation);
       }
-      const permitted = nearbyHoles.map((h) => [h.tee, h.green]).flat().filter(Boolean);
       watch = navigator.geolocation.watchPosition((result) => {
         if (closed) return;
         const point = coordinates({ lat: result.coords.latitude, lng: result.coords.longitude });
         const age = Date.now() - result.timestamp;
-        if (!point || !Number.isFinite(result.coords.accuracy) || result.coords.accuracy > 35 || age < 0 || age > 15000 ||
-            !permitted.some((p) => distanceMetres(point, p) <= 2000)) {
+        if (!point || !Number.isFinite(result.coords.accuracy) || result.coords.accuracy > 35 || age < 0 || age > 15000) {
           position = null; update(); return;
         }
         position = point; accuracy = result.coords.accuracy; lastFix = result.timestamp; update();
