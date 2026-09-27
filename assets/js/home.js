@@ -1,6 +1,6 @@
 import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
 import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-simple-events-1";
-import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
+import { mountEventOperations } from "./operations.js?v=2027-payment-status-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
 import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
 import { openRsvp, rsvpClosed, rsvpChangeLocked } from "./rsvp.js?v=2027-rsvp-cutoff-1";
@@ -57,6 +57,10 @@ else {
   syncCover();
   const playingToggle = area.querySelector(".home-players-toggle");
   const playingList = area.querySelector("#homePlayingList");
+  let paymentOverview = null;
+  const paymentStatus = (id) => paymentOverview?.players?.find((p) => p.user_id === id)?.status || "unpaid";
+  const paymentLabel = (status) => status === "paid" ? "Paid · admin confirmed" : status === "pending" ? "Transfer reported · awaiting admin" : "Payment not confirmed";
+  const paymentDot = (status) => `<span class="event-payment-status is-${status}"><i aria-hidden="true"></i>${paymentLabel(status)}</span>`;
   async function refreshPlayingList() {
     if (playingList.hidden) return;
     if (!b.state.user) {
@@ -64,7 +68,7 @@ else {
       return;
     }
     const { data: bookings, error: playersError } = await b.client.from("rsvps")
-      .select("name,attending,reserve,guest_host_id")
+      .select("user_id,name,attending,reserve,guest_host_id")
       .eq("event_id", ev.id)
       .or("attending.eq.true,reserve.eq.true")
       .order("requested_at");
@@ -75,15 +79,15 @@ else {
     }
     const confirmed = (bookings || []).filter((p) => p.attending && !p.reserve);
     const waiting = (bookings || []).filter((p) => p.reserve);
-    const names = (rows) => rows.map((p) => `<li>${b.escape(p.name)}${p.guest_host_id ? ' <small>(guest)</small>' : ""}</li>`).join("");
-    playingList.innerHTML = `<h3>${ev.event_type === "social" ? "Attending" : "Playing"} (${confirmed.length})</h3>${confirmed.length ? `<ul>${names(confirmed)}</ul>` : '<p>No one has confirmed yet.</p>'}${waiting.length ? `<h3>Waiting list (${waiting.length})</h3><ul>${names(waiting)}</ul>` : ""}`;
+    const names = (rows, withPayment = false) => rows.map((p) => `<li><span>${b.escape(p.name)}${p.guest_host_id ? ' <small>(guest)</small>' : ""}</span>${withPayment ? paymentDot(paymentStatus(p.user_id)) : ""}</li>`).join("");
+    playingList.innerHTML = `<h3>${ev.event_type === "social" ? "Attending" : "Playing"} (${confirmed.length})</h3>${confirmed.length ? `<ul>${names(confirmed, true)}</ul>` : '<p>No one has confirmed yet.</p>'}${waiting.length ? `<h3>Waiting list (${waiting.length})</h3><ul>${names(waiting)}</ul>` : ""}`;
   }
   playingToggle.onclick = () => {
     playingList.hidden = !playingList.hidden;
     playingToggle.setAttribute("aria-expanded", String(!playingList.hidden));
     if (!playingList.hidden) {
       playingList.innerHTML = '<p>Loading players…</p>';
-      refreshPlayingList();
+      refreshPayment().then(refreshPlayingList);
     }
   };
   const actions = area.querySelector("[data-home-actions]");
@@ -92,12 +96,44 @@ else {
   const buggyArea = document.getElementById("homeBuggy");
   const inviteArea = area.querySelector("[data-home-invites]");
   const inviteManagement = area.querySelector(".home-invite-management");
-  const options = { compact: true, showBookingLink: false, showInvites: false, showBrief: false };
+  const options = { compact: true, showBookingLink: false, showInvites: false, showBrief: false, showPayments: false };
   let response = null;
   let bookingRefresh = null;
   let guestContext = guestHome;
   let inviting = false;
   let refreshing = false;
+  async function refreshPayment() {
+    if (!b.state.user) return;
+    const { data, error } = await b.client.rpc("event_payment_overview", { event: ev.id });
+    if (error) { area.querySelector("[data-home-status]").textContent = "Payment status could not refresh. Please try again shortly."; return; }
+    paymentOverview = data;
+    renderActions();
+  }
+  function paymentDialog() {
+    const charge = paymentOverview?.own_charge;
+    if (!charge || !response?.attending || response.reserve) return;
+    const dialog = document.createElement("dialog");
+    dialog.className = "rsvp-dialog home-transfer-dialog";
+    dialog.innerHTML = `<h2>Have you paid?</h2><p>${b.escape(ev.name)} · ${b.money(charge.amount)}</p><p>Tell the committee if you’ve made the bank transfer. They will check the account before marking you paid.</p><div class="actions"><button type="button" data-transferred="yes">Yes, I’ve paid</button><button type="button" class="secondary" data-transferred="no">No, not yet</button></div><button type="button" class="text-button" data-close>Cancel</button><p role="status"></p>`;
+    document.body.append(dialog);
+    dialog.querySelector("[data-close]").onclick = () => dialog.close();
+    dialog.onclose = () => dialog.remove();
+    dialog.querySelectorAll("[data-transferred]").forEach((button) => button.onclick = async () => {
+      dialog.querySelectorAll("button").forEach((node) => node.disabled = true);
+      const paid = button.dataset.transferred === "yes";
+      const { error } = await b.client.rpc("set_transfer_confirmation", { event: ev.id, paid });
+      if (error) {
+        dialog.querySelector("[role=status]").textContent = error.message;
+        dialog.querySelectorAll("button").forEach((node) => node.disabled = false);
+        return;
+      }
+      dialog.close();
+      await refreshPayment();
+      await refreshPlayingList();
+      b.toast(paid ? "Transfer reported. Waiting for admin confirmation." : "Payment remains unconfirmed.");
+    });
+    dialog.showModal();
+  }
   function updateFacts() {
     area.querySelector("[data-event-date]").textContent = b.date(ev.date);
     area.querySelector("[data-event-name]").textContent = ev.name;
@@ -106,18 +142,22 @@ else {
     area.querySelector("[data-time-label]").textContent = ev.event_type === "social" ? "START TIME" : "FIRST TEE";
   }
   function renderActions() {
-    const focusedAction = actions.contains(document.activeElement) ? (document.activeElement.hasAttribute("data-home-invite") ? "[data-home-invite]" : "[data-home-rsvp]") : null;
+    const focusedAction = actions.contains(document.activeElement) ? (document.activeElement.hasAttribute("data-home-invite") ? "[data-home-invite]" : document.activeElement.hasAttribute("data-transfer-confirm") ? "[data-transfer-confirm]" : "[data-home-rsvp]") : null;
     const closed = rsvpClosed(ev);
     const locked = rsvpChangeLocked(ev, response, b.state.admin);
     const confirmation = response?.reserve ? "You’re on the waiting list" : response?.attending ? ev.event_type === "social" ? "You’re attending" : "You’re playing" : response ? "You’re not playing" : "";
     const guestClosed = closed || (ev.rsvp_deadline && ev.rsvp_deadline < londonToday());
     const canInvite = !!b.state.user && guestContext && guestContext.category !== "guest" && !guestClosed;
     const note = area.querySelector("[data-invite-note]");
-    actions.innerHTML = `<div class="home-rsvp-controls">${confirmation ? `<p class="home-rsvp-confirmation" role="status"><span aria-hidden="true">${response?.attending && !response.reserve ? "✓" : "•"}</span> ${b.escape(confirmation)}</p>` : ""}${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : locked ? '<p class="home-rsvp-cutoff">Online RSVP changes are closed within six days of the event. Contact the committee to change your RSVP.</p>' : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP"}</button>`}</div>${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
+    const charge = paymentOverview?.own_charge;
+    const price = charge?.amount ?? (guestContext?.category === "guest" ? guestContext?.bookings?.find((x) => x.event_id === ev.id)?.guest_price ?? ev.guest_price : ev.member_price);
+    const paidStatus = paymentOverview && response?.attending && !response.reserve ? paymentStatus(b.state.user?.id) : null;
+    actions.innerHTML = `<div class="home-rsvp-controls">${confirmation ? `<p class="home-rsvp-confirmation" role="status"><span aria-hidden="true">${response?.attending && !response.reserve ? "✓" : "•"}</span> ${b.escape(confirmation)}</p>` : ""}${price != null ? `<p class="home-event-fee">${b.escape(ev.name)} <strong>${b.money(price)}</strong></p>` : ""}${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : locked ? '<p class="home-rsvp-cutoff">Online RSVP changes are closed within six days of the event. Contact the committee to change your RSVP.</p>' : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP"}</button>`}${paidStatus ? `<div class="home-payment-action">${paymentDot(paidStatus)}${charge && paidStatus !== "paid" ? `<button type="button" class="secondary" data-transfer-confirm>${paidStatus === "pending" ? "Update transfer confirmation" : "Confirm you have transferred funds"}</button>` : ""}</div>` : ""}</div>${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
     note.hidden = !canInvite || ev.guest_price != null;
     note.textContent = "The organiser needs to confirm the guest price before invitations can be sent.";
     const rsvpButton = actions.querySelector("[data-home-rsvp]");
-    if (rsvpButton) rsvpButton.onclick = () => openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
+    if (rsvpButton) rsvpButton.onclick = () => openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); await refreshPayment(); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
+    actions.querySelector("[data-transfer-confirm]")?.addEventListener("click", paymentDialog);
     const inviteButton = actions.querySelector("[data-home-invite]");
     if (inviteButton) inviteButton.onclick = async () => {
       if (inviting) return;
@@ -159,7 +199,7 @@ else {
       renderActions();
       groupArea.hidden = !b.state.user || ev.event_type === "social";
       await Promise.all([
-        operationArea.contains(document.activeElement) ? Promise.resolve() : mountEventOperations(operationArea, ev, options),
+        operationArea.contains(document.activeElement) ? Promise.resolve() : mountEventOperations(operationArea, ev, options).then(() => { operationArea.hidden = !operationArea.querySelector('[data-reservation-notices] .notice,[data-seen]'); }),
         refreshInvites(),
         b.state.user && ev.event_type !== "social" ? mountMemberTees(groupArea, ev.id, { home: true }) : Promise.resolve().then(() => { groupArea.hidden = true; }),
         b.state.user && ev.event_type !== "social" ? mountBuggy(buggyArea, ev).then(() => { buggyArea.hidden = !buggyArea.innerHTML; }) : Promise.resolve().then(() => { buggyArea.hidden = true; }),
@@ -186,8 +226,8 @@ else {
   if (b.state.user) actions.innerHTML = '<p class="muted">Checking your RSVP…</p>';
   else renderActions();
   refreshHoleAction();
-  const initialRefresh = Promise.all([refreshBooking(), updateSlots(ev, area)]);
-  if (location.hash === "#rsvp") await openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
+  const initialRefresh = Promise.all([refreshBooking(), updateSlots(ev, area), refreshPayment()]);
+  if (location.hash === "#rsvp") await openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); await refreshPayment(); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
   await initialRefresh;
   async function refreshEvent() {
     if (document.hidden || refreshing || document.querySelector("dialog[open]")) return;
@@ -199,7 +239,8 @@ else {
       syncCover();
       updateFacts();
       refreshHoleAction();
-      await Promise.all([updateSlots(ev, area), refreshBooking({ background: true }), refreshPlayingList()]);
+      await Promise.all([updateSlots(ev, area), refreshBooking({ background: true }), refreshPayment()]);
+      await refreshPlayingList();
     } finally { refreshing = false; }
   }
   setInterval(refreshEvent, 25000);

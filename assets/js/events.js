@@ -14,6 +14,7 @@ const list = document.getElementById("eventList");
 const dedicated = location.pathname.endsWith("event.html");
 const eventId = Number(new URLSearchParams(location.search).get("id"));
 let events = [], responses = [], counts = [], tees = [], filter = "upcoming";
+let paymentOverview = null;
 let contentKey = "", loading = null;
 const privatePending = new Set();
 const own = (id) => responses.find((r) => r.event_id === id && r.user_id === state.user?.id);
@@ -83,15 +84,17 @@ async function load({ forceRender = false } = {}) {
       c.rpc("event_counts"),
       state.user && dedicated ? c.from("tee_times").select("*").order("group_number") : Promise.resolve({ data: [] }),
       state.user ? c.from("rsvps").select("id,event_id,user_id,name,attending,reserve,buggy,preferred_time,flexibility,terms_snapshot,created_at,requested_at").order("requested_at") : Promise.resolve({ data: [] }),
+      state.user && dedicated ? c.rpc("event_payment_overview", { event: eventId }) : Promise.resolve({ data: null }),
     ]);
-    const failed = result.find((value) => value.error);
+    const failed = result.slice(0, 4).find((value) => value.error);
     if (failed) throw failed.error;
     events = result[0].data || [];
     counts = result[1].data || [];
     tees = result[2].data || [];
     responses = result[3].data || [];
+    paymentOverview = result[4].error ? null : result[4].data;
     document.getElementById("memberNotice").hidden = dedicated || !!state.user;
-    const key = JSON.stringify([events, responses, tees, state.user?.id, filter]);
+    const key = JSON.stringify([events, responses, tees, paymentOverview, state.user?.id, filter]);
     if (key !== contentKey && (forceRender || !postponeRender())) {
       await render();
       contentKey = key;
@@ -141,7 +144,9 @@ function roster(ev) {
   const rows = responses.filter((r) => r.event_id === ev.id);
   const playing = rows.filter((r) => r.attending && !r.reserve);
   const waiting = rows.filter((r) => r.reserve);
-  return `${ev.event_type !== "social" ? `<section id="memberTees-${ev.id}">Loading tee groups…</section>` : ""}<h3>${ev.event_type === "social" ? "Who’s attending" : "Who’s playing"} <span class="muted">(${playing.length})</span></h3>${playing.length ? `<ul class="roster">${playing.map((r) => `<li>${e(r.name)}<span>${ev.event_type === "social" ? "Attending" : r.buggy ? "Buggy" : "Walking"}</span></li>`).join("")}</ul>` : '<p class="muted">No confirmed players yet.</p>'}${waiting.length ? `<h3>Waiting list (${waiting.length})</h3><ol class="roster">${waiting.map((r) => `<li>${e(r.name)}</li>`).join("")}</ol>` : ""}`;
+  const payment = (id) => paymentOverview?.players?.find((p) => p.user_id === id)?.status || "unpaid";
+  const label = (s) => s === "paid" ? "Paid · admin confirmed" : s === "pending" ? "Transfer reported · awaiting admin" : "Payment not confirmed";
+  return `${ev.event_type !== "social" ? `<section id="memberTees-${ev.id}">Loading tee groups…</section>` : ""}<h3>${ev.event_type === "social" ? "Who’s attending" : "Who’s playing"} <span class="muted">(${playing.length})</span></h3>${playing.length ? `<ul class="roster">${playing.map((r) => `<li><strong>${e(r.name)}</strong>${paymentOverview ? `<span class="event-payment-status is-${payment(r.user_id)}"><i aria-hidden="true"></i>${label(payment(r.user_id))}</span>` : ""}</li>`).join("")}</ul>` : '<p class="muted">No confirmed players yet.</p>'}${waiting.length ? `<h3>Waiting list (${waiting.length})</h3><ol class="roster">${waiting.map((r) => `<li>${e(r.name)}</li>`).join("")}</ol>` : ""}`;
 }
 
 function updateHeroCover(url, credit) {

@@ -27,6 +27,7 @@
 .home-playing-list h3:not(:first-child) { margin-top: 18px; }
 .home-playing-list ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 7px 20px; list-style: none; padding: 0; margin: 0; }
 .home-playing-list li { min-width: 0; overflow-wrap: anywhere; padding: 7px 0; border-bottom: 1px solid var(--line); font-weight: 600; }
+.home-playing-list li .event-payment-status { display: flex; margin-top: 4px; font-weight: 500; }
 .home-playing-list li small { font-weight: 400; color: var(--muted); }
 .home-playing-list p { margin: 0; }
 .home-event-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 8px; }
@@ -35,6 +36,10 @@
 .home-rsvp-confirmation { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 9px 14px; border: 1px solid #a3ccb6; border-radius: 9px; background: #e4f5e8; color: #174d32; font-weight: 800; }
 .home-rsvp-confirmation span { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #267d4e; color: #fff; font-size: .85rem; }
 .home-rsvp-cutoff { max-width: 42ch; margin: 0; color: var(--muted); font-size: .87rem; line-height: 1.45; }
+.home-event-fee { margin: 0; font-size: .9rem; }
+.home-event-fee strong { margin-left: 6px; color: var(--ink); font-size: 1.25rem; }
+.home-payment-action { display: grid; justify-items: start; gap: 10px; padding-top: 4px; }
+.home-payment-action button { min-height: 44px; }
 .dark-mode .home-rsvp-confirmation { border-color: #3e7857; background: #204432; color: #e3f9e8; }
 .home-event-actions button { min-height: 48px; flex: 0 1 auto; }
 .home-event-details { display: inline-flex; align-items: center; gap: 10px; font-weight: 750; padding: 8px 0 4px; }
@@ -48,6 +53,8 @@
 #homeOperations .booking-status h2 { font-size: 1.35rem; }
 #homeOperations .booking-status { margin-bottom: 10px; }
 #homeOperations [data-guest-invites][hidden] { display: none; }
+#homeOperations[hidden] { display: none; }
+.home-member-grid:has(#homeOperations[hidden]) { grid-template-columns: 1fr; }
 .rsvp-dialog {
   width: min(540px, calc(100% - 24px));
   max-height: calc(100dvh - 32px);
@@ -86,6 +93,7 @@
   .home-event-actions button { flex: 1 1 110px; padding: 12px 14px; }
   .home-rsvp-controls { width: 100%; }
   .home-rsvp-controls > button { width: 100%; }
+  .home-payment-action, .home-payment-action button { width: 100%; }
   .home-event-actions { gap: 8px; }
   .home-member-grid > .panel { padding: 18px 15px; }
   .rsvp-dialog { padding: 22px 18px; }

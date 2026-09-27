@@ -4,7 +4,7 @@ import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import {
   operationTabs,
   showOperations,
-} from "./operations-admin.js?v=2027-results-1";
+} from "./operations-admin.js?v=2027-payment-status-1";
 import { operation } from "./operations.js?v=2027-results-1";
 import {
   mountEventFields,

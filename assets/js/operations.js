@@ -121,8 +121,8 @@ export async function mountPayments(
     area.innerHTML = `<p class="notice">Payment details could not load: ${e(err.message)}</p>`;
   }
 }
-export async function mountEventOperations(area, ev, { compact = false, showBookingLink = true, showBookingStatus = true, showInvites = true, showBrief = true } = {}) {
-  const options = { compact, showBookingLink, showBookingStatus, showInvites, showBrief };
+export async function mountEventOperations(area, ev, { compact = false, showBookingLink = true, showBookingStatus = true, showInvites = true, showBrief = true, showPayments = true } = {}) {
+  const options = { compact, showBookingLink, showBookingStatus, showInvites, showBrief, showPayments };
   if (!b.state.user) {
     area.hidden = true;
     return;
@@ -153,7 +153,7 @@ export async function mountEventOperations(area, ev, { compact = false, showBook
             "",
           )}<button class="secondary" data-seen>I’ve seen this update</button></div>`
       : "";
-    area.innerHTML = `<div data-reservation-notices></div>${changes}${showBookingStatus ? `<div class="booking-status"><p class="eyebrow">YOUR BOOKING</p><h2>${ev.cancelled ? "Event cancelled" : r?.reserve ? "You’re on the waiting list" : r?.attending ? "You’re booked" : "You’re not booked"}</h2>${r?.attending || r?.reserve ? `<p>${ev.event_type === "social" ? "Attendance saved" : `${r.buggy ? "Buggy requested" : "Walking"} · Tee preference: ${e(r.preferred_time || "None")}`}</p>` : ""}${compact && showBookingLink ? `<a class="button secondary" href="index.html?event=${ev.id}#rsvp">${r?.attending || r?.reserve ? "Change booking or withdraw" : "View event & RSVP"}</a>` : ""}</div>` : ""}${compact ? '<section class="section" data-guest-invites></section>' + (showBrief ? '<details class="compact-brief"><summary>Fees & event briefing</summary>' + eventBrief(ev) + "</details>" : "") : ""}<div data-event-payment class="section"></div>${!compact && ev.event_type !== "social" && r?.attending ? '<button class="secondary" data-course-member>I’m a member of this golf club — request my price</button>' : ""}
+    area.innerHTML = `<div data-reservation-notices></div>${changes}${showBookingStatus ? `<div class="booking-status"><p class="eyebrow">YOUR BOOKING</p><h2>${ev.cancelled ? "Event cancelled" : r?.reserve ? "You’re on the waiting list" : r?.attending ? "You’re booked" : "You’re not booked"}</h2>${r?.attending || r?.reserve ? `<p>${ev.event_type === "social" ? "Attendance saved" : `${r.buggy ? "Buggy requested" : "Walking"} · Tee preference: ${e(r.preferred_time || "None")}`}</p>` : ""}${compact && showBookingLink ? `<a class="button secondary" href="index.html?event=${ev.id}#rsvp">${r?.attending || r?.reserve ? "Change booking or withdraw" : "View event & RSVP"}</a>` : ""}</div>` : ""}${compact ? '<section class="section" data-guest-invites></section>' + (showBrief ? '<details class="compact-brief"><summary>Fees & event briefing</summary>' + eventBrief(ev) + "</details>" : "") : ""}${showPayments ? '<div data-event-payment class="section"></div>' : ""}${!compact && ev.event_type !== "social" && r?.attending ? '<button class="secondary" data-course-member>I’m a member of this golf club — request my price</button>' : ""}
  ${
    !compact && ev.event_type === "pairs"
      ? `<section class="section"><h2>Your playing partner</h2><p>Playing partners are separate from buggy partners. Both players need their own confirmed booking.</p>${
@@ -239,7 +239,7 @@ export async function mountEventOperations(area, ev, { compact = false, showBook
       area.querySelector("[data-reservation-notices]"),
       ev.id,
     );
-    await mountPayments(area.querySelector("[data-event-payment]"), {
+    if (showPayments) await mountPayments(area.querySelector("[data-event-payment]"), {
       eventId: ev.id,
       compact,
     });

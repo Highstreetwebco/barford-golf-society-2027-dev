@@ -140,11 +140,13 @@ function payments(area, data, event) {
   const shown = data.charges.filter(
     (c) => !event || c.event_id === event.id || c.scope === "membership:2027",
   );
+  const pending = data.charges.filter((c) => c.event_id && c.reported && Number(c.received) < Number(c.amount));
   const total = shown.reduce(
     (s, c) => s + Math.max(0, c.amount - c.received),
     0,
   );
-  area.innerHTML = `<h2>Payments</h2><p>${event ? e(event.name) + " and annual membership" : "All events and annual membership"} · <strong>${b.money(total)} outstanding</strong></p><p>Confirm transfers against the bank statement. Record the total received; a player’s “transfer sent” flag is not proof of payment. Negative balances are shown as credits, not automatic refunds.</p>${event ? '<button class="secondary" id="generateCharges">Create missing event charges</button>' : ""}<label class="section">Find a payment<input type="search" id="paymentSearch" placeholder="Player or event name"></label><div class="stack section">${
+  const queue = `<a class="button admin-confirm-payments" href="#pendingTransfers">Confirm payments <span>${pending.length} awaiting review</span></a><section id="pendingTransfers" class="payment-review-queue section"><h3>Transfers awaiting confirmation</h3><p>Check your bank statement before marking anyone paid. A member’s confirmation is only a report.</p>${pending.length ? pending.map((c) => `<div class="payment-review-row"><div><strong>${e(c.name)}</strong><small>${e(c.label)} · ${b.money(c.amount - c.received)} to verify</small><span class="event-payment-status is-pending"><i></i> Waiting for admin confirmation</span></div><label class="payment-switch"><span>Confirm paid</span><input type="checkbox" role="switch" aria-label="Confirm payment from ${e(c.name)} for ${e(c.label)}" data-confirm-charge="${c.id}" data-revision="${c.revision}"><span class="payment-switch-track" aria-hidden="true"></span></label></div>`).join("") : '<p class="muted">No reported transfers are waiting for review.</p>'}</section>`;
+  area.innerHTML = `<h2>Payments</h2><p>${event ? e(event.name) + " and annual membership" : "All events and annual membership"} · <strong>${b.money(total)} outstanding</strong></p>${queue}<p>Confirm transfers against the bank statement. Record the total received; a player’s “transfer sent” flag is not proof of payment. Negative balances are shown as credits, not automatic refunds.</p>${event ? '<button class="secondary" id="generateCharges">Create missing event charges</button>' : ""}<label class="section">Find a payment<input type="search" id="paymentSearch" placeholder="Player or event name"></label><div class="stack section">${
     shown.length
       ? shown
           .map(
@@ -177,6 +179,28 @@ function payments(area, data, event) {
         )}<button>Save category</button><p role="status"></p></form>`,
     )
     .join("")}</details><p data-status role="status"></p>`;
+  area.querySelectorAll("[data-confirm-charge]").forEach((control) => {
+    control.onchange = async () => {
+      const charge = pending.find((c) => c.id === Number(control.dataset.confirmCharge));
+      if (!charge || !confirm(`Confirm you checked the bank and received the full ${b.money(charge.amount)} from ${charge.name} for ${charge.label}?`)) {
+        control.checked = false;
+        return;
+      }
+      control.disabled = true;
+      const { error } = await b.client.rpc("admin_confirm_event_payment", {
+        charge_id: charge.id,
+        expected_revision: Number(control.dataset.revision),
+      });
+      if (error) {
+        control.checked = false;
+        control.disabled = false;
+        area.querySelector("[data-status]").textContent = error.message;
+        return;
+      }
+      b.toast(`${charge.name} marked paid.`);
+      await showOperations("payments", event);
+    };
+  });
   area.querySelector("#paymentSearch").oninput = (ev) =>
     area
       .querySelectorAll("[data-search]")
