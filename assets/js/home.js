@@ -93,6 +93,8 @@ else {
   const actions = area.querySelector("[data-home-actions]");
   const operationArea = document.getElementById("homeOperations");
   const groupArea = document.getElementById("homeTeeGroup");
+  const memberGrid = area.querySelector(".home-member-grid");
+  const homeHeading = area.closest("section").querySelector(":scope > .section-heading");
   const buggyArea = document.getElementById("homeBuggy");
   const inviteArea = area.querySelector("[data-home-invites]");
   const inviteManagement = area.querySelector(".home-invite-management");
@@ -102,6 +104,19 @@ else {
   let guestContext = guestHome;
   let inviting = false;
   let refreshing = false;
+  function showTeeGroupFirst(teeTime) {
+    const publishedForMember = !!teeTime;
+    area.classList.toggle("has-published-tee", publishedForMember);
+    if (publishedForMember) {
+      area.insertBefore(groupArea, area.querySelector(".next-event-heading"));
+      homeHeading.querySelector(".eyebrow").textContent = "YOUR TEE GROUP";
+      homeHeading.querySelector("h2").textContent = ev.name;
+    } else {
+      memberGrid.append(groupArea);
+      homeHeading.querySelector(".eyebrow").textContent = requestedId ? "YOUR SELECTED EVENT" : "YOUR NEXT EVENT";
+      homeHeading.querySelector("h2").textContent = requestedId ? "Your event." : "Next on the tee.";
+    }
+  }
   async function refreshPayment() {
     if (!b.state.user) return;
     const { data, error } = await b.client.rpc("event_payment_overview", { event: ev.id });
@@ -152,7 +167,7 @@ else {
     const charge = paymentOverview?.own_charge;
     const price = charge?.amount ?? (guestContext?.category === "guest" ? guestContext?.bookings?.find((x) => x.event_id === ev.id)?.guest_price ?? ev.guest_price : ev.member_price);
     const paidStatus = paymentOverview && response?.attending && !response.reserve ? paymentStatus(b.state.user?.id) : null;
-    actions.innerHTML = `<div class="home-rsvp-controls">${confirmation ? `<p class="home-rsvp-confirmation" role="status"><span aria-hidden="true">${response?.attending && !response.reserve ? "✓" : "•"}</span> ${b.escape(confirmation)}</p>` : ""}${price != null ? `<p class="home-event-fee">${b.escape(ev.name)} <strong>${b.money(price)}</strong></p>` : ""}${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : locked ? '<p class="home-rsvp-cutoff">Online RSVP changes are closed within six days of the event. Contact the committee to change your RSVP.</p>' : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP"}</button>`}${paidStatus ? `<div class="home-payment-action">${paymentDot(paidStatus)}${charge && paidStatus !== "paid" ? `<button type="button" class="secondary" data-transfer-confirm>${paidStatus === "pending" ? "Update transfer confirmation" : "Confirm you have transferred funds"}</button>` : ""}${paidStatus !== "paid" ? '<a href="account.html#payments">View bank transfer details →</a>' : ""}</div>` : ""}</div>${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
+    actions.innerHTML = `<div class="home-rsvp-controls">${confirmation ? `<p class="home-rsvp-confirmation" role="status"><span aria-hidden="true">${response?.attending && !response.reserve ? "✓" : "•"}</span> ${b.escape(confirmation)}</p>` : ""}${price != null ? `<p class="home-event-fee">${b.escape(ev.name)} <strong>${b.money(price)}</strong></p>` : ""}${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : locked ? '<p class="home-rsvp-cutoff">Online RSVP changes are closed within six days of the event. Contact the committee to change your RSVP.</p>' : `<button type="button" class="${area.classList.contains("has-published-tee") ? "secondary" : ""}" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP"}</button>`}${paidStatus ? `<div class="home-payment-action">${paymentDot(paidStatus)}${charge && paidStatus !== "paid" ? `<button type="button" class="secondary" data-transfer-confirm>${paidStatus === "pending" ? "Update transfer confirmation" : "Confirm you have transferred funds"}</button>` : ""}${paidStatus !== "paid" ? '<a href="account.html#payments">View bank transfer details →</a>' : ""}</div>` : ""}</div>${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
     note.hidden = !canInvite || ev.guest_price != null;
     note.textContent = "The organiser needs to confirm the guest price before invitations can be sent.";
     const rsvpButton = actions.querySelector("[data-home-rsvp]");
@@ -198,12 +213,14 @@ else {
       if (background && document.querySelector("dialog[open]")) return;
       renderActions();
       groupArea.hidden = !b.state.user || ev.event_type === "social";
-      await Promise.all([
+      const [, , teeTime] = await Promise.all([
         operationArea.contains(document.activeElement) ? Promise.resolve() : mountEventOperations(operationArea, ev, options).then(() => { operationArea.hidden = !operationArea.querySelector('[data-reservation-notices] .notice,[data-seen]'); }),
         refreshInvites(),
         b.state.user && ev.event_type !== "social" ? mountMemberTees(groupArea, ev.id, { home: true }) : Promise.resolve().then(() => { groupArea.hidden = true; }),
         b.state.user && ev.event_type !== "social" ? mountBuggy(buggyArea, ev).then(() => { buggyArea.hidden = !buggyArea.innerHTML; }) : Promise.resolve().then(() => { buggyArea.hidden = true; }),
       ]);
+      showTeeGroupFirst(teeTime);
+      if (teeTime) actions.querySelector("[data-home-rsvp]")?.classList.add("secondary");
     })();
     bookingRefresh = task;
     try { await task; }

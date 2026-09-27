@@ -54,6 +54,14 @@
 #homeOperations .booking-status { margin-bottom: 10px; }
 #homeOperations [data-guest-invites][hidden] { display: none; }
 #homeOperations[hidden] { display: none; }
+.has-published-tee > .next-event-heading,
+.has-published-tee > .next-event-facts,
+.has-published-tee > .home-playing-list,
+.has-published-tee .home-rsvp-confirmation,
+.has-published-tee .home-event-fee { display: none; }
+.has-published-tee #homeTeeGroup { margin: 0 0 16px; }
+.has-published-tee .home-member-grid:has(#homeOperations[hidden]) { display: none; }
+.has-published-tee .home-event-actions:empty { display: none; }
 .home-member-grid:has(#homeOperations[hidden]) { grid-template-columns: 1fr; }
 .rsvp-dialog {
   width: min(540px, calc(100% - 24px));
