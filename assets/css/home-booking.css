@@ -62,6 +62,16 @@
 .has-published-tee #homeTeeGroup { margin: 0 0 16px; }
 .has-published-tee .home-member-grid:has(#homeOperations[hidden]) { display: none; }
 .has-published-tee .home-event-actions:empty { display: none; }
+.home-day-hub[hidden] { display: none; }
+.home-day-hub { display: grid; gap: 16px; }
+.home-day-hub .home-hole-action { margin: 0; }
+.home-day-directions, .home-day-weather { padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.home-day-directions h3, .home-day-weather h2 { margin: 0 0 10px; font-size: 1.2rem; }
+.home-day-directions .address { margin: 0 0 10px; }
+.home-day-hub #homeTeeGroup { margin: 0; }
+.is-event-day > .next-event-heading, .is-event-day > .next-event-facts, .is-event-day > .home-playing-list,
+.is-event-day .home-rsvp-confirmation, .is-event-day .home-event-fee,
+.is-event-day .home-rsvp-cutoff, .is-event-day .status-pill { display: none; }
 .home-member-grid:has(#homeOperations[hidden]) { grid-template-columns: 1fr; }
 .rsvp-dialog {
   width: min(540px, calc(100% - 24px));

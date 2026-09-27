@@ -274,7 +274,7 @@ function conditions(code) {
                 ? "snow showers"
                 : "thunderstorms";
 }
-function renderWeather(area, w, ev, ownTime) {
+export function renderWeather(area, w, ev, ownTime) {
   const heading = area.closest('[data-detail-section]') ? '' :
     '<p class="eyebrow">WEATHER FOR YOUR ROUND</p><h2>Looking ahead.</h2>';
   if (w.status !== "ready") {

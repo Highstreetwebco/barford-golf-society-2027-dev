@@ -2,7 +2,7 @@ import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
 import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-simple-events-1";
 import { mountEventOperations } from "./operations.js?v=2027-payment-status-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
-import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
+import { updateSlots, londonToday, mountBuggy, directions, renderWeather } from "./event-experience.js?v=2027-day-hub-1";
 import { openRsvp, rsvpClosed, rsvpChangeLocked } from "./rsvp.js?v=2027-rsvp-cutoff-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
@@ -44,7 +44,7 @@ else {
     area.closest("section").querySelector("h2").textContent = "Your event.";
   }
   area.classList.add("has-event");
-  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow" data-event-date></p><h2 data-event-name></h2></div></div><div class="home-event-actions" data-home-actions></div><p class="home-invite-note muted" data-invite-note hidden></p><p role="status" data-home-status></p><div class="next-event-facts"><span><small data-time-label>FIRST TEE</small><strong data-event-time></strong></span><span class="home-availability"><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong><button type="button" class="home-players-toggle" aria-expanded="false" aria-controls="homePlayingList">See who’s playing <span aria-hidden="true">⌄</span></button></span><span><small>THE COURSE</small><strong data-event-course></strong></span></div><div id="homePlayingList" class="home-playing-list" hidden aria-live="polite"></div><a class="home-event-details" href="event.html?id=${ev.id}">View event details <span aria-hidden="true">→</span></a><div class="home-hole-action"></div><details class="home-invite-management" hidden><summary>Your guest invitations</summary><div data-home-invites></div></details><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><section id="homeBuggy" class="panel section" hidden></section>`;
+  area.innerHTML = `<div class="home-day-hub" hidden><div class="home-hole-action"></div><section class="home-day-directions"><h3>Directions to the course</h3><p class="address" data-day-address></p><div data-day-directions></div></section><section class="home-day-weather"><div data-day-weather>Loading forecast…</div></section><div data-day-tee></div></div><div class="section-heading next-event-heading"><div><p class="eyebrow" data-event-date></p><h2 data-event-name></h2></div></div><div class="home-event-actions" data-home-actions></div><p class="home-invite-note muted" data-invite-note hidden></p><p role="status" data-home-status></p><div class="next-event-facts"><span><small data-time-label>FIRST TEE</small><strong data-event-time></strong></span><span class="home-availability"><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong><button type="button" class="home-players-toggle" aria-expanded="false" aria-controls="homePlayingList">See who’s playing <span aria-hidden="true">⌄</span></button></span><span><small>THE COURSE</small><strong data-event-course></strong></span></div><div id="homePlayingList" class="home-playing-list" hidden aria-live="polite"></div><a class="home-event-details" href="event.html?id=${ev.id}">View event details <span aria-hidden="true">→</span></a><details class="home-invite-management" hidden><summary>Your guest invitations</summary><div data-home-invites></div></details><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><section id="homeBuggy" class="panel section" hidden></section>`;
   function syncCover() {
     const old = area.querySelector(".home-event-cover");
     const url = b.safeUrl(ev.cover_url);
@@ -94,6 +94,9 @@ else {
   const operationArea = document.getElementById("homeOperations");
   const groupArea = document.getElementById("homeTeeGroup");
   const memberGrid = area.querySelector(".home-member-grid");
+  const dayHub = area.querySelector(".home-day-hub");
+  const dayTee = area.querySelector("[data-day-tee]");
+  const dayWeather = area.querySelector("[data-day-weather]");
   const homeHeading = area.closest("section").querySelector(":scope > .section-heading");
   const buggyArea = document.getElementById("homeBuggy");
   const inviteArea = area.querySelector("[data-home-invites]");
@@ -104,7 +107,31 @@ else {
   let guestContext = guestHome;
   let inviting = false;
   let refreshing = false;
+  let weatherLoadedAt = 0;
+  const isEventDay = () => !!b.state.user && !ev.cancelled && ev.event_type !== "social" && ev.date === londonToday();
+  async function refreshDayWeather(teeTime) {
+    if (!isEventDay()) return;
+    if (Date.now() - weatherLoadedAt < 15 * 60 * 1000 && dayWeather.dataset.teeTime === (teeTime || "")) return;
+    weatherLoadedAt = Date.now();
+    dayWeather.dataset.teeTime = teeTime || "";
+    try { renderWeather(dayWeather, await b.service("weather", { event_id: ev.id }), ev, teeTime); }
+    catch { renderWeather(dayWeather, { status: "unavailable" }, ev, teeTime); }
+  }
   function showTeeGroupFirst(teeTime) {
+    const today = isEventDay();
+    dayHub.hidden = !today;
+    area.classList.toggle("is-event-day", today);
+    if (today) {
+      area.classList.remove("has-published-tee");
+      dayTee.append(groupArea);
+      homeHeading.querySelector(".eyebrow").textContent = "EVENT DAY HUB";
+      homeHeading.querySelector("h2").textContent = ev.name;
+      const address = ev.address || ev.location || ev.course_name || ev.name;
+      area.querySelector("[data-day-address]").textContent = address;
+      area.querySelector("[data-day-directions]").innerHTML = directions(ev);
+      refreshDayWeather(teeTime);
+      return;
+    }
     const publishedForMember = !!teeTime;
     area.classList.toggle("has-published-tee", publishedForMember);
     if (publishedForMember) {
@@ -226,7 +253,7 @@ else {
     try { await task; }
     finally { if (bookingRefresh === task) bookingRefresh = null; }
   }
-  const holeArea = area.querySelector(".home-hole-action");
+  const holeArea = dayHub.querySelector(".home-hole-action");
   function refreshHoleAction() {
     holeArea.hidden = !b.state.user || ev.cancelled || ev.event_type === "social" || ev.date !== londonToday();
     if (holeArea.hidden || holeArea.childElementCount) return;
