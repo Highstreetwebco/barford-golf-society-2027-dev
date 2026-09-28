@@ -1,5 +1,5 @@
 import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
-import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-simple-events-1";
+import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-speed-1";
 import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
 import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
@@ -20,21 +20,21 @@ memberWelcome();
 mountPersonalResults(personal, b);
 window.addEventListener("focus", () => mountPersonalResults(personal, b));
 setInterval(() => { if (!document.hidden) mountPersonalResults(personal, b); }, 30000);
-let guestHome = null;
-if (b.state.user) {
-  try { guestHome = await guestAction("mine"); } catch {}
-}
 const requested = new URLSearchParams(location.search).get("event");
 const requestedId = requested && /^[1-9]\d*$/.test(requested) && Number.isSafeInteger(Number(requested)) ? Number(requested) : null;
+// Start independent requests together; guest access is checked before rendering.
+const guestHomePromise = b.state.user ? guestAction("mine").catch(() => null) : Promise.resolve(null);
+const requestedPromise = requestedId ? Promise.resolve(b.client.from("events").select("*").eq("id", requestedId).limit(1)) : null;
+const upcomingPromise = !requestedId ? Promise.resolve(b.client.from("events").select("*").gte("date", londonToday()).eq("cancelled", false).order("date").limit(1)) : null;
+const guestHome = await guestHomePromise;
 const guestNext = (guestHome?.bookings || []).find((x) => x.attending || x.reserve) || guestHome?.bookings?.[0];
 const unavailableRequest = requested !== null && (!requestedId || (guestHome?.category === "guest" && !(guestHome.bookings || []).some((x) => x.event_id === requestedId)));
-let eventQuery = b.client.from("events").select("*");
-if (requestedId) eventQuery = eventQuery.eq("id", requestedId);
-else {
-  eventQuery = eventQuery.gte("date", londonToday()).eq("cancelled", false).order("date");
-  if (guestHome?.category === "guest" && guestNext) eventQuery = eventQuery.eq("id", guestNext.event_id);
-}
-const { data, error } = b.state.user && !guestHome ? { data: null, error: new Error("Account details unavailable") } : unavailableRequest || (guestHome?.category === "guest" && !guestNext && !requestedId) ? { data: [], error: null } : await eventQuery.limit(1);
+const eventRequest = requestedId
+  ? requestedPromise
+  : guestHome?.category === "guest" && guestNext
+    ? b.client.from("events").select("*").eq("id", guestNext.event_id).limit(1)
+    : upcomingPromise;
+const { data, error } = b.state.user && !guestHome ? { data: null, error: new Error("Account details unavailable") } : unavailableRequest || (guestHome?.category === "guest" && !guestNext && !requestedId) ? { data: [], error: null } : await eventRequest;
 if (error) area.innerHTML = b.empty("Unable to load the next event.", "Please try again shortly.");
 else if (!data?.length) area.innerHTML = b.empty(requested !== null ? "This event is unavailable." : guestHome?.category === "guest" ? "Your next invitation starts here." : "A new season is taking shape.", requested !== null ? "Choose another event from the Events page." : guestHome?.category === "guest" ? "Your invited rounds will appear here once you join them." : "The 2027 golf days will appear here as they’re announced.");
 else {
@@ -96,6 +96,7 @@ else {
   let response = null;
   let bookingRefresh = null;
   let guestContext = guestHome;
+  let initialGuestContext = true;
   let inviting = false;
   let refreshing = false;
   function updateFacts() {
@@ -126,16 +127,17 @@ else {
       try {
         const link = await guestAction("create", { event_id: ev.id });
         shareInvite(ev, link.token, link.host_name);
-        await refreshInvites();
+        await refreshInvites({ fresh: true });
       } catch (error) { status.textContent = error.message || "Your invitation could not be created. Please try again."; }
       finally { inviting = false; inviteButton.disabled = ev.guest_price == null; }
     };
     if (focusedAction) (actions.querySelector(focusedAction) || area.querySelector(".home-event-details"))?.focus({ preventScroll: true });
   }
-  async function refreshInvites() {
+  async function refreshInvites({ fresh = false } = {}) {
     if (!b.state.user || guestContext?.category === "guest") { inviteManagement.hidden = true; return; }
     if (inviteArea.contains(document.activeElement)) return;
-    await mountGuestInvites(inviteArea, ev, guestContext?.category, { showCreate: false, showManagement: true });
+    if (fresh) guestContext = await guestAction("mine", { event_id: ev.id }).catch(() => guestContext);
+    await mountGuestInvites(inviteArea, ev, guestContext?.category, { showCreate: false, showManagement: true, data: guestContext });
     inviteManagement.hidden = inviteArea.hidden || !inviteArea.querySelector("[data-invites]")?.childElementCount;
   }
   async function refreshBooking({ force = false, background = false } = {}) {
@@ -146,9 +148,11 @@ else {
     }
     const task = (async () => {
       if (b.state.user) {
+        const guestsPromise = initialGuestContext ? Promise.resolve(guestContext) : guestAction("mine", { event_id: ev.id }).catch(() => null);
+        initialGuestContext = false;
         const [own, guests] = await Promise.all([
           b.client.from("rsvps").select("*").eq("event_id", ev.id).eq("user_id", b.state.user.id).maybeSingle(),
-          guestAction("mine", { event_id: ev.id }).catch(() => null),
+          guestsPromise,
         ]);
         if (!own.error) response = own.data;
         guestContext = guests;

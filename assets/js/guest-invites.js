@@ -63,14 +63,13 @@ export function shareInvite(ev, token, host) {
     }
   };
 }
-export async function mountGuestInvites(area, ev, category = "member", { showCreate = true, showManagement = true } = {}) {
+export async function mountGuestInvites(area, ev, category = "member", { showCreate = true, showManagement = true, data: prefetched = null } = {}) {
   if (!area) return;
   area.hidden = false;
-  let data;
-  try {
-    data = await guestAction("mine", { event_id: ev.id });
-  } catch {
-    data = { links: [], bookings: [] };
+  let data = prefetched;
+  if (!data) {
+    try { data = await guestAction("mine", { event_id: ev.id }); }
+    catch { data = { links: [], bookings: [] }; }
   }
   const booking = (data.bookings || []).find((x) => x.event_id === ev.id);
   if (booking) {
@@ -79,7 +78,7 @@ export async function mountGuestInvites(area, ev, category = "member", { showCre
   }
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
   const closed = ev.cancelled || ev.date < today || (ev.rsvp_deadline && ev.rsvp_deadline < today);
-  const links = (data.links || []).filter((l) => !l.revoked);
+  const links = (data.links || []).filter((l) => !l.revoked && l.event_id === ev.id);
   if ((data.category || category) === "guest" || closed || (!showCreate && (!showManagement || !links.length))) {
     area.hidden = true;
     return;

@@ -107,20 +107,17 @@ window.barfordReady = (async () => {
     state.profile = null;
     state.admin = false;
     if (state.user) {
-      const [p, a] = await Promise.all([
-        raw
-          .from("profiles")
-          .select("id,full_name,email,phone,baseline_avatar_path")
-          .eq("id", state.user.id)
-          .maybeSingle(),
-        raw.rpc("is_admin"),
-      ]);
+      const p = await raw
+        .from("profiles")
+        .select("id,full_name,email,phone,baseline_avatar_path,is_admin")
+        .eq("id", state.user.id)
+        .maybeSingle();
       if (!p.error && !p.data) {
         await raw.auth.signOut({ scope: "local" });
         state.user = null;
       }
       state.profile = p.data;
-      state.admin = !!state.user && !a.error && a.data === true;
+      state.admin = !!state.user && !p.error && p.data?.is_admin === true;
     }
     document
       .querySelectorAll("[data-admin]")
