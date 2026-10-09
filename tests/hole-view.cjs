@@ -103,7 +103,7 @@ async function fixture(browser, options = {}) {
     if (url.pathname === "/auth/v1/user") return reply(user);
     if (url.pathname === "/rest/v1/profiles") return reply({ id: uid, full_name: "Hole Test", phone: "07000000000", email: user.email, is_admin: !!options.admin });
     if (rpc === "is_admin") return reply(!!options.admin);
-    if (["baseline_admin_accounts", "baseline_member_roster", "baseline_signups"].includes(rpc)) return reply([]);
+    if (["baseline_admin_accounts", "baseline_admin_account_photos", "baseline_member_roster", "baseline_signups"].includes(rpc)) return reply([]);
     if (rpc === "baseline_league_admin") return reply({ revision: 0, players: [], rounds: [] });
     if (rpc === "baseline_finance") return reply({ pending: 0 });
     if (rpc === "baseline_league_board") return reply({ players: [], rounds: [], visible_rounds: 5 });
