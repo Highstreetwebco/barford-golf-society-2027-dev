@@ -27,7 +27,7 @@ async function setup(browser, options = {}) {
     admin: true, width: options.width || 390,
     events: [{ ...eventFixture, course_layout_id: null, ...(options.event || {}) }], layout: null,
     prepare: async (context, model) => {
-      Object.assign(model, { setupRequests: [], uploads: [], storageDeletes: [], savedCourseLayouts: [], heldMappings: new Set(), pendingMappings: new Map(), mappingReplies: {}, courseLayoutSaveFailures: 0, eventFailures: 0, uploadFailures: 0, eventSaves: [] });
+      Object.assign(model, { setupRequests: [], uploads: [], storageDeletes: [], savedCourseLayouts: [], heldMappings: new Set(), pendingMappings: new Map(), mappingReplies: options.mappingReplies || {}, courseLayoutSaveFailures: 0, eventFailures: 0, uploadFailures: 0, eventSaves: [] });
       model.releaseMapping = placeId => model.pendingMappings.get(placeId)?.();
       await context.route(backend + "/**", async route => {
         const request = route.request(), url = new URL(request.url()), p = url.pathname;
@@ -240,7 +240,50 @@ async function run() {
       await finish(f);
     });
 
-    await check("Course and tee choices use the selected key and require explicit map confirmation", async () => {
+    await check("Opening an existing event automatically selects Yellow mens tees and saves GPS with the event", async () => {
+      const choices = ['White (men)', 'Yellow (men)', 'Yellow (women)', 'Red (women)'].map((tee_name, i) => ({ key: `alpha-${i}`, course_name: courses[0].displayName.text, tee_name }));
+      const f = await setup(browser, { existing: true,
+        event: { place_id: courses[0].id, course_name: courses[0].displayName.text },
+        mappingReplies: { [courses[0].id]: body => {
+          if (!body.scorecard_key) return { status: 'choice_required', scorecards: choices };
+          assert.equal(body.scorecard_key, choices[1].key);
+          return { ...readyFor(courses[0], choices[1].key, 'Yellow (men)'), scorecards: choices, selected_key: choices[1].key };
+        } },
+      });
+      await f.page.locator('[data-preview-layout]').waitFor();
+      assert.equal(await f.page.locator('[data-scorecard-choice]').inputValue(), choices[1].key);
+      assert.equal(await f.page.locator('[data-course-prepare]').isVisible(), false);
+      assert.equal(await f.page.locator('[data-confirm-maps]').count(), 0);
+      assert.equal(f.model.savedCourseLayouts.length, 0);
+      f.model.eventFailures = 1;
+      await saveEvent(f);
+      assert.equal(f.model.savedCourseLayouts.length, 1);
+      assert.equal(f.model.eventSave, undefined);
+      await saveEvent(f);
+      assert.equal(f.model.savedCourseLayouts.length, 1, 'Event retry must reuse the prepared GPS layout');
+      assert.equal(f.model.eventSave.course_layout_id, f.model.savedCourseLayouts[0].id);
+      assert.equal(f.model.savedCourseLayouts[0].tee_name, 'Yellow (men)');
+      assert.equal(f.model.savedCourseLayouts[0].source.confirmation_method, 'event_save');
+      await finish(f);
+    });
+
+    await check("Save event waits for an in-progress automatic GPS lookup", async () => {
+      const f = await setup(browser, { existing: true });
+      f.model.mappingReplies[courses[0].id] = readyFor(courses[0]);
+      f.model.heldMappings.add(courses[0].id);
+      await chooseCourse(f, 0);
+      await waitUntil(() => f.model.pendingMappings.has(courses[0].id), 'GPS lookup must be running');
+      const saving = saveEvent(f);
+      await f.page.waitForFunction(() => document.querySelector('#eventForm').inert);
+      assert.equal(f.model.eventSaves.length, 0);
+      f.model.releaseMapping(courses[0].id);
+      await saving;
+      assert.equal(f.model.savedCourseLayouts.length, 1);
+      assert.equal(f.model.eventSave.course_layout_id, f.model.savedCourseLayouts[0].id);
+      await finish(f);
+    });
+
+    await check("Multiple courses require a choice; GPS is then included in Save event", async () => {
       const f = await setup(browser, { existing: true });
       const choices = [{ key: "alpha-north-yellow", course_name: "Alpha North", tee_name: "Yellow" }, { key: "alpha-south-white", course_name: "Alpha South", tee_name: "White" }];
       f.model.mappingReplies[courses[0].id] = body => {
@@ -256,16 +299,15 @@ async function run() {
       await choice.waitFor();
       assert.equal(await choice.inputValue(), "");
       assert.equal(f.model.savedCourseLayouts.length, 0);
-      assert.equal(await f.page.locator("[data-confirm-maps]").isVisible(), false);
+      assert.equal(await f.page.locator("[data-confirm-maps]").count(), 0);
+      await saveEvent(f);
+      assert.equal(f.model.eventSaves.length, 0, "Do not guess a layout at a multiple-course venue");
       const response = f.page.waitForResponse(response => response.url().endsWith("/baseline-services") && response.request().postDataJSON().scorecard_key === choices[1].key);
       await choice.selectOption(choices[1].key);
       await (await response).finished();
-      await f.page.locator("[data-confirm-maps]").waitFor();
+      await f.page.locator("[data-preview-layout]").waitFor();
       assert.equal(f.model.savedCourseLayouts.length, 0, "A ready preview must not save or publish itself");
       await saveEvent(f);
-      assert.equal(f.model.eventSaves.length, 0, "Saving the event must wait for explicit confirmation of ready GPS maps");
-      await f.page.getByText(/confirm.*hole|hole.*confirm/i).first().waitFor();
-      await f.page.locator("[data-confirm-maps]").click();
       await waitUntil(() => f.model.savedCourseLayouts.length === 1, "Confirmed maps should be saved once");
       const saved = f.model.savedCourseLayouts[0];
       assert.equal(saved.holes.length, 18);
@@ -278,7 +320,7 @@ async function run() {
       await finish(f);
     });
 
-    await check("Malformed ready responses cannot enable confirmation or save partial GPS maps", async () => {
+    await check("Malformed ready responses cannot save partial GPS maps", async () => {
       for (const mutate of [
         reply => { reply.draft.holes[17].green = null; },
         reply => { reply.draft.holes[0].yards = null; },
@@ -306,12 +348,12 @@ async function run() {
       await chooseCourse(f, 0);
       await waitUntil(() => f.model.pendingMappings.has(courses[0].id), "Course A lookup should be in progress");
       await settleMapping(f, 1);
-      await f.page.locator("[data-confirm-maps]").waitFor();
+      await f.page.locator("[data-preview-layout]").waitFor();
       const completed = f.page.waitForResponse(response => response.url().endsWith("/baseline-services") && response.request().postDataJSON().action === "prepare_course" && response.request().postDataJSON().place_id === courses[0].id);
       f.model.releaseMapping(courses[0].id);
       await (await completed).finished();
       await f.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      await f.page.locator("[data-confirm-maps]").click();
+      await saveEvent(f);
       await waitUntil(() => f.model.savedCourseLayouts.length === 1, "Course B should be the only saved map");
       assert.equal(f.model.savedCourseLayouts[0].place_id, courses[1].id);
       assert.equal(f.model.savedCourseLayouts[0].name, courses[1].displayName.text);
@@ -339,15 +381,16 @@ async function run() {
       await finish(f);
     });
 
-    await check("A failed map confirmation can be retried without creating duplicate layouts", async () => {
+    await check("A failed GPS save blocks the event and can be retried", async () => {
       const f = await setup(browser, { existing: true });
       f.model.mappingReplies[courses[0].id] = readyFor(courses[0]);
       f.model.courseLayoutSaveFailures = 1;
       await settleMapping(f, 0);
-      await f.page.locator("[data-confirm-maps]").click();
-      await f.page.getByText(/Hole map confirmation interrupted/).waitFor();
+      await saveEvent(f);
+      await f.page.getByText(/Hole map confirmation interrupted/).first().waitFor();
+      assert.equal(f.model.eventSaves.length, 0, "Do not save the event if saving its prepared GPS fails");
       assert.equal(f.model.savedCourseLayouts.length, 0);
-      await f.page.locator("[data-confirm-maps]").click();
+      await saveEvent(f);
       await waitUntil(() => f.model.savedCourseLayouts.length === 1, "Retry should save the confirmed layout");
       assert.equal(f.model.setupRequests.filter(request => request.action === "save").length, 2);
       assert.equal(f.model.savedCourseLayouts[0].ready_count, 18);

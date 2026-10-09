@@ -101,7 +101,7 @@ async function fixture(browser, options = {}) {
     const reply = data => route.fulfill({ json: data });
     const rpc = url.pathname.split("/").pop();
     if (url.pathname === "/auth/v1/user") return reply(user);
-    if (url.pathname === "/rest/v1/profiles") return reply({ id: uid, full_name: "Hole Test", phone: "07000000000", email: user.email });
+    if (url.pathname === "/rest/v1/profiles") return reply({ id: uid, full_name: "Hole Test", phone: "07000000000", email: user.email, is_admin: !!options.admin });
     if (rpc === "is_admin") return reply(!!options.admin);
     if (["baseline_admin_accounts", "baseline_member_roster", "baseline_signups"].includes(rpc)) return reply([]);
     if (rpc === "baseline_league_admin") return reply({ revision: 0, players: [], rounds: [] });
@@ -327,7 +327,7 @@ async function run() {
       await clean(f);
     });
 
-    await check("Course lookup selects the course and tees, previews all 18 discovered holes, then confirms them for the event", async () => {
+    await check("Course lookup selects Yellow automatically and saves all 18 GPS holes with the event", async () => {
       const prepared = structuredClone(preparedLayoutFixture);
       const place = { id: prepared.place_id, displayName: { text: prepared.name }, formattedAddress: prepared.address, location: { latitude: prepared.latitude, longitude: prepared.longitude }, websiteUri: "https://example.invalid/course", nationalPhoneNumber: "01926 000000" };
       const cards = [{ key: "course-yellow", course_name: prepared.name, tee_name: "Yellow" }, { key: "course-red", course_name: prepared.name, tee_name: "Red" }];
@@ -348,14 +348,14 @@ async function run() {
       } });
       await f.page.locator('[data-tab="details"]').click();
       await f.page.locator("#adminEvent").selectOption("999");
-      await f.page.waitForFunction(() => /previous map/.test(document.querySelector("[data-course-preparation]").textContent));
+      await f.page.waitForFunction(() => /Choose the course/.test(document.querySelector("[data-course-preparation]").textContent));
       await f.page.locator("#courseQuery").fill(prepared.name);
       await f.page.locator("#findCourse").click();
       await f.page.locator("#courseResults [data-course]").click();
       const choice = f.page.locator("[data-scorecard-choice]");
       await choice.waitFor();
-      await choice.selectOption("course-yellow");
       await f.page.locator("[data-preview-layout]").waitFor();
+      assert.equal(await choice.inputValue(), "course-yellow");
       assert.equal(f.model.savedLayouts.length, 0, "Discovery must not save an unconfirmed layout");
       assert.equal(await f.page.locator("[name=course_layout_id]").inputValue(), "");
       await f.page.locator("[data-preview-layout]").click();
@@ -367,8 +367,9 @@ async function run() {
       assert.equal(await preview.locator("[data-hole-title]").textContent(), "Hole 1");
       await preview.locator("[data-hole-close]").click();
       await preview.waitFor({ state: "detached" });
-      await f.page.locator("[data-confirm-maps]").click();
-      await f.page.waitForFunction(() => document.querySelector("[name=course_layout_id]").value === "33333333-3333-4333-8333-333333333333");
+      assert.equal(await f.page.locator("[data-confirm-maps]").count(), 0);
+      await f.page.getByRole("button", { name: "Save event", exact: true }).click();
+      await f.page.waitForFunction(() => document.querySelector("#eventForm button:not([type])")?.textContent === "Save event");
       assert.equal(f.model.savedLayouts.length, 1);
       assert.equal(f.model.savedLayouts[0].holes.length, 18);
       assert.ok(f.model.savedLayouts[0].holes.every(h => h.reviewed));
@@ -376,8 +377,6 @@ async function run() {
       assert.equal(f.model.requests.filter(r => /baseline_course_layout$/.test(r.url) && ["list", "match", "import"].includes(r.body.action)).length, 0, "Fresh setup must not restore earlier course drafts");
       assert.equal(calls.length, 2);
       assert.equal(calls[0].place_id, prepared.place_id);
-      await f.page.getByRole("button", { name: "Save event", exact: true }).click();
-      await f.page.waitForFunction(() => document.querySelector("#eventForm button:not([type])")?.textContent === "Save event");
       assert.equal(f.model.eventSave.course_layout_id, "33333333-3333-4333-8333-333333333333");
       await clean(f);
     });

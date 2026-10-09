@@ -1,5 +1,5 @@
 import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
-import { mountHoleSetup } from "./hole-admin.js?v=2027-accurate-gps-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-auto-gps-1";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import {
   operationTabs,
@@ -168,7 +168,7 @@ async function init() {
       if (!name) throw new Error("Enter an event name.");
       const updates = {
         ...eventFields(form),
-        course_layout_id: f.get('event_type') === 'social' ? null : holeSetup.layoutId(),
+        course_layout_id: f.get('event_type') === 'social' ? null : await holeSetup.layoutId(),
         name,
         round_number: f.get("round_number")
           ? Number(f.get("round_number"))

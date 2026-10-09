@@ -16,7 +16,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     dialog.setAttribute("aria-label","Course map preview");
     dialog.querySelector(".eyebrow").textContent="ADMIN PREVIEW";
     dialog.querySelector(".hole-dialog-top h2").textContent="Course map preview";
-    dialog.querySelector(".hole-picker-note").textContent="Preview the discovered tee and green positions. Confirm the hole maps in event setup before members can use them.";
+    dialog.querySelector(".hole-picker-note").textContent="Preview the discovered tee and green positions. They are added automatically when you save the event.";
   }
   activeDialog=dialog;
   dialog.showModal();
