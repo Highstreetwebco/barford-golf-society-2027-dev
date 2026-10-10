@@ -190,7 +190,7 @@ async function run() {
       await openHole(f.page);
       assert.equal(await f.page.evaluate(() => window.__gps.calls), 0, "Opening the view must not ask for location");
       assert.equal(await f.page.locator("[data-hole='18']").isDisabled(), true);
-      assert.match(await f.page.locator("[data-distance-origin]").textContent(), /mapped tee/i);
+      assert.match(await f.page.locator("[data-distance-origin]").textContent(), /mapped start reference/i);
       assert.ok(Math.abs(Number(await f.page.locator("[data-distance='green']").textContent()) - 365) <= 1, "Mapped tee to centre is approximately 365 yards");
       await noOverflow(f.page);
       await f.page.screenshot({ path: path.join(out, "hole-view-320.png"), fullPage: false });
@@ -267,7 +267,7 @@ async function run() {
         assert.notEqual(Number(await f.page.locator("[data-distance='green']").textContent()), 243);
       }
       await f.page.evaluate(() => { window.__gps.position(52.0011, -1.5); window.__now += 16000; });
-      await f.page.waitForFunction(() => /^From mapped tee/.test(document.querySelector("[data-distance-origin]").textContent));
+      await f.page.waitForFunction(() => /^From mapped start reference/.test(document.querySelector("[data-distance-origin]").textContent));
       assert.match(await f.page.locator("[data-gps-status]").textContent(), /out of date/i, "A stopped GPS stream must expire without another fix arriving");
       await f.page.locator("[data-hole-close]").click();
       await f.page.locator(".hole-dialog").waitFor({ state: "detached" });

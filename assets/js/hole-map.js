@@ -99,7 +99,7 @@ export async function createHoleMap(element,{center,onClick,onError}={}) {
     if(!current)return;
     const {tee,green,front,back,dogleg}=current;
     if(tee&&green)line([tee,...(dogleg?[dogleg]:[]),green]);
-    pin(tee,"Tee","tee");pin(green,"Centre","green");pin(front,"Front","edge");pin(back,"Back","edge");pin(dogleg,"Turn","edge");
+    pin(tee,"Mapped start","tee");pin(green,"Centre","green");pin(front,"Front","edge");pin(back,"Back","edge");pin(dogleg,"Turn","edge");
     if(position)pin(position,"You","player");
     const origin=position||tee;
     if(target){if(origin)line([origin,target],"#ffd66d",4);if(green)line([target,green],"#ffd66d",3);pin(target,"Target","target");}

@@ -86,3 +86,24 @@ test('Missing real geometry remains unavailable with its specific error', async 
   assert.equal(result.error_code, 'COURSE_BOUNDARY_UNCONFIRMED');
   assert.equal(result.draft, null);
 });
+
+// Real provider response reproducing Welcombe's missing tee-area evidence.
+test('Welcombe prepares all 18 greens with explicit route references for holes 4, 12 and 18', async () => {
+  const w = JSON.parse(await readFile(new URL('./fixtures/welcombe-course-source.json', import.meta.url)));
+  const result = await prepareCourseGps(w.course, discovery([]), {}, async course => buildCourseMapping(course, w.elements));
+  assert.equal(result.status, 'ready');
+  assert.equal(result.draft.holes.length, 18);
+  const validation = result.draft.source.validation;
+  assert.equal(validation.tee_anchors, 15);
+  assert.equal(validation.route_starts, 18);
+  assert.equal(validation.green_anchors, 18);
+  assert.deepEqual(validation.evidence.filter(e => e.start_evidence === 'numbered_route_start').map(e => e.number).sort((a,b)=>a-b), [4,12,18]);
+  assert.ok(validation.evidence.every(e => e.green_feature_id));
+  assert.ok(completeCourseMap(result.draft));
+  const missingGreen = structuredClone(result.draft);
+  missingGreen.source.validation.green_anchors = 17;
+  assert.equal(completeCourseMap(missingGreen), false);
+  const missingStart = structuredClone(result.draft);
+  missingStart.source.validation.route_starts = 17;
+  assert.equal(completeCourseMap(missingStart), false);
+});
