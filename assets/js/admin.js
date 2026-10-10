@@ -1,5 +1,5 @@
 import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
-import { mountHoleSetup } from "./hole-admin.js?v=2027-route-start-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-par-camera-1";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import {
   operationTabs,

@@ -1,4 +1,4 @@
-import { openHolePicker } from './hole-view.js?v=2027-route-start-1';
+import { openHolePicker } from './hole-view.js?v=2027-par-camera-1';
 
 const point = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
 export function completeCourseMap(layout) {
@@ -11,7 +11,7 @@ export function completeCourseMap(layout) {
     if (!Number.isInteger(h.number) || h.number < 1 || h.number > 18 || numbers.has(h.number) || !point(h.tee) || !point(h.green)) return false;
     if (h.tee.lat === h.green.lat && h.tee.lng === h.green.lng) return false;
     if (gpsOnly) {
-      if (h.par !== null || h.yards !== null || h.stroke_index !== null) return false;
+      if ((h.par !== null && (layout.source.par_source !== 'numbered_map_routes' || !Number.isInteger(h.par) || h.par < 3 || h.par > 6)) || h.yards !== null || h.stroke_index !== null) return false;
     } else if (!Number.isInteger(h.par) || h.par < 3 || h.par > 6 || !Number.isInteger(h.yards) || h.yards < 30 || h.yards > 1200 || !Number.isInteger(h.stroke_index) || h.stroke_index < 1 || h.stroke_index > 18 || indexes.has(h.stroke_index)) return false;
     numbers.add(h.number); indexes.add(h.stroke_index); greens.add(`${h.green.lat},${h.green.lng}`); tees.add(`${h.tee.lat},${h.tee.lng}`);
   }
@@ -53,7 +53,7 @@ export function mountHoleSetup(form, b) {
     status.textContent = draft ? `GPS ready for all 18 holes · ${draft.name} · ${draft.tee_name}. ${confirmed ? 'Linked when you save the event.' : 'Saves automatically with the event. Preview is optional.'}` : '';
     const source = $('[data-map-source]');
     source.hidden = !draft;
-    source.textContent = draft ? `${draft.source.attribution || 'OpenStreetMap'} · Numbered hole routes matched to green areas. ${draft.source.setup_mode === 'gps_only' ? 'Hole numbers follow the mapped course; scorecard details are not verified. ' : ''}Mapped starts are reference positions; separate tee areas and tee colours may be unconfirmed. Live GPS distances use the player’s location.` : '';
+    source.textContent = draft ? `${draft.source.attribution || 'OpenStreetMap'} · Numbered hole routes matched to green areas. ${draft.source.setup_mode === 'gps_only' ? 'Hole numbers follow the mapped course; pars, where available, come from the map; tee-specific scorecard details are not verified. ' : ''}Mapped starts are reference positions; separate tee areas and tee colours may be unconfirmed. Live GPS distances use the player’s location.` : '';
   }
   function clear() {
     draft = confirmed = null; hidden.value = ''; status.textContent = '';

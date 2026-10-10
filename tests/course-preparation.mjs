@@ -16,8 +16,8 @@ test('An unavailable scorecard still produces usable GPS from real mapped geomet
   assert.equal(result.draft.source.validation.scorecard_order_confirmed, false);
   assert.equal(result.draft.source.validation.order_evidence, 'numbered_map_routes');
   assert.equal(result.draft.holes.length, 18);
-  assert.ok(result.draft.holes.every(h => h.tee && h.green && h.par === null && h.yards === null && h.stroke_index === null));
-  assert.equal(result.draft.tee_name, 'Mapped tee positions');
+  assert.ok(result.draft.holes.every(h => h.tee && h.green && Number.isInteger(h.par) && h.yards === null && h.stroke_index === null));
+  assert.equal(result.draft.tee_name, 'Mapped start references');
   assert.equal(completeCourseMap(result.draft), true, 'The frontend must accept independently verified GPS without a scorecard');
 });
 
@@ -95,6 +95,8 @@ test('Welcombe prepares all 18 greens with explicit route references for holes 4
   assert.equal(result.draft.holes.length, 18);
   const validation = result.draft.source.validation;
   assert.equal(validation.tee_anchors, 15);
+  assert.deepEqual(result.draft.holes.map(h => h.par), [5,3,4,4,4,4,4,4,3,4,3,4,4,3,4,5,4,5]);
+  assert.equal(result.draft.source.par_source, 'numbered_map_routes');
   assert.equal(validation.route_starts, 18);
   assert.equal(validation.green_anchors, 18);
   assert.deepEqual(validation.evidence.filter(e => e.start_evidence === 'numbered_route_start').map(e => e.number).sort((a,b)=>a-b), [4,12,18]);

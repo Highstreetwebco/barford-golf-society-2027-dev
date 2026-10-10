@@ -88,11 +88,11 @@ export function openHolePicker(event,b,preparedLayout=null) {
     dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Your hole view";
     $("[data-hole-title]").textContent=`Hole ${number}`;
     $("[data-hole-course]").textContent=`${layout.name}${layout.tee_name?" · "+layout.tee_name+" tees":""}`;
-    $("[data-hole-stats]").innerHTML=`<div><span>Par</span><strong>${b.escape(hole.par??"—")}</strong></div><div><span>Card yardage</span><strong>${b.escape(hole.yards??"—")}</strong></div><div><span>Stroke index</span><strong>${b.escape(hole.stroke_index??"—")}</strong></div>`;
+    $("[data-hole-stats]").innerHTML=`<div><span>${layout.source?.par_source === "numbered_map_routes" ? "Par (map)" : "Par"}</span><strong>${b.escape(hole.par??"—")}</strong></div><div><span>Card yardage</span><strong>${b.escape(hole.yards??"—")}</strong></div><div><span>Stroke index</span><strong>${b.escape(hole.stroke_index??"—")}</strong></div>`;
     $("[data-hole-count]").textContent=`${number} / 18`;
     $("[data-hole-prev]").disabled=!holes.some(h=>h.number<number&&h.reviewed&&h.tee&&h.green);
     $("[data-hole-next]").disabled=!holes.some(h=>h.number>number&&h.reviewed&&h.tee&&h.green);
-    $("[data-find-green]").hidden=preview;
+    $("[data-find-green]").hidden=false;
     updateDistances();
     if(controller){controller.setHole(hole);controller.setPosition(validFix()?fix.point:null);return;}
     if(mapPromise)return;

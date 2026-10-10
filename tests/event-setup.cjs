@@ -157,9 +157,10 @@ async function run() {
         reply.scorecards = [];
         reply.draft.tee_name = "Mapped tee positions";
         reply.draft.source.setup_mode = "gps_only";
+        reply.draft.source.par_source = "numbered_map_routes";
         delete reply.draft.source.selected_scorecard;
         Object.assign(reply.draft.source.validation, { scorecard_order_confirmed: false, order_evidence: "numbered_map_routes", method: "numbered_routes_with_verified_greens", route_starts: 18, tee_anchors: 15 });
-        reply.draft.holes.forEach(h => Object.assign(h, { par: null, yards: null, stroke_index: null }));
+        reply.draft.holes.forEach(h => Object.assign(h, { par: 4, yards: null, stroke_index: null }));
         const f = await setup(browser, { mappingReplies: { [courses[index].id]: reply } });
         assert.equal(await f.page.locator("#findCourse").textContent(), "Find course and GPS hole layout");
         await f.page.locator('[name="name"]').fill("New automatic GPS event " + index);
@@ -169,6 +170,11 @@ async function run() {
         await f.page.locator('[data-preview-layout]').click();
         await f.page.locator('dialog [data-hole="4"]').click();
         assert.match(await f.page.locator('[data-distance-origin]').textContent(), /mapped start reference/i);
+        assert.match(await f.page.locator('[data-hole-stats]').textContent(), /Par \(map\)4/);
+        await f.page.locator('[data-find-green]').click();
+        await f.page.locator('[data-finder-start]').waitFor({ state: "visible" });
+        assert.match(await f.page.locator('[data-finder-course]').textContent(), /Hole 4/);
+        await f.page.locator('[data-finder-close]').click();
         await f.page.locator('[data-hole-close]').click();
         await saveEvent(f);
         assert.equal(f.model.savedCourseLayouts.length, 1);

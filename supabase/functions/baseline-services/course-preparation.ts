@@ -31,7 +31,7 @@ export async function prepareCourseGps(course: CourseInput, discovery: Discovery
   }
   const layoutName = chosen?.card.course_name || selection.layout_name || (courseNames.size === 1 ? candidates[0].card.course_name : '');
   try {
-    const draft = await mapping({ ...course, tee_name: chosen?.card.tee_name || 'Mapped tee positions', layout_name: layoutName }, { scorecard: chosen?.card });
+    const draft = await mapping({ ...course, tee_name: chosen?.card.tee_name || 'Mapped start references', layout_name: layoutName }, { scorecard: chosen?.card });
     if (draft.source.validation?.status !== 'verified' || draft.source.coverage.mapped !== 18) throw new Error('All 18 GPS holes must pass the position checks.');
     if (chosen) return {
       ...base, status: 'ready', selected_key: chosen.key,
@@ -43,9 +43,9 @@ export async function prepareCourseGps(course: CourseInput, discovery: Discovery
       draft: { ...draft,
         // No tee-specific scorecard facts are invented from route lengths or
         // another tee. Hole View computes distances from the actual coordinates.
-        holes: draft.holes.map(h => ({ ...h, par: null, yards: null, stroke_index: null })),
-        source: { ...draft.source, setup_mode: 'gps_only', scorecard_status: candidates.length ? 'not_selected' : 'unavailable',
-          coverage: { ...draft.source.coverage, par: 0, yards: 0, stroke_index: 0 } },
+        holes: draft.holes.map(h => ({ ...h, yards: null, stroke_index: null })),
+        source: { ...draft.source, setup_mode: 'gps_only', par_source: 'numbered_map_routes', scorecard_status: candidates.length ? 'not_selected' : 'unavailable',
+          coverage: { ...draft.source.coverage, par: draft.holes.filter(h => h.par !== null).length, yards: 0, stroke_index: 0 } },
       },
       message: 'GPS is ready for all 18 numbered holes. Scorecard details are unavailable or not selected; live GPS distances still work. Save the event to use the layout.',
     };
