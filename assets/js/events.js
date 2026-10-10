@@ -1,6 +1,6 @@
 import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
-import { openRsvp } from "./rsvp.js?v=2027-rsvp-cutoff-1";
+import { openRsvp, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-published-tees-1";
 import {
   mountExperience,
   mountBuggy,
@@ -185,7 +185,7 @@ async function render() {
   document.title = ev.name + " | Barford Golf Society";
   const closed = ev.cancelled || ev.date < londonToday();
   list.innerHTML = `<article class="event-detail" id="event-${ev.id}"><header class="event-detail-hero">${imageHTML(ev, true)}<div class="event-poster-content"><div class="event-poster-top"><span class="event-kind">${e(kind(ev))}</span>${ev.cancelled ? '<span class="event-booking-tag">Cancelled</span>' : r ? `<span class="event-booking-tag">${status(r)}</span>` : closed ? '<span class="event-booking-tag">Event complete</span>' : ""}</div><div class="event-poster-heading"><h1>${e(ev.name)}</h1>${place(ev) && place(ev) !== ev.name ? `<p>${e(place(ev))}</p>` : ""}</div></div></header><div class="event-photo-credit" data-cover-credit ${ev.cover_credit ? "" : "hidden"}>${e(ev.cover_credit || "")}</div>
-    <div class="event-summary">${essentials(ev, ownTime)}${!closed ? `<p class="event-booking-link"><a href="index.html?event=${ev.id}#rsvp">${r ? "Manage your RSVP on Home" : "RSVP from your homepage"}<span aria-hidden="true"> ↗</span></a></p>` : ""}</div>
+    <div class="event-summary">${teeTimesPublished(ev) ? `<p class="notice">${withdrawalNotice}</p>` : ""}${essentials(ev, ownTime)}${!closed ? `<p class="event-booking-link"><a href="index.html?event=${ev.id}${teeTimesPublished(ev) ? "#tees" : "#rsvp"}">${teeTimesPublished(ev) ? "Tee times" : r ? "Manage your RSVP on Home" : "RSVP from your homepage"}<span aria-hidden="true"> ↗</span></a></p>` : ""}</div>
     ${ev.cancelled ? '<p class="notice" role="status">This event has been cancelled. Contact an organiser about any payment already made.</p>' : ""}${ev.event_notice ? `<p class="notice preserve-lines">${e(ev.event_notice)}</p>` : ""}
     <div class="event-information"><div id="eventExperience"></div>
     ${section("players", ev.event_type === "social" ? "Who’s attending" : "Players & tee groups", "Confirmed players and published times", roster(ev))}

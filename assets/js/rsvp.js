@@ -7,6 +7,8 @@ export const rsvpChangeLocked = (event, response, admin = false) => {
   cutoff.setUTCDate(cutoff.getUTCDate() - 6);
   return today() >= cutoff.toISOString().slice(0, 10);
 };
+export const teeTimesPublished = event => event.event_type !== "social" && !!event.tee_published_at;
+export const withdrawalNotice = "If you need to withdraw from the event please contact the committee";
 let opening = false;
 
 function radio(e, name, legend, options, selected) {
@@ -65,6 +67,10 @@ export async function openRsvp(ev, b, { onSaved } = {}) {
       Object.assign(ev, current.data);
       if (rsvpClosed(ev)) {
         dialog.querySelector("[role=status]").textContent = ev.cancelled ? "This event has been cancelled." : "Bookings for this event are closed.";
+        return;
+      }
+      if (teeTimesPublished(ev)) {
+        dialog.querySelector("[role=status]").textContent = withdrawalNotice;
         return;
       }
       if (rsvpChangeLocked(ev, r, b.state.admin)) {

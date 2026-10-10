@@ -3,7 +3,7 @@ import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?
 import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
 import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
-import { openRsvp, rsvpClosed } from "./rsvp.js?v=2027-simple-events-1";
+import { openRsvp, rsvpClosed, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-published-tees-1";
 const b = await window.barfordReady;
 const area = document.getElementById("nextEvent");
 const personal = document.getElementById("personalResults");
@@ -44,7 +44,7 @@ else {
     area.closest("section").querySelector("h2").textContent = "Your event.";
   }
   area.classList.add("has-event");
-  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow" data-event-date></p><h2 data-event-name></h2></div></div><div class="home-event-actions" data-home-actions></div><p class="home-invite-note muted" data-invite-note hidden></p><p role="status" data-home-status></p><div class="next-event-facts"><span><small data-time-label>FIRST TEE</small><strong data-event-time></strong></span><span class="home-availability"><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong><button type="button" class="home-players-toggle" aria-expanded="false" aria-controls="homePlayingList">See who’s playing <span aria-hidden="true">⌄</span></button></span><span><small>THE COURSE</small><strong data-event-course></strong></span></div><div id="homePlayingList" class="home-playing-list" hidden aria-live="polite"></div><a class="home-event-details" href="event.html?id=${ev.id}">View event details <span aria-hidden="true">→</span></a><div class="home-hole-action"></div><details class="home-invite-management" hidden><summary>Your guest invitations</summary><div data-home-invites></div></details><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><section id="homeBuggy" class="panel section" hidden></section>`;
+  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow" data-event-date></p><h2 data-event-name></h2></div></div><p class="notice" data-withdrawal-notice hidden></p><div class="home-event-actions" data-home-actions></div><p class="home-invite-note muted" data-invite-note hidden></p><p role="status" data-home-status></p><div class="next-event-facts"><span><small data-time-label>FIRST TEE</small><strong data-event-time></strong></span><span class="home-availability"><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong><button type="button" class="home-players-toggle" aria-expanded="false" aria-controls="homePlayingList">See who’s playing <span aria-hidden="true">⌄</span></button></span><span><small>THE COURSE</small><strong data-event-course></strong></span></div><div id="homePlayingList" class="home-playing-list" hidden aria-live="polite"></div><a class="home-event-details" href="event.html?id=${ev.id}">View event details <span aria-hidden="true">→</span></a><div class="home-hole-action"></div><details class="home-invite-management" hidden><summary>Your guest invitations</summary><div data-home-invites></div></details><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><section id="homeBuggy" class="panel section" hidden></section>`;
   function syncCover() {
     const old = area.querySelector(".home-event-cover");
     const url = b.safeUrl(ev.cover_url);
@@ -109,12 +109,23 @@ else {
   function renderActions() {
     const focusedAction = actions.contains(document.activeElement) ? (document.activeElement.hasAttribute("data-home-invite") ? "[data-home-invite]" : "[data-home-rsvp]") : null;
     const closed = rsvpClosed(ev);
-    const guestClosed = closed || (ev.rsvp_deadline && ev.rsvp_deadline < londonToday());
+    const published = teeTimesPublished(ev);
+    const withdrawal = area.querySelector("[data-withdrawal-notice]");
+    withdrawal.hidden = !published || closed; withdrawal.textContent = withdrawalNotice;
+    if (published && b.state.user) actions.after(groupArea);
+    const guestClosed = published || closed || (ev.rsvp_deadline && ev.rsvp_deadline < londonToday());
     const canInvite = !!b.state.user && guestContext && guestContext.category !== "guest" && !guestClosed;
     const note = area.querySelector("[data-invite-note]");
-    actions.innerHTML = `${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change RSVP" : "RSVP"}</button>`}${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
+    actions.innerHTML = `${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : published ? `<button type="button" data-home-tees>Tee times</button>` : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change RSVP" : "RSVP"}</button>`}${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
     note.hidden = !canInvite || ev.guest_price != null;
     note.textContent = "The organiser needs to confirm the guest price before invitations can be sent.";
+    const teeButton = actions.querySelector("[data-home-tees]");
+    if (teeButton) teeButton.onclick = async () => {
+      if (!b.state.user && !(await b.requireMember())) return;
+      groupArea.hidden = false;
+      await mountMemberTees(groupArea, ev.id, { home: true });
+      groupArea.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
     const rsvpButton = actions.querySelector("[data-home-rsvp]");
     if (rsvpButton) rsvpButton.onclick = () => openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
     const inviteButton = actions.querySelector("[data-home-invite]");

@@ -124,6 +124,27 @@ async function run() {
   const report = [];
   const check = async (name, fn) => { await fn(); report.push(name); console.log("PASS " + name); };
   try {
+    await check("Published tee times replace RSVP actions and block legacy RSVP links", async () => {
+      for (const published of [false, true]) {
+        const f = await fixture(browser, { events: [{ ...eventFixture, tee_published_at: published ? "2027-06-20T10:00:00Z" : null }] });
+        await f.page.locator('[data-home-actions]').waitFor();
+        assert.equal(await f.page.locator('[data-home-rsvp]').count(), published ? 0 : 1);
+        assert.equal(await f.page.locator('[data-home-tees]').count(), published ? 1 : 0);
+        assert.equal(await f.page.locator('[data-withdrawal-notice]').isVisible(), published);
+        if (published) {
+          assert.equal(await f.page.locator('[data-home-invite]').count(), 0);
+          assert.equal(await f.page.locator('[data-withdrawal-notice]').textContent(), "If you need to withdraw from the event please contact the committee");
+          await f.page.locator('[data-home-tees]').click();
+          assert.equal(await f.page.locator('#homeTeeGroup').isVisible(), true);
+          await f.page.goto('http://127.0.0.1:8766/index.html?event=999#rsvp');
+          await f.page.locator('.rsvp-dialog').waitFor();
+          await f.page.waitForFunction(() => document.querySelector('.rsvp-dialog [role=status]')?.textContent === 'If you need to withdraw from the event please contact the committee');
+          assert.equal(await f.page.locator('.rsvp-dialog form').count(), 0);
+        }
+        await finish(f);
+      }
+    });
+
     await check("The event form has one type and a required league round directly underneath", async () => {
       const f = await setup(browser, { width: 320 });
       const type = f.page.locator('[name="event_type"]'), round = f.page.locator('[name="round_number"]');

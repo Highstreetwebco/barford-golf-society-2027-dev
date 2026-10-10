@@ -136,3 +136,5 @@ The Welcombe regression fixture reproduces the unconfirmed tee areas at holes 4,
 Admin previews also expose camera direction guidance for mapped greens; camera, location and compass permissions still require the user to press Start. GPS-only pars are retained from numbered map routes and labelled as map data.
 
 Course preparation requests declare map_format 3. Older organiser pages receive an update-required message before provider lookups rather than an incompatible map. The service worker fetches same-site navigation and scripts with no-store so revisiting the page does not reuse cached HTML or JavaScript. Existing open forms are never automatically reloaded.
+
+Once golf tee times have been published, member RSVP actions become Tee times and the homepage shows the committee withdrawal notice above the published group. Guest invitation creation is hidden there. The shared RSVP dialog also blocks old links; the RSVP database function enforces the lock while retaining committee/admin changes. Social events and the existing six-day change cutoff retain their prior behaviour.
