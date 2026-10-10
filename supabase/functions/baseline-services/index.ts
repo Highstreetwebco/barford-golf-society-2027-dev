@@ -1,6 +1,6 @@
 // Isolated 2027 services. Public requests validate the project API key;
 // organiser operations additionally validate a current GoTrue user and database role.
-import { prepareCourseMapping } from "./course-mapping.ts";
+import { prepareCourseGps } from "./course-preparation.ts";
 import { findCourseScorecards } from "./course-scorecard.ts";
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -309,25 +309,14 @@ Deno.serve(async (req) => {
         if (courseCardCache.size >= 20) courseCardCache.delete(courseCardCache.keys().next().value!);
         courseCardCache.set(course.place_id, { at: Date.now(), result: discovery });
       }
-      const candidates = await Promise.all(discovery.cards.map(async card => ({
-        key: await digest(JSON.stringify([card.source_url, card.course_name, card.tee_name])), card,
-      })));
-      const choices = candidates.map(({ key, card }) => ({ key, course_name: card.course_name, tee_name: card.tee_name }));
-      const base = { scorecards: choices, warnings: discovery.warnings, draft: null };
-      if (!candidates.length) return reply({ ...base, status: "unavailable", message: "A complete scorecard for this course could not be verified. No GPS layout has been created." });
-      const selected = body.scorecard_key
-        ? candidates.filter(c => c.key === body.scorecard_key)
-        : candidates.length === 1 ? candidates : [];
-      if (selected.length !== 1) return reply({ ...base, status: "choice_required", message: body.scorecard_key ? "The available scorecards have changed. Choose the course and tees again." : "Choose the course and tees you are playing so its 18 holes can be matched accurately." });
-      const chosen = selected[0];
-      try {
-        const draft = await prepareCourseMapping({ ...course, tee_name: chosen.card.tee_name, layout_name: chosen.card.course_name }, { scorecard: chosen.card });
-        if (draft.source.validation?.status !== "verified") throw new Error("The course map did not pass all position checks.");
-        return reply({ ...base, status: "ready", selected_key: chosen.key, draft: { ...draft, source: { ...draft.source, selected_scorecard: { course_name: chosen.card.course_name, tee_name: chosen.card.tee_name, source_url: chosen.card.source_url } } }, message: "All 18 numbered holes match mapped tee and green areas and the selected scorecard. Preview the maps, then confirm them." });
-      } catch (error) {
-        return reply({ ...base, status: "unavailable", selected_key: chosen.key, message: `${error instanceof Error ? error.message : "The course positions could not be verified."} No GPS layout has been created.` });
-      }
+      if (body.layout_name !== undefined && (typeof body.layout_name !== "string" || !body.layout_name.trim() || body.layout_name.length > 200))
+        return reply({ error: "Choose a valid course layout." }, 400);
+      return reply(await prepareCourseGps(course, discovery, {
+        scorecard_key: typeof body.scorecard_key === "string" ? body.scorecard_key : undefined,
+        layout_name: body.layout_name,
+      }));
     }
+
     const eventId = Number(body.event_id);
     if (!Number.isSafeInteger(eventId) || eventId <= 0)
       return reply({ error: "Choose an event." }, 400);

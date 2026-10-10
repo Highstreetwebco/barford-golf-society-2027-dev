@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { mountHoleSetup, defaultScorecardKey } from '../assets/js/hole-admin.js';
 import { buildCourseMapping } from '../supabase/functions/baseline-services/course-mapping.ts';
+import { prepareCourseGps } from '../supabase/functions/baseline-services/course-preparation.ts';
 
 const fixture = JSON.parse(await readFile(new URL('./fixtures/leamington-course-source.json', import.meta.url)));
 const mapped = buildCourseMapping(fixture.course, fixture.elements, fixture.scorecard);
@@ -160,4 +161,28 @@ test('Unavailable and malformed maps never save partial GPS', async () => {
     assert.equal(f.saves.length, 0);
     assert.equal(f.nodes.get('[data-course-prepare]').hidden, false);
   }
+});
+
+test('GPS without a scorecard saves and reloads for a new event', async () => {
+  const reply = await prepareCourseGps(fixture.course, { cards: [], warnings: [] }, {}, async course => buildCourseMapping(course, fixture.elements));
+  const f = mount({ service: async () => reply });
+  await f.setup.setCourse(course);
+  assert.equal(await f.setup.layoutId(), 'saved-1');
+  assert.ok(f.saves[0].holes.every(h => h.reviewed && h.yards === null && h.stroke_index === null));
+  const loaded = mount({ rpc: async () => ({ data: f.saves[0] }) });
+  await loaded.setup.setEvent({ ...course, course_layout_id: 'saved-1' });
+  assert.equal(await loaded.setup.layoutId(), 'saved-1');
+  assert.equal(loaded.requests.length, 0);
+});
+
+test('Choosing an OSM course layout automatically resumes GPS without a scorecard', async () => {
+  const reply = await prepareCourseGps(fixture.course, { cards: [], warnings: [] }, {}, async course => buildCourseMapping(course, fixture.elements));
+  const f = mount({ service: async (_, body) => body.layout_name ? { ...reply, selected_layout: body.layout_name } : { status: 'choice_required', scorecards: [], layouts: ['North', 'South'] } });
+  await f.setup.setCourse(course);
+  await assert.rejects(f.setup.layoutId(), /Choose the course/);
+  const select = f.nodes.get('[data-scorecard-choice]');
+  select.value = 'layout:South'; select.onchange();
+  assert.equal(await f.setup.layoutId(), 'saved-1');
+  assert.equal(f.requests[1].layout_name, 'South');
+  assert.equal(f.requests[1].scorecard_key, undefined);
 });

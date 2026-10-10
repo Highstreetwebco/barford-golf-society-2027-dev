@@ -1,5 +1,5 @@
 import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
-import { mountHoleSetup } from "./hole-admin.js?v=2027-auto-gps-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-course-gps-2";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import {
   operationTabs,
@@ -277,7 +277,7 @@ async function init() {
       });
       if (token !== courseGeneration) return;
       status.textContent = result.places.length
-        ? "Choose your course. Its contact details and available course maps will be looked up."
+        ? "Select your course to fill its details and prepare the GPS hole layout automatically."
         : "No matching courses found.";
       const area = document.getElementById("courseResults");
       area.innerHTML = result.places
@@ -316,7 +316,8 @@ async function chooseCourse(match) {
     form.elements.course_phone.value = p.nationalPhoneNumber || p.internationalPhoneNumber || "";
   }
   fill(match);
-  status.textContent = "Loading course address, website and phone number…";
+  const gps = holeSetup.setCourse(match);
+  status.textContent = "Loading course details and preparing the GPS hole layout…";
   let course = match, detailError = null;
   try {
     const result = await b.service("course_details", { place_id: match.id });
@@ -336,7 +337,7 @@ async function chooseCourse(match) {
   status.textContent = detailError
     ? `Course selected. Contact details could not be loaded: ${detailError.message}`
     : `Matched ${course.displayName?.text || "your course"}. ${missing.length ? `No ${missing.join(" or ")} was supplied; add it if you know it. ` : "Address and contact details filled in. "}Save the event to keep this course.`;
-  try { await holeSetup.setCourse(course); }
+  try { await gps; }
   catch (error) { if (token === courseGeneration) b.toast(error.message); }
 }
 async function fillEvent() {

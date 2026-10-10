@@ -74,7 +74,8 @@ function layoutLabel(tags: Record<string, string>) {
 }
 export class CourseMappingError extends Error {
   code: string;
-  constructor(code: string, message: string) { super(message); this.name = 'CourseMappingError'; this.code = code; }
+  layouts: string[];
+  constructor(code: string, message: string, layouts: string[] = []) { super(message); this.name = 'CourseMappingError'; this.code = code; this.layouts = layouts; }
 }
 function geometry(e: Element) {
   if (!Array.isArray(e.geometry) || e.geometry.length > 2000) return [];
@@ -175,7 +176,7 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   const labels = [...new Set(rows.map(r => r.label).filter(Boolean))];
   const requestedLayout = course.layout_name || scorecard?.course_name || '';
   const matchingLabels = labels.filter(label => nameMatch(label, requestedLayout));
-  if (labels.length > 1 && matchingLabels.length !== 1) throw new CourseMappingError('COURSE_CHOICE_REQUIRED', `This venue contains ${labels.join(' and ')}. Choose the exact course before producing its hole map.`);
+  if (labels.length > 1 && matchingLabels.length !== 1) throw new CourseMappingError('COURSE_CHOICE_REQUIRED', `This venue contains ${labels.join(' and ')}. Choose the exact course before producing its hole map.`, labels);
   if (labels.length && requestedLayout && matchingLabels.length !== 1) throw new CourseMappingError('COURSE_LAYOUT_UNCONFIRMED', 'The selected course layout could not be matched to the numbered map routes. No hole map has been produced.');
   const chosenLabel = matchingLabels[0] || (labels.length === 1 ? labels[0] : '');
   const courseRows = chosenLabel ? rows.filter(r => r.label === chosenLabel) : rows;
@@ -238,7 +239,7 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   if (coverage.mapped !== 18) throw new CourseMappingError('MAPPING_VALIDATION_FAILED', 'All 18 tee and green positions could not be confirmed. No hole map has been produced.');
   const missingCardFields = [...(coverage.yards < 18 ? ['yardages'] : []), ...(coverage.stroke_index < 18 ? ['stroke indexes'] : [])];
   if (missingCardFields.length) warnings.push(`Complete the missing ${missingCardFields.join(' and ')} from the chosen tee scorecard.`);
-  warnings.push('The numbered routes match mapped tee and green areas. Confirm the course preview before making it available to members. Tee colours are not verified by this map source.');
+  warnings.push('The numbered routes match mapped tee and green areas. Tee colours are not verified by this map source.');
   return {
     name: `${course.name.trim()}${chosenLabel && !cleanName(course.name).includes(cleanName(chosenLabel)) ? ` · ${chosenLabel}` : ''}`.slice(0, 200), tee_name: (cardValid ? scorecard!.tee_name : course.tee_name || 'Yellow').slice(0, 80),
     place_id: course.place_id, center, address: String(course.address || '').slice(0, 500), holes,
@@ -338,6 +339,12 @@ export async function prepareCourseMapping(course: CourseInput, options: Mapping
   if (!point({ lat: course.latitude, lng: course.longitude }) || !course.place_id || course.place_id.length > 250 || !course.name?.trim()) throw new Error('Select a course with a valid map location.');
   const key = `${course.place_id}:${course.latitude.toFixed(5)}:${course.longitude.toFixed(5)}`;
   let elements = cache.get(key)?.at && Date.now() - cache.get(key)!.at < 600000 ? cache.get(key)!.elements : null;
+  if (elements) {
+    try { buildCourseMapping(course, elements, options.scorecard); }
+    catch (error) {
+      if (!(error instanceof CourseMappingError && error.code === 'COURSE_CHOICE_REQUIRED')) { cache.delete(key); elements = null; }
+    }
+  }
   if (!elements) {
     const query = `[out:json][timeout:12];(way(around:2500,${course.latitude},${course.longitude})["leisure"="golf_course"];relation(around:2500,${course.latitude},${course.longitude})["leisure"="golf_course"];way(around:2500,${course.latitude},${course.longitude})["golf"~"^(hole|tee|green)$"];);out body geom;`;
     const stop = new AbortController();
@@ -348,7 +355,12 @@ export async function prepareCourseMapping(course: CourseInput, options: Mapping
     const validated = async (request: Promise<Element[]>) => {
       const result = await request;
       // An HTTP 200 with incomplete geometry must not cancel a usable fallback.
-      buildCourseMapping(course, result, options.scorecard);
+      try { buildCourseMapping(course, result, options.scorecard); }
+      catch (error) {
+        // A verified venue containing multiple layouts is usable discovery data.
+        // Return its choices promptly and validate the chosen layout on retry.
+        if (!(error instanceof CourseMappingError && error.code === 'COURSE_CHOICE_REQUIRED')) throw error;
+      }
       return result;
     };
     try {

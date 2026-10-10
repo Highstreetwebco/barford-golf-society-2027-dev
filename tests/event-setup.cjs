@@ -151,6 +151,32 @@ async function run() {
       await finish(f);
     });
 
+    await check("Every new event automatically saves GPS even when its scorecard is unavailable", async () => {
+      for (const index of [0, 1]) {
+        const reply = readyFor(courses[index]);
+        reply.scorecards = [];
+        reply.draft.tee_name = "Mapped tee positions";
+        reply.draft.source.setup_mode = "gps_only";
+        delete reply.draft.source.selected_scorecard;
+        Object.assign(reply.draft.source.validation, { scorecard_order_confirmed: false, order_evidence: "numbered_map_routes" });
+        reply.draft.holes.forEach(h => Object.assign(h, { par: null, yards: null, stroke_index: null }));
+        const f = await setup(browser, { mappingReplies: { [courses[index].id]: reply } });
+        assert.equal(await f.page.locator("#findCourse").textContent(), "Find course and GPS hole layout");
+        await f.page.locator('[name="name"]').fill("New automatic GPS event " + index);
+        await f.page.locator('[name="date"]').fill("2027-07-30");
+        await f.page.locator('[name="round_number"]').selectOption("3");
+        await settleMapping(f, index);
+        await saveEvent(f);
+        assert.equal(f.model.savedCourseLayouts.length, 1);
+        const saved = f.model.savedCourseLayouts[0];
+        assert.equal(saved.place_id, courses[index].id);
+        assert.equal(saved.source.setup_mode, "gps_only");
+        assert.ok(saved.holes.every(h => h.reviewed && h.tee && h.green && h.yards === null));
+        assert.equal(f.model.eventSave.course_layout_id, saved.id);
+        await finish(f);
+      }
+    });
+
     await check("A league event cannot save without its round and persists the chosen round", async () => {
       const f = await setup(browser);
       await f.page.locator('[name="name"]').fill("Season round");
