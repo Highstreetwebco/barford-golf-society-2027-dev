@@ -83,7 +83,7 @@ export function mountHoleSetup(form, b) {
     message.textContent = selectedKey ? 'Matching this course and scorecard to its tee and green areas…' : 'Finding the course and available tees…';
     render();
     try {
-      let result = await b.service('prepare_course', { place_id: requested, ...(selectedKey ? { scorecard_key: selectedKey } : {}), ...(selectedLayout ? { layout_name: selectedLayout } : {}) });
+      let result = await b.service('prepare_course', { map_format: 3, place_id: requested, ...(selectedKey ? { scorecard_key: selectedKey } : {}), ...(selectedLayout ? { layout_name: selectedLayout } : {}) });
       if (token !== sequence || social()) return;
       if (result.status === 'choice_required' && !selectedKey && !selectedLayout) {
         fillChoices(result.scorecards, '', result.layouts);
@@ -92,7 +92,7 @@ export function mountHoleSetup(form, b) {
           selectedKey = key = automaticKey; select.value = key;
           message.textContent = `Preparing GPS automatically for ${cards.find(card => card.key === key).tee_name}…`;
           render();
-          result = await b.service('prepare_course', { place_id: requested, scorecard_key: key });
+          result = await b.service('prepare_course', { map_format: 3, place_id: requested, scorecard_key: key });
         }
       }
       if (token !== sequence || social()) return;

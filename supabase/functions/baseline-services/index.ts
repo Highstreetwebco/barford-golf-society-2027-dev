@@ -282,6 +282,7 @@ Deno.serve(async (req) => {
     }
     if (body.action === "prepare_course") {
       await admin(req);
+      if (body.map_format !== 3) return reply({ status: "update_required", draft: null, scorecards: [], message: "This organiser page needs updating before GPS setup can continue. Close this tab and reopen the organiser page, then select the course again. Your saved events are unchanged." });
       if (!(await budget("course-preparation", 86400, 40)))
         return reply({ error: "Course preparation daily limit reached. Please try again tomorrow." }, 429);
       const p = await courseDetails(body.place_id);

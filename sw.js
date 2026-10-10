@@ -7,4 +7,13 @@ self.addEventListener('activate', event => {
     await self.clients.claim();
   })());
 });
-// Fresh pages and data always come from the network for this baseline.
+// Navigation and scripts must bypass the HTTP cache as well as Cache Storage.
+// Otherwise a cached organiser page can load code for an older map format.
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
+  if (request.mode === 'navigate' || request.destination === 'script') {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+  }
+});

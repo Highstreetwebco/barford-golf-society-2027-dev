@@ -52,6 +52,7 @@ test('Selecting a course prepares all 18 GPS holes and event save persists them 
   await f.setup.setCourse(course);
   assert.equal(f.requests.length, 2);
   assert.equal(f.requests[1].scorecard_key, '2');
+  assert.ok(f.requests.every(r => r.map_format === 3), 'Every map request identifies the supported response format');
   assert.equal(f.nodes.get('[data-scorecard-choice]').value, '2');
   assert.equal(f.nodes.get('[data-course-prepare]').hidden, true);
   assert.equal(f.saves.length, 0, 'Discovery alone must not persist a layout');
