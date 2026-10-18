@@ -1,0 +1,28 @@
+name: Verify Barford domain cutover
+on:
+  push:
+    branches: [verify-domain-cutover]
+permissions:
+  contents: read
+  pages: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check GitHub Pages domain setting
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for repo in barford-golf-society-2027-dev barford-golf-society; do
+            echo "==== Repo: $repo ===="
+            curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/Highstreetwebco/$repo/pages" | python3 -c 'import json,sys; x=json.load(sys.stdin);print({k:x.get(k) for k in ["html_url","cname","status","source"]})' || echo "Pages settings not readable from this token"
+          done
+      - name: Verify live HTTPS and content
+        run: |
+          for host in barfordgolf.co.uk www.barfordgolf.co.uk; do
+            echo "==== $host ===="
+            getent ahostsv4 "$host" | head -n 3 || true
+            curl -sSL -m 20 -o /tmp/barford-domain-body -w 'HTTP:%{http_code} FINAL:%{url_effective} SSL:%{ssl_verify_result}\n' "https://$host/?verify=2027-season-domain-transfer"
+            grep -o -m1 '<title>[^<]*' /tmp/barford-domain-body || true
+            if grep -qi 'Season loading' /tmp/barford-domain-body; then echo 'RESULT: 2027 coming-soon confirmed'; else echo 'RESULT: 2027 content not yet visible'; fi
+          done
