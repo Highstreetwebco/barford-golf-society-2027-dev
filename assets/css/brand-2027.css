@@ -1,0 +1,51 @@
+
+/* The official Barford emblem is a complete lock-up, with white lettering.
+   A dark backing keeps its transparent artwork legible in the site's light header. */
+.site-header a.brand:has(.brand-lockup) {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  background: #133646;
+  border: 1px solid #315765;
+  box-shadow: 0 3px 14px rgba(18, 45, 59, .14);
+  letter-spacing: normal;
+  line-height: 1;
+}
+.site-header .brand .brand-lockup {
+  display: block;
+  width: 125px;
+  height: auto;
+  aspect-ratio: 340 / 247;
+  object-fit: contain;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  flex-shrink: 0;
+}
+.site-header .brand .brand-year {
+  display: inline-block;
+  align-self: center;
+  margin: 0;
+  padding: 5px 7px;
+  color: #f0d5a3;
+  border: 1px solid #e5cd9b5e;
+  border-radius: 5px;
+  background: #ffffff10;
+  font: 700 11px/1.2 system-ui, sans-serif;
+  letter-spacing: 0;
+}
+.site-header .brand:focus-visible { outline: 3px solid #bd9150; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .site-header a.brand:has(.brand-lockup) { gap: 7px; padding: 6px 8px; }
+  .site-header .brand .brand-lockup { width: 96px; }
+  .site-header .brand .brand-year { font-size: 9px; padding: 4px 5px; }
+}
+@media (max-width: 360px) {
+  .site-header .brand .brand-lockup { width: 83px; }
+}

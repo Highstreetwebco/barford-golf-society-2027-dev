@@ -44,6 +44,8 @@ function resultBoard() {
       const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();
       await page.goto(base+'index.html');
       await page.locator('#previewPassword').waitFor();
+      assert.equal(await page.locator('header img.preview-logo').count(),1,'Correct launch emblem must be present');
+      await page.locator('header img.preview-logo').evaluate(img => img.decode());
       assert.match(await page.title(),/Coming soon/);
       await page.goto(base+'events.html');
       await page.waitForURL('**/index.html?next=events.html');
@@ -54,6 +56,8 @@ function resultBoard() {
       const {context,page,model,errors}=await setup(browser,{width});
       await page.goto(base+'home.html');
       await page.locator('[data-home-rsvp]').waitFor();
+      assert.equal(await page.locator('header img.brand-lockup').count(),1,'Member header uses the same new Barford emblem');
+      await page.locator('header img.brand-lockup').evaluate(img => img.decode());
       assert.equal(await page.locator('.more-nav').count(),0);
       assert.equal(await page.locator('a[data-admin]:visible').count(),0);
       assert.equal(await page.locator('#homeHoles').count(),1);

@@ -32,3 +32,20 @@ footer{display:flex;justify-content:space-between;gap:15px;color:#adc3bc;padding
 @media(max-width:900px){main{grid-template-columns:1fr;min-height:0;padding-top:20px;gap:42px}.panel{justify-self:start}h1{font-size:clamp(84px,16vw,140px)}h1 em{font-size:clamp(46px,8vw,80px)}}
 @media(max-width:550px){header{padding:24px}.top-label{font-size:9px;padding:7px 10px}main{padding:30px 24px 55px}h1{font-size:clamp(80px,20vw,115px)}h1 em{font-size:clamp(45px,12vw,69px)}.panel{padding:26px}footer{flex-direction:column;padding:5px 24px 25px}}
 @media(prefers-reduced-motion:reduce){.track span{animation:none;width:100%}}
+
+
+/* Official, transparent Barford emblem: no white circular badge or duplicate text. */
+header .brand .preview-logo {
+  display: block;
+  width: 165px;
+  height: auto;
+  aspect-ratio: 340 / 247;
+  object-fit: contain;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+@media (max-width: 550px) {
+  header .brand .preview-logo { width: 132px; }
+}
