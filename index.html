@@ -1,119 +1,21 @@
-<!doctype html>
-<html lang="en-GB">
-  <head>
-    <link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin />
-    <link rel="preload" as="script" href="assets/vendor/supabase-2.116.0.js" />
-
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="robots" content="noindex,nofollow" />
-    <meta name="theme-color" content="#203b4d" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co https://*.googleapis.com https://*.gstatic.com https://*.google.com;"
-    />
-    <title>Home | Barford Golf Society</title>
-    <link rel="icon" href="icon-logo.png" />
-    <link rel="manifest" href="manifest.json?v=2027-results-1" />
-    <link rel="apple-touch-icon" href="icon-logo.png" />
-    <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
-    <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
-    <link rel="stylesheet" href="assets/css/simple.css?v=2027-simple-1" />
-    <script src="assets/js/baseline.js?v=2027-simple-1" defer></script>
-    <script type="module" src="assets/js/home.js?v=2027-simple-1"></script>
-  </head>
-  <body class="page-index simple-site">
-    <a class="skip-link" href="#main">Skip to content</a>
-    <header class="site-header">
-      <div class="header-inner">
-        <a
-          href="index.html"
-          class="brand"
-          aria-label="Barford Golf Society home"
-          ><img
-            class="brand-icon"
-            src="icon-logo.png"
-            alt="Barford Golf Society logo"
-            width="70"
-            height="70"
-          /><span>Barford<small>GOLF SOCIETY</small></span
-          ><span class="brand-year">2027</span></a
-        ><button
-          class="menu-toggle secondary"
-          id="menuToggle"
-          aria-expanded="false"
-          aria-controls="siteNav"
-        >
-          Menu
-        </button>
-        <nav class="site-nav" id="siteNav" aria-label="Main navigation">
-          <a href="index.html" aria-current="page">Home</a
-          ><a href="events.html">Events</a><a href="scores.html">Leaderboard</a>
-          <a class="account-link" href="account.html" id="accountNav"
-            >Sign in</a
-          >
-          <a href="admin.html" data-admin hidden>Admin</a>
-        </nav>
-      </div>
-    </header>
-    <main id="main" class="container">
-      <section class="simple-home-heading" aria-labelledby="homeTitle">
-        <div><p class="eyebrow">BARFORD GOLF SOCIETY · 2027</p><h1 id="homeTitle">Your next round starts here.</h1><p id="homeWelcome">RSVP, check the leaderboard and open your course hole view.</p></div>
-        <a class="button simple-admin-action" href="admin.html?tab=scoring" data-admin hidden>Enter scores <span aria-hidden="true">→</span></a>
-      </section>
-      <nav class="simple-go-grid" aria-label="Quick actions">
-        <a id="homeRsvp" class="simple-go-card is-primary" href="#nextEvent"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-12 5 3 3 5-5"/></svg></span><span><strong>RSVP</strong><small>Book your place</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
-        <a class="simple-go-card" href="scores.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21v-8h5v8m1 0V5h5v16m1 0v-11h5v11M2 21h21"/></svg></span><span><strong>Leaderboard</strong><small>Best 5 rounds count</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
-        <a id="homeHoles" class="simple-go-card" href="events.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 21V3l12 4-12 5M3 21h9"/></svg></span><span><strong>Course hole view</strong><small>Maps &amp; distances</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
-        <a class="simple-go-card" href="events.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg></span><span><strong>All events</strong><small>Dates &amp; details</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
-      </nav>
-      <section class="simple-next-section" aria-labelledby="nextEventTitle">
-        <div class="section-heading"><h2 id="nextEventTitle">Next event</h2><a href="events.html">All events <span aria-hidden="true">→</span></a></div>
-        <div id="nextEvent" class="panel simple-next-panel" aria-live="polite"><p class="muted">Loading your next event…</p></div>
-      </section>
-      <p class="simple-season-note">7 rounds. Your best 5 scores count towards the Order of Merit.</p>
-    </main>
-    <footer class="site-footer">
-      <div>
-        <a class="footer-brand" href="index.html">Barford Golf Society</a
-        ><span>2027 season · Best 5 of 7 rounds</span>
-      </div>
-      <div class="footer-actions">
-        <a href="admin.html" data-admin hidden>Admin</a
-        ><button id="themeToggle" class="text-button" aria-pressed="false">
-          Dark mode</button
-        ><button id="installButton" class="text-button" hidden>
-          Install app
-        </button>
-      </div>
-    </footer>
-    <nav class="mobile-dock" aria-label="Quick navigation">
-      <a href="index.html" aria-current="page" aria-label="Home tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m3 10 9-7 9 7v10H3Z" />
-          <path d="M9 20v-7h6v7" /></svg
-        ><span>Home</span></a
-      ><a href="events.html" aria-label="Events tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="16" rx="3" />
-          <path d="M7 3v4m10-4v4M3 11h18m-13 5h3" /></svg
-        ><span>Events</span></a
-      ><a href="scores.html" aria-label="Leaderboard tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 20v-6h5v6m1 0V5h5v15m1 0v-10h5v10M2 21h21" /></svg
-        ><span>Leaderboard</span></a
-      ><a href="account.html" aria-label="Account tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg
-        ><span>Account</span></a
-      >
-    </nav>
-    <div id="toast" role="status" aria-live="polite"></div>
-    <noscript
-      ><p class="notice">
-        Please enable JavaScript to sign in and use the member features.
-      </p></noscript
-    >
-  </body>
-</html>
+<!doctype html><html lang="en-GB"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e2e3d"><meta name="description" content="Barford Golf Society 2027 is coming soon.">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co">
+<title>Barford Golf Society 2027 | Coming soon</title><link rel="icon" href="icon-logo.png">
+<link rel="stylesheet" href="assets/css/preview.css?v=2027-launch-1">
+<script src="assets/js/preview-landing.js?v=2027-launch-1" defer></script>
+</head><body><div class="back" aria-hidden="true"></div>
+<header><a class="brand" href="index.html"><img src="icon-logo.png" alt=""><span>Barford<small>Golf Society</small></span></a><span class="top-label">The 2027 season</span></header>
+<main><section><p class="kicker">A new chapter on the fairway</p><h1>2027<em>Season loading.</em></h1>
+<p class="intro">The next season of Barford Golf Society is taking shape. A new home for our golf days, tee times, results and everything in between is coming soon.</p>
+<div class="loading"><div class="loading-top"><span>Getting ready for the first tee</span><span>Coming soon</span></div><div class="track"><span></span></div></div>
+<p class="aside">Seven rounds. One society. Plenty of stories still to be written.</p></section>
+<section class="panel" aria-labelledby="title"><div class="symbol" aria-hidden="true">✦</div><h2 id="title">Committee preview</h2>
+<p>Helping us get ready for 2027? Enter the preview password to explore the new website before launch.</p>
+<form id="previewForm"><label for="previewPassword">Preview password</label>
+<input id="previewPassword" name="password" type="password" autocomplete="off" placeholder="Enter password" required maxlength="128">
+<button type="submit" id="previewSubmit">Enter 2027 site →</button><p id="previewStatus" class="message" aria-live="polite"></p></form>
+<div class="help">Committee and invited testers only. You'll still need your normal member or admin login once inside.</div></section></main>
+<footer><span>© Barford Golf Society · 2027</span><span>See you on the first tee.</span></footer>
+<noscript><p style="padding:2rem">JavaScript is required for committee preview access.</p></noscript></body></html>

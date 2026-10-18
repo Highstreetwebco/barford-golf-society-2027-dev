@@ -12,6 +12,8 @@ const names = ['Test Member', 'Derek Lewis', 'Richard Jones', 'Gary Example', 'T
 async function setup(browser, {admin = false, signedIn = true, width = 1365} = {}) {
   const context = await browser.newContext({viewport:{width,height:900},serviceWorkers:'block',timezoneId:'Europe/London'});
   const model = await mocks(context, {signedIn,admin});
+  await context.addInitScript(() => sessionStorage.setItem('barford-2027-preview-session','mock-valid-token'));
+  await context.route(backend+'/rest/v1/rpc/baseline_preview_valid',route=>route.fulfill({json:true}));
   model.profile.is_admin = admin;
   model.events = [{...fixture, event_type:'league',round_number:1,member_price:45,course_name:'The Warwickshire',date:'2027-06-25',tee_published_at:null,course_layout_id:null}];
   await context.addInitScript(() => {
@@ -38,9 +40,19 @@ function resultBoard() {
   await new Promise(resolve=>server.listen(8765,'127.0.0.1',resolve));
   const browser = await chromium.launch();
   try {
+    {
+      const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();
+      await page.goto(base+'index.html');
+      await page.locator('#previewPassword').waitFor();
+      assert.match(await page.title(),/Coming soon/);
+      await page.goto(base+'events.html');
+      await page.waitForURL('**/index.html?next=events.html');
+      report.push('PASS public coming-soon page and locked direct event links');
+      await context.close();
+    }
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{width});
-      await page.goto(base+'index.html');
+      await page.goto(base+'home.html');
       await page.locator('[data-home-rsvp]').waitFor();
       assert.equal(await page.locator('.more-nav').count(),0);
       assert.equal(await page.locator('a[data-admin]:visible').count(),0);
@@ -120,7 +132,7 @@ function resultBoard() {
       await page.locator('dialog.hole-dialog').waitFor({state:'detached'});
       model.events[0].tee_published_at='2027-06-01T12:00:00Z';
       model.groups=[{event_id:999,group_number:1,tee_time:'10:00',players:[{user_id:uid,name:'Test Member',type:'walker'}]}];
-      await page.goto(base+'index.html');
+      await page.goto(base+'home.html');
       await page.locator('#homeRsvp strong').filter({hasText:'Tee times'}).waitFor();
       assert.equal(await page.locator('[data-home-rsvp]').count(),0);
       assert.match(await page.locator('#nextEvent').innerText(),/contact the committee/i);
@@ -139,7 +151,7 @@ function resultBoard() {
     {
       const {context,page,model,errors}=await setup(browser,{signedIn:true});
       for(const requested of ['', 'abc', '0', '-1', '1.5', '9007199254740993', '998']) {
-        await page.goto(base+'index.html?event='+encodeURIComponent(requested)+'#rsvp');
+        await page.goto(base+'home.html?event='+encodeURIComponent(requested)+'#rsvp');
         await page.locator('#nextEvent').getByText('Event unavailable',{exact:true}).waitFor();
         assert.equal(await page.locator('dialog.rsvp-dialog').count(),0);
         assert.equal(await page.locator('[data-home-rsvp]').count(),0);

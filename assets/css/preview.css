@@ -1,0 +1,34 @@
+*{box-sizing:border-box}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark}
+html,body{margin:0;min-height:100%;background:#0c2a3a;color:#f8f2e6}
+body{min-height:100svh;display:flex;flex-direction:column;overflow-x:hidden}
+.back{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 82% 7%,#62889788,transparent 48%),radial-gradient(ellipse at 5% 97%,#326251a9,transparent 58%),linear-gradient(125deg,#183f4f,#092737 85%)}
+.back:after{content:"";position:absolute;left:-12%;width:145%;bottom:-38%;height:69%;border-radius:50% 50% 0 0;background:linear-gradient(160deg,#547e563d,#173b3566);transform:rotate(-9deg)}
+header,main,footer{position:relative;z-index:1;width:min(1360px,100%);margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:32px clamp(24px,6vw,80px)}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;letter-spacing:.12em;text-transform:uppercase;font-size:12px;font-weight:800}
+.brand img{width:43px;height:43px;border:1px solid #eed7aa;border-radius:50%;background:white}
+.brand small{display:block;letter-spacing:.25em;font-weight:500;color:#edd5a5;font-size:10px}
+.top-label{border:1px solid #dbc39482;border-radius:50px;padding:9px 14px;letter-spacing:.15em;text-transform:uppercase;color:#efdab2;font-size:10px;font-weight:750}
+main{padding:5vh clamp(24px,6vw,80px) 8vh;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(315px,.75fr);gap:clamp(38px,7vw,110px);align-items:center;flex:1}
+.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.27em;color:#e8ce9a;font-weight:800}
+h1{font:400 clamp(85px,13vw,176px)/.94 Georgia,serif;letter-spacing:-.055em;margin:20px 0}
+h1 em{display:block;font-size:clamp(46px,6vw,91px);line-height:1.1;color:#e8cfa0;font-weight:400}
+.intro{font-size:clamp(16px,1.65vw,20px);line-height:1.7;color:#d4e0dc;max-width:570px;margin:27px 0 34px}
+.loading{max-width:440px}.loading-top{display:flex;justify-content:space-between;color:#ead5b1;font-size:10px;letter-spacing:.15em;text-transform:uppercase;gap:8px;font-weight:800;margin-bottom:12px}
+.track{height:3px;background:#ffffff3d;border-radius:50px;overflow:hidden}.track span{display:block;width:31%;height:100%;background:#eaca94;border-radius:50px;animation:load 3.4s ease-in-out infinite alternate}
+@keyframes load{to{transform:translateX(222%)}}.aside{color:#aac1bc;font-size:13px;margin-top:27px}
+.panel{padding:clamp(27px,4vw,45px);max-width:470px;width:100%;justify-self:end;background:linear-gradient(145deg,#214353df,#173443ec);border:1px solid #d3bb8c6f;border-radius:19px;box-shadow:0 20px 75px #071a2388;backdrop-filter:blur(20px)}
+.symbol{width:44px;height:44px;border:1px solid #e4cca47a;border-radius:11px;display:grid;place-items:center;color:#e9d09e;margin-bottom:24px;font-size:24px}
+h2{font:400 28px Georgia,serif;letter-spacing:-.02em;margin:0 0 12px}
+.panel>p{color:#c3d4d0;font-size:14px;line-height:1.68;margin:0 0 27px}
+label{display:block;font-size:12px;font-weight:750;margin:0 0 10px}
+input{background:#0c2939;color:white;border:1px solid #b9c4b4a0;border-radius:9px;width:100%;height:52px;font:inherit;font-size:16px;padding:0 15px;outline:none}
+input:focus-visible{border-color:#e7c796;box-shadow:0 0 0 3px #daba8150}
+button{display:block;width:100%;margin-top:15px;min-height:53px;border:0;border-radius:9px;background:#e8cb96;color:#153247;font:750 14px system-ui;cursor:pointer}
+button:hover{filter:brightness(1.08)}button:disabled{opacity:.7;cursor:wait}.message{min-height:22px;color:#ffdcae;font-size:13px;margin:12px 0 0}
+.help{border-top:1px solid #b4c0a83e;margin-top:10px;padding-top:17px;color:#a7bbb5;font-size:12px;line-height:1.6}
+footer{display:flex;justify-content:space-between;gap:15px;color:#adc3bc;padding:10px clamp(24px,6vw,80px) 30px;font-size:12px}
+@media(max-width:900px){main{grid-template-columns:1fr;min-height:0;padding-top:20px;gap:42px}.panel{justify-self:start}h1{font-size:clamp(84px,16vw,140px)}h1 em{font-size:clamp(46px,8vw,80px)}}
+@media(max-width:550px){header{padding:24px}.top-label{font-size:9px;padding:7px 10px}main{padding:30px 24px 55px}h1{font-size:clamp(80px,20vw,115px)}h1 em{font-size:clamp(45px,12vw,69px)}.panel{padding:26px}footer{flex-direction:column;padding:5px 24px 25px}}
+@media(prefers-reduced-motion:reduce){.track span{animation:none;width:100%}}

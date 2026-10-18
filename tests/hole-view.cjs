@@ -146,13 +146,15 @@ async function fixture(browser, options = {}) {
     return route.fulfill({ status: 500, json: { message: "Unexpected test request" } });
   });
   await options.prepare?.(context, model);
+  await context.addInitScript(() => sessionStorage.setItem('barford-2027-preview-session','mock-valid-token'));
+  await context.route(backend+'/rest/v1/rpc/baseline_preview_valid',route=>route.fulfill({json:true}));
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
   page.on("pageerror", err => model.errors.push(err.message));
   const actualRequests = [];
   page.on("request", req => actualRequests.push({ url: req.url(), method: req.method(), body: req.postData() }));
   model.actualRequests = actualRequests;
-  await page.goto((options.liveMap ? deployedOrigin : "http://127.0.0.1:8766/") + (options.admin ? "admin.html" : "index.html"));
+  await page.goto((options.liveMap ? deployedOrigin : "http://127.0.0.1:8766/") + (options.admin ? "admin.html" : "home.html"));
   if (options.admin) await page.locator("#adminContent").waitFor();
   else await page.waitForFunction(() => window.barford && !document.querySelector("#nextEvent")?.textContent.includes("Loading the next event"));
   return { context, page, model };
