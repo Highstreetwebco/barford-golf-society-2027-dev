@@ -1,0 +1,22 @@
+name: Read 2026 public fixtures
+on:
+  push:
+    branches: [research/2026-fixtures]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read public event details (read only)
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6emtnZmVodG51aXphbXpsYmdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0MzY5ODAsImV4cCI6MjA3ODAxMjk4MH0.2mf4RMbJJvPo0NApywlrDyHuqAMfMyEWxgOS2ZSP4KQ';
+          const base='https://tzzkgfehtnuizamzlbgr.supabase.co/rest/v1/events?select=*&order=date.asc';
+          const res=await fetch(base,{headers:{apikey:key,Authorization:'Bearer '+key} });
+          const content=await res.text();
+          console.log('HTTP',res.status);
+          console.log('FIXTURES_START');
+          console.log(content);
+          console.log('FIXTURES_END');
+          if(!res.ok)process.exit(1);
+          JS
