@@ -1,170 +1,89 @@
-const b = await window.barfordReady;
-const e = b.escape;
-const { preparePhoto, photoUrls } = await import("./member-photos.js?v=2027-admin-photos-1");
-let accounts = [];
+const b = await window.barfordReady, e = b.escape;
+let accounts = [], generation = 0, editingDirty = false;
+window.addEventListener("beforeunload", ev => { if (editingDirty) { ev.preventDefault(); ev.returnValue = ""; } });
+
 export async function loadAccounts() {
-  const list = document.getElementById("accountList");
-  const [{ data, error }, photos] = await Promise.all([
-    b.client.rpc("admin_accounts"),
-    b.client.rpc("admin_account_photos"),
-  ]);
-  if (error) {
-    list.innerHTML = b.empty("Accounts could not load.", error.message);
-    return;
-  }
-  if (photos.error) {
-    list.innerHTML = b.empty("Account photos could not load.", photos.error.message);
-    return;
-  }
-  const paths = new Map((photos.data || []).map((p) => [p.id, p.avatar_path]));
-  accounts = (data || []).map((p) => ({ ...p, avatar_path: paths.get(p.id) }));
-  render();
-  document.getElementById("accountSearch").oninput = render;
-  document.getElementById("refreshAccounts").onclick = loadAccounts;
+  const ticket = ++generation, list = document.getElementById("accountList"), refresh = document.getElementById("refreshAccounts");
+  refresh.disabled = true;
+  list.innerHTML = '<p class="muted" role="status">Loading members…</p>';
+  try {
+    const { data, error } = await b.client.rpc("admin_accounts");
+    if (ticket !== generation) return;
+    if (error) throw error;
+    accounts = data || [];
+    render();
+    document.getElementById("accountSearch").oninput = render;
+  } catch (error) {
+    if (ticket === generation) list.innerHTML = b.empty("Could not load members.", error.message);
+  } finally { if (ticket === generation) refresh.disabled = false; }
+  refresh.onclick = loadAccounts;
 }
 function render() {
-  const query = document
-    .getElementById("accountSearch")
-    .value.trim()
-    .toLowerCase();
-  const visible = accounts.filter(
-    (p) =>
-      p.username.toLowerCase().includes(query) ||
-      (p.mobile || "").includes(query),
-  );
-  document.getElementById("accountSummary").textContent =
-    `${accounts.length} account${accounts.length === 1 ? "" : "s"} · ${accounts.filter((p) => p.is_admin).length} admin${accounts.filter((p) => p.is_admin).length === 1 ? "" : "s"}`;
+  const query = document.getElementById("accountSearch").value.trim().toLowerCase();
+  const active = accounts.filter(p => !p.disabled);
+  const visible = accounts.filter(p => (query || !p.disabled) && ((p.username || "").toLowerCase().includes(query) || (p.mobile || "").includes(query)));
+  document.getElementById("accountSummary").textContent = `${active.length} members · ${active.filter(p => p.is_admin).length} admins`;
   const list = document.getElementById("accountList");
-  list.innerHTML = visible.length
-    ? visible
-        .map(
-          (p) =>
-            `<article class="account-row"><div><h3>${e(p.username)} ${p.id === b.state.user.id ? "<small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p><small>Joined ${e(new Date(p.created_at).toLocaleDateString("en-GB"))}</small></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.is_admin ? "Admin" : "Member"}</span><button class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit account</button><button class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button></div></article>`,
-        )
-        .join("")
-    : b.empty(
-        "No matching accounts.",
-        "Try a different name or mobile number.",
-      );
-  list
-    .querySelectorAll("[data-edit-account]")
-    .forEach(
-      (btn) =>
-        (btn.onclick = () =>
-          edit(accounts.find((p) => p.id === btn.dataset.editAccount))),
-    );
-  list
-    .querySelectorAll("[data-reset-account]")
-    .forEach(
-      (btn) =>
-        (btn.onclick = () =>
-          resetPassword(
-            accounts.find((p) => p.id === btn.dataset.resetAccount),
-          )),
-    );
+  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button><button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button></div></article>`).join("") : b.empty("No matching members.", "Try a different name or mobile number.");
+  list.querySelectorAll("[data-edit-account]").forEach(button => button.onclick = () => edit(accounts.find(p => p.id === button.dataset.editAccount)));
+  list.querySelectorAll("[data-reset-account]").forEach(button => button.onclick = () => resetPassword(accounts.find(p => p.id === button.dataset.resetAccount)));
 }
 function openDialog(title, contents) {
   const dialog = document.createElement("dialog");
-  dialog.className = "account-editor";
-  dialog.setAttribute("aria-labelledby", "accountDialogTitle");
+  dialog.className = "account-editor"; dialog.setAttribute("aria-labelledby", "accountDialogTitle");
   dialog.innerHTML = `<form class="form-stack"><h2 id="accountDialogTitle">${e(title)}</h2>${contents}<p class="form-status" role="status"></p><div class="actions"><button type="submit">Save changes</button><button type="button" class="secondary" data-close>Cancel</button></div></form>`;
   document.body.append(dialog);
-  dialog.querySelector("[data-close]").onclick = () => dialog.close();
-  dialog.onclose = () => dialog.remove();
+  const form = dialog.querySelector("form");
+  form.oninput = () => editingDirty = true;
+  dialog.querySelector("[data-close]").onclick = () => { if (!dialog.dataset.busy) dialog.close(); };
+  dialog.oncancel = ev => { if (dialog.dataset.busy) ev.preventDefault(); };
+  dialog.onclose = () => { editingDirty = false; dialog.remove(); };
   dialog.showModal();
   return dialog;
 }
-async function edit(person) {
-  const urls = await photoUrls([person.avatar_path]);
-  const dialog = openDialog(
-    "Edit " + person.username,
-    `<label for="managedUsername">Username</label><input id="managedUsername" name="username" value="${e(person.username)}" minlength="2" maxlength="150" required><small>Changing this name changes the member’s sign-in username and their saved RSVP name.</small><label for="managedMobile">Mobile number</label><input id="managedMobile" name="mobile" type="tel" value="${e(person.mobile || "")}" minlength="10" maxlength="25" required><label for="managedHandicap">Season starting handicap</label><input id="managedHandicap" name="handicap" type="number" min="0" max="36" step="0.1" value="${person.handicap ?? ""}"><small>Changing this starting value recalculates handicaps for all published rounds.</small><label for="managedPhoto">Profile photo</label>${urls[person.avatar_path] ? `<img class="photo-preview" src="${e(urls[person.avatar_path])}" alt="Current photo of ${e(person.username)}">` : ""}<input id="managedPhoto" name="photo" type="file" accept="image/jpeg,image/png,image/webp"><small>Optional. JPEG, PNG or WebP; the photo is cropped to a square. Members can replace it themselves.</small><img id="managedPhotoPreview" class="photo-preview" alt="Selected new photo" hidden>${person.avatar_path ? '<label><input type="checkbox" name="remove_photo"> Remove current photo</label>' : ""}<label class="admin-role-choice"><input name="admin_access" type="checkbox" ${person.is_admin ? "checked" : ""} ${person.id === b.state.user.id ? "disabled" : ""}>Administrator access</label><small>${person.id === b.state.user.id ? "You cannot remove your own admin access." : "Admins can edit all accounts, reset passwords, manage events and appoint other admins. Only give this access to someone you trust."}</small>`,
-  );
+async function saveDialog(dialog, work) {
+  if (dialog.dataset.busy) return;
+  const form = dialog.querySelector("form"), status = form.querySelector(".form-status");
+  const invalid = form.querySelector(":invalid");
+  if (invalid?.closest("details")) invalid.closest("details").open = true;
+  if (!form.reportValidity()) return;
+  dialog.dataset.busy = "true"; form.inert = true; status.textContent = "Saving… Please wait.";
+  try { await work(); }
+  catch (error) { status.textContent = error.message || "Could not save. Please try again."; }
+  finally { delete dialog.dataset.busy; form.inert = false; }
+}
+function edit(person) {
+  if (!person) return;
+  const dialog = openDialog("Edit member", `<p class="muted">${e(person.username)}</p><label for="managedUsername">Member name</label><input id="managedUsername" name="username" value="${e(person.username)}" minlength="2" maxlength="150" required><small>This is also the member's sign-in name.</small><label for="managedMobile">Mobile number</label><input id="managedMobile" name="mobile" type="tel" value="${e(person.mobile || "")}" minlength="10" maxlength="25" required><label for="managedHandicap">Season starting handicap</label><input id="managedHandicap" name="handicap" type="number" min="0" max="36" step="0.1" value="${person.handicap ?? ""}"><small>Correcting this starting value recalculates handicaps for completed rounds.</small><details class="admin-extra"><summary>Admin access</summary><label class="admin-role-choice"><input name="admin_access" type="checkbox" ${person.is_admin ? "checked" : ""} ${person.id === b.state.user.id ? "disabled" : ""}>Allow this member to use admin</label><small>${person.id === b.state.user.id ? "You cannot remove your own admin access." : "Admins can manage members, passwords, events and scores. Only give this access to a committee member who needs it."}</small></details>`);
   const form = dialog.querySelector("form");
-  let previewUrl;
-  dialog.onclose = () => { if (previewUrl) URL.revokeObjectURL(previewUrl); dialog.remove(); };
-  form.elements.photo.onchange = async () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const preview = dialog.querySelector("#managedPhotoPreview");
-    preview.hidden = true;
-    const file = form.elements.photo.files[0];
-    if (!file) return;
-    try {
-      const blob = await preparePhoto(file);
-      previewUrl = URL.createObjectURL(blob);
-      preview.src = previewUrl;
-      preview.hidden = false;
-      form.elements.remove_photo && (form.elements.remove_photo.checked = false);
-    } catch (error) { form.querySelector(".form-status").textContent = error.message; }
-  };
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    b.submit(form, async () => {
-      const f = new FormData(form),
-        adminAccess =
-          person.id === b.state.user.id
-            ? true
-            : form.elements.admin_access.checked;
-      const file = form.elements.photo.files[0];
-      const removing = form.elements.remove_photo?.checked;
-      if (file && removing) throw new Error("Choose a new photo or remove the old one.");
-      const blob = file ? await preparePhoto(file) : null;
-      if (
-        adminAccess !== person.is_admin &&
-        !confirm(
-          `${adminAccess ? "Give" : "Remove"} admin access ${adminAccess ? "for" : "from"} ${person.username}?${adminAccess ? " They will be able to manage every account and appoint other admins." : ""}`,
-        )
-      )
-        return;
-      const { error } = await b.client.rpc("admin_save_account", {
-        target: person.id,
-        username: String(f.get("username")).trim(),
-        mobile: String(f.get("mobile")).trim(),
-        society_handicap:
-          f.get("handicap") === "" ? null : Number(f.get("handicap")),
-        admin_access: adminAccess,
-      });
+  form.onsubmit = ev => {
+    ev.preventDefault();
+    saveDialog(dialog, async () => {
+      const f = new FormData(form), adminAccess = person.id === b.state.user.id ? true : form.elements.admin_access.checked;
+      const handicap = f.get("handicap") === "" ? null : Number(f.get("handicap"));
+      if (adminAccess !== person.is_admin && !confirm(`${adminAccess ? "Give admin access to" : "Remove admin access from"} ${person.username}?`)) return;
+      if (person.handicap != null && handicap !== person.handicap && !confirm(`Change ${person.username}'s season starting handicap from ${person.handicap} to ${handicap ?? "not set"}? Completed-round handicaps will be recalculated.`)) return;
+      const { error } = await b.client.rpc("admin_save_account", { target: person.id, username: String(f.get("username") || "").trim(), mobile: String(f.get("mobile") || "").trim(), society_handicap: handicap, admin_access: adminAccess });
       if (error) throw error;
-      if (file) {
-        const path = `${person.id}/${crypto.randomUUID()}.jpg`;
-        const bucket = b.raw.storage.from("baseline-profile-images");
-        const upload = await bucket.upload(path, blob, { contentType: "image/jpeg", upsert: false });
-        if (upload.error) throw upload.error;
-        const result = await b.client.rpc("admin_set_account_photo", { target: person.id, photo_path: path });
-        if (result.error) { await bucket.remove([path]); throw result.error; }
-        if (person.avatar_path) await bucket.remove([person.avatar_path]);
-      } else if (removing) {
-        const result = await b.client.rpc("admin_set_account_photo", { target: person.id, photo_path: null });
-        if (result.error) throw result.error;
-        await b.raw.storage.from("baseline-profile-images").remove([person.avatar_path]);
-      }
       dialog.close();
-      await b.refresh();
-      await loadAccounts();
-      b.toast("Account updated.");
+      await b.refresh(); await loadAccounts();
+      window.dispatchEvent(new CustomEvent("barford:member-account-saved"));
+      b.toast("Member saved.");
     });
   };
 }
 function resetPassword(person) {
-  const dialog = openDialog(
-    "Reset password",
-    `<p>Set a new password for <strong>${e(person.username)}</strong>. Verify who you are helping before sharing it with them.</p><label for="managedPassword">New password</label><input id="managedPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label for="managedConfirm">Confirm new password</label><input id="managedConfirm" name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><small>Use at least 12 characters. Existing passwords cannot be viewed. Ask the member to change this password after signing in.</small>`,
-  );
-  dialog.querySelector("[type=submit]").textContent = "Reset password";
+  if (!person) return;
+  const dialog = openDialog("Reset password", `<p>Set a new password for <strong>${e(person.username)}</strong>. Check who you are helping before sharing it privately.</p><label for="managedPassword">New password</label><input id="managedPassword" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><label for="managedConfirm">Confirm new password</label><input id="managedConfirm" name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required><small>Use at least 12 characters. Ask the member to change it after signing in.</small>`);
+  dialog.querySelector('[type="submit"]').textContent = "Reset password";
   const form = dialog.querySelector("form");
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    b.submit(form, async () => {
+  form.onsubmit = ev => {
+    ev.preventDefault();
+    saveDialog(dialog, async () => {
       const f = new FormData(form);
-      if (f.get("password") !== f.get("confirm"))
-        throw new Error("The passwords do not match.");
-      await b.service("admin_reset_password", {
-        target: person.id,
-        confirmation_name: person.username,
-        password: f.get("password"),
-      });
-      dialog.close();
-      b.toast("Password reset. Share it with the verified member privately.");
+      if (f.get("password") !== f.get("confirm")) throw new Error("The passwords do not match.");
+      await b.service("admin_reset_password", { target: person.id, confirmation_name: person.username, password: f.get("password") });
+      dialog.close(); b.toast("Password reset. Share it with the verified member privately.");
     });
   };
 }

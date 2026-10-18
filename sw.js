@@ -1,4 +1,4 @@
-// Replace the retired 2027 offline app without touching other sites on this host.
+// 2027 simple site, October 2026. Retire cached pages only within this app.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
@@ -13,7 +13,7 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin || !url.href.startsWith(self.registration.scope)) return;
-  if (request.mode === 'navigate' || request.destination === 'script') {
+  if (request.mode === 'navigate' || request.destination === 'script' || request.destination === 'style') {
     event.respondWith(fetch(request, { cache: 'no-store' }));
   }
 });

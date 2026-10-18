@@ -1,0 +1,123 @@
+/* Simple administration, using the existing Barford colours and typography. */
+.page-admin .page-heading { margin-bottom: 25px; padding-block: 10px 0; }
+.page-admin .page-heading h1 { font-size: clamp(2.6rem, 6vw, 4.3rem); line-height: 1; }
+.page-admin .page-heading .lede { max-width: 660px; margin-bottom: 0; }
+.admin-event-bar { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 16px; padding: 22px; background: #203543; color: #fff; }
+.admin-event-bar > label { flex: 1 1 380px; font-weight: 700; }
+.admin-event-bar label select { display: block; width: 100%; margin-top: 9px; background: #fff; color: #192b36; }
+.admin-event-bar .actions { margin: 0; flex: 0 1 auto; }
+.admin-event-bar .secondary { background: #fff; color: #192b36; border-color: #fff; }
+.admin-event-bar #adminEventSummary { flex-basis: 100%; margin: 0; color: #e3e8eb; font-size: .92rem; }
+.page-admin .admin-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; padding: 6px; margin: 19px 0; overflow: visible; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); }
+.page-admin .admin-tabs button { min-width: 0; min-height: 52px; padding: 12px 8px; border: 0; border-radius: 10px; background: transparent; color: var(--ink); font-size: .97rem; box-shadow: none; white-space: normal; }
+.page-admin .admin-tabs button.active, .page-admin .admin-tabs button.active:hover { color: #fff; background: #274b62; }
+.page-admin .admin-tabs button:not(.active):hover { background: var(--soft); }
+.page-admin button:focus-visible, .page-admin a:focus-visible, .page-admin input:focus-visible, .page-admin select:focus-visible, .page-admin summary:focus-visible { outline: 3px solid #b38646; outline-offset: 3px; }
+.admin-panel { padding: clamp(20px, 3vw, 34px); margin: 0 0 28px; }
+.admin-panel > .section-heading { align-items: flex-start; gap: 16px; margin-bottom: 22px; }
+.admin-panel > .section-heading h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2rem); }
+.admin-panel .section-heading p { margin-top: 8px; margin-bottom: 0; }
+.save-state { display: inline-flex; align-items: center; gap: 7px; flex: 0 1 auto; max-width: 360px; padding: 8px 12px; background: var(--soft); color: var(--ink); border: 1px solid var(--line); border-radius: 9px; font: 650 .84rem/1.4 system-ui, sans-serif; }
+.save-state[data-state="unsaved"], .save-state[data-state="new"] { background: #f8efdf; color: #77501e; border-color: #e6cca6; }
+.save-state[data-state="saving"] { background: #e5eef4; color: #234e68; border-color: #b7ccd9; }
+.admin-panel label { color: var(--ink); font-weight: 650; }
+.admin-panel label small, .admin-panel small { display: block; color: var(--muted); font-weight: 400; line-height: 1.5; }
+.admin-panel input, .admin-panel select, .admin-panel textarea { margin-top: 7px; min-height: 46px; }
+.admin-panel .form-grid { gap: 20px; }
+.admin-panel .course-search-box { padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+.course-search-box .actions { align-items: stretch; margin-top: 4px; }
+.course-search-box .actions input { flex: 1 1 240px; min-width: 0; }
+.course-search-box .actions button { margin-top: 7px; }
+.course-results { display: grid; gap: 10px; }
+.course-results button { text-align: left; }
+.course-results button small { margin-top: 5px; }
+.admin-extra { padding-top: 20px; margin: 22px 0; border-top: 1px solid var(--line); }
+.admin-extra summary { color: var(--ink); cursor: pointer; font-weight: 700; min-height: 30px; }
+.admin-extra > p { max-width: 760px; }
+.admin-panel .event-cover-picker img { display: block; width: 100%; max-width: 640px; max-height: 280px; margin-top: 12px; object-fit: cover; border-radius: 12px; }
+.admin-panel .hole-setup { border: 1px solid var(--line); padding: 20px; border-radius: 12px; background: var(--soft); }
+.admin-panel .hole-setup h3 { margin-top: 0; }
+.admin-panel .hole-setup > p:first-of-type { margin-bottom: 14px; }
+.admin-panel .hole-setup [data-map-source] { font-size: .78rem; }
+.admin-save-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 20px; margin-top: 12px; border-top: 1px solid var(--line); }
+.admin-save-bar .form-status { margin: 0; flex: 1 1 270px; }
+.form-status { white-space: normal; min-height: 1.25em; }
+.event-management { margin-top: 28px; margin-bottom: 0; }
+.simple-response-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 18px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.simple-response-row h3 { margin: 0; font-size: 1.12rem; }
+.simple-response-row p { margin: 5px 0 0; color: var(--muted); font-size: .9rem; }
+.rsvp-counts { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 0 0 5px; padding: 16px 18px; background: var(--soft); border-radius: 11px; }
+.rsvp-counts strong { color: var(--ink); }
+.tee-settings { max-width: 650px; }
+.tee-settings input { width: 100%; }
+.page-admin .tee-group { margin-top: 14px; padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.tee-group .section-heading { align-items: center; }
+.tee-group h3 { margin: 0; }
+.tee-group h3 small { margin-top: 7px; font-family: system-ui, sans-serif; font-size: .88rem; letter-spacing: 0; }
+.tee-group .section-heading label { min-width: 135px; }
+.tee-player { gap: 20px; min-height: 60px; }
+.tee-player > span { flex: 1; min-width: 0; }
+.tee-player select { width: 135px; max-width: 42%; margin-top: 0; }
+.score-tools { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 18px; padding: 16px 0 22px; }
+.score-tools label { flex: 1 1 260px; max-width: 460px; }
+.score-tools select { display: block; width: 100%; }
+.score-tools > button { margin-bottom: 4px; }
+.score-entry-table { width: 100%; border-collapse: collapse; min-width: 650px; }
+.score-entry-table th, .score-entry-table td { padding: 14px 12px; vertical-align: middle; }
+.score-entry-table thead { background: var(--soft); }
+.score-entry-table th { font-size: .92rem; }
+.score-entry-table thead th { white-space: normal; }
+.score-entry-table tbody th { min-width: 180px; font-weight: 650; }
+.score-entry-table .score-input, #handicapForm .score-input { width: 88px; min-height: 48px; text-align: center; font-size: 1.15rem; font-weight: 700; margin: 0; }
+.score-entry-table .score-input[aria-invalid="true"] { border: 2px solid var(--danger); background: #fff1f1; }
+.score-entry-table .dnp-choice { display: flex; align-items: center; justify-content: flex-start; padding-left: 12px; }
+.score-entry-table input[type="checkbox"], .scorecard-table input[type="checkbox"] { width: 23px; height: 23px; min-height: 0; margin: 0; accent-color: var(--ink); }
+.score-entry-table .next-hcp-col { color: var(--muted); font-size: .86rem; }
+.score-progress { padding: 15px 18px; background: var(--soft); border-radius: 10px; font-weight: 650; }
+.winner-choice { display: block; max-width: 440px; }
+.winner-choice select { display: block; width: 100%; }
+.round-leading { font-size: 1.02rem; }
+#completionHelp { line-height: 1.65; }
+.private-round-notice { border-left: 4px solid #b28a54; }
+.admin-panel .league-rules { box-shadow: none; padding: 20px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+.admin-panel .league-rules p, .admin-panel .league-rules table { font-size: .9rem; }
+.admin-panel #accountSearch { max-width: 520px; margin-bottom: 10px; }
+.admin-panel .account-row { padding: 20px 0; box-shadow: none; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.admin-panel .account-row h3 { margin: 0 0 6px; }
+.admin-panel .account-row p { margin: 0; }
+.admin-panel .account-row-actions { justify-content: flex-end; }
+.simple-admin-dialog, .account-editor { width: min(560px, calc(100% - 28px)); max-height: calc(100dvh - 40px); padding: 26px; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); background: var(--surface); }
+.simple-admin-dialog::backdrop, .account-editor::backdrop { background: #14263185; }
+.simple-admin-dialog .form-stack, .account-editor .form-stack { gap: 10px; }
+.simple-admin-dialog h2, .account-editor h2 { margin: 0 0 5px; }
+.simple-admin-dialog .actions, .account-editor .actions { margin-top: 15px; }
+.simple-admin-dialog .check { display: flex; align-items: center; gap: 10px; }
+.simple-admin-dialog .check input { width: 21px; min-height: 21px; }
+.page-admin [aria-busy="true"] { opacity: .8; }
+.dark-mode .save-state[data-state="unsaved"], .dark-mode .save-state[data-state="new"] { color: #edd6af; background: #3b3021; }
+@media (max-width: 760px) {
+  .admin-event-bar > label { flex-basis: 100%; }
+  .admin-event-bar .actions { width: 100%; }
+  .admin-event-bar .actions > * { flex: 1 1 auto; }
+  .page-admin .admin-tabs { gap: 2px; padding: 4px; }
+  .page-admin .admin-tabs button { font-size: .79rem; padding: 11px 4px; min-height: 50px; }
+  .admin-panel > .section-heading { flex-direction: column; gap: 12px; }
+  .simple-response-row { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .simple-response-row button { grid-column: 1 / -1; justify-self: start; }
+  .admin-panel .account-row-actions { justify-content: flex-start; margin-top: 12px; }
+  .score-entry-table { min-width: 390px; }
+  .score-entry-table th, .score-entry-table td { padding: 12px 7px; }
+  .score-entry-table tbody th { min-width: 120px; max-width: 160px; }
+  .score-entry-table .score-input { width: 70px; }
+  .score-entry-table .next-hcp-col { display: none; }
+  .admin-save-bar > button { flex: 1 1 155px; }
+  .page-admin .tee-group { padding: 16px; }
+  .page-admin .tee-group .section-heading { flex-direction: row; align-items: center; }
+  .tee-player { gap: 10px; }
+}
+@media print {
+  .printing-scorecards .admin-tabs, .printing-scorecards .admin-event-bar, .printing-scorecards #adminTees > :not(#scorecardTools), .printing-scorecards #scorecardTools > summary { display: none !important; }
+  .printing-scorecards #scorecardTools { margin: 0; padding: 0; border: 0; }
+  body.printing-scorecards #adminContent > #adminTees { display: block !important; margin: 0; padding: 0; border: 0; }
+  .printing-scorecards #adminScorecards, .printing-scorecards #scorecardTools, .printing-scorecards #adminTees { display: block !important; }
+}

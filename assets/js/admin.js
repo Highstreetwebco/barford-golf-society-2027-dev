@@ -1,303 +1,246 @@
-import { finance, expenseBadge } from "./finance-admin.js?v=2027-results-1";
 import { mountHoleSetup } from "./hole-admin.js?v=2027-map-format-3";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
-import {
-  operationTabs,
-  showOperations,
-} from "./operations-admin.js?v=2027-payment-status-1";
-import { operation } from "./operations.js?v=2027-results-1";
-import {
-  mountEventFields,
-  eventFields,
-  updateEventType,
-} from "./event-fields.js?v=2027-accurate-gps-1";
-import {
-  showLeagueTab,
-  canLeaveLeague,
-  updateHandicapSetup,
-} from "./league-admin.js?v=2027-results-1";
-import { loadAccounts } from "./account-admin.js?v=2027-admin-photos-1";
+import { eventFields, updateEventType } from "./event-fields.js?v=2027-accurate-gps-1";
+import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-simple-1";
+import { loadAccounts } from "./account-admin.js?v=2027-simple-1";
 import { packPlayers } from "./tee-groups.js?v=2027-results-1";
-const b = await window.barfordReady;
-const { client: c, escape: e } = b;
-const gate = document.getElementById("adminGate"),
-  content = document.getElementById("adminContent");
-let events = [],
-  selected = null,
-  rows = [],
-  groups = [];
-let holeSetup, coverUpload;
-let courseGeneration = 0, coursePending = false, savingEvent = false;
-let teeBusy = false;
-const form = document.getElementById("eventForm"),
-  picker = document.getElementById("adminEvent");
+import { operation } from "./operations.js?v=2027-results-1";
+
+const b = await window.barfordReady, { client: c, escape: e } = b;
+const $ = id => document.getElementById(id);
+const gate = $("adminGate"), content = $("adminContent"), form = $("eventForm"), picker = $("adminEvent");
+const panels = { details: "adminDetails", responses: "adminResponses", tees: "adminTees", scoring: "adminScoring", accounts: "adminAccounts" };
+let events = [], selected = null, rows = [], groups = [], activeTab = "details", groupsLoadedFor = null;
+let eventDirty = false, teeDirty = false, savingEvent = false, responseBusy = false, teeBusy = false;
+let courseGeneration = 0, coursePending = false, holeSetup, coverUpload;
+const isBusy = () => savingEvent || responseBusy || teeBusy;
+window.addEventListener("barford-signout", () => {
+  ++courseGeneration; eventDirty = teeDirty = savingEvent = responseBusy = teeBusy = false;
+  events = []; rows = []; groups = []; selected = null;
+  clearLeagueAdmin();
+  document.querySelectorAll("dialog").forEach(dialog => { dialog.close(); dialog.remove(); });
+  content.hidden = true; content.replaceChildren(); gate.hidden = false;
+  gate.innerHTML = '<h2>Signed out</h2><p>Sign in with an admin account to continue.</p><a class="button" href="account.html?next=admin.html">Sign in</a>';
+});
+function updateCourseReadOnly() {
+  form.elements.course_name.readOnly = !!form.elements.place_id.value && form.elements.event_type.value !== "social";
+}
+const britishToday = () => {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const part = key => parts.find(p => p.type === key).value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+function setSaveState(id, text, state = "saved") { $(id).textContent = text; $(id).dataset.state = state; }
+function markEventDirty() { eventDirty = true; setSaveState("eventSaveState", "Unsaved changes", "unsaved"); }
+function syncControls() {
+  picker.disabled = isBusy(); $("newEvent").disabled = isBusy();
+  document.querySelectorAll(".admin-tabs button").forEach(button => button.disabled = isBusy());
+  $("saveTees").disabled = teeBusy || !groups.some(g => g.players.length) || !!selected?.cancelled;
+}
+function updateEventSummary() {
+  $("adminEventSummary").textContent = selected
+    ? `${selected.round_number ? "Round " + selected.round_number + " · " : ""}${b.date(selected.date)}${selected.cancelled ? " · Cancelled" : ""}${selected.round_number >= 6 ? " · Scores remain private to admins" : ""}`
+    : "Create an event to start taking RSVPs.";
+  $("viewAdminEvent").href = selected ? `event.html?id=${selected.id}` : "events.html";
+  $("viewAdminEvent").textContent = selected ? "View event" : "View events";
+}
+function canChangeEvent() {
+  if (isBusy()) { b.toast("Please wait until saving has finished."); return false; }
+  if ((eventDirty || teeDirty) && !confirm("There are unsaved event or tee time changes. Change event without saving?")) return false;
+  return canLeaveLeague();
+}
+window.addEventListener("beforeunload", ev => {
+  if (eventDirty || teeDirty || isBusy()) { ev.preventDefault(); ev.returnValue = ""; }
+});
 if (!b.state.admin) {
-  gate.innerHTML = `<h2>Organiser access</h2><p>${b.state.user ? "Your account does not have organiser access." : "Sign in with your organiser account to manage the society."}</p><a class="button section" href="account.html?next=admin.html">${b.state.user ? "My account" : "Sign in"}</a>`;
+  gate.innerHTML = `<h2>Admin sign in</h2><p>${b.state.user ? "Your account does not have admin access." : "Sign in with your admin account to manage the society."}</p><a class="button" href="account.html?next=admin.html">${b.state.user ? "My account" : "Sign in"}</a>`;
 } else {
-  for (const [tab, title] of Object.entries(operationTabs)) {
-    const button = document.createElement("button");
-    button.dataset.tab = tab;
-    button.textContent = title;
-    document.querySelector(".admin-tabs").append(button);
-    const panel = document.createElement("section");
-    panel.id = "adminOp-" + tab;
-    panel.className = "panel";
-    panel.hidden = true;
-    document.getElementById("adminAccounts").before(panel);
-  }
-  async function refreshIndicators() {
-    if (document.hidden) return;
-    const [league, expenses] = await Promise.allSettled([
-      c.rpc("league_admin"),
-      finance("summary"),
-    ]);
-    if (league.status === "fulfilled" && !league.value.error)
-      updateHandicapSetup(league.value.data);
-    if (expenses.status === "fulfilled") expenseBadge(expenses.value.pending);
-  }
-  refreshIndicators();
-  setInterval(refreshIndicators, 30000);
-  window.addEventListener("focus", refreshIndicators);
-  mountEventFields(form);
   coverUpload = mountCoverUpload(form, b);
   holeSetup = mountHoleSetup(form, b);
-  const ready = await init();
-  if (ready) {
-    gate.hidden = true;
-    content.hidden = false;
+  form.elements.event_type.addEventListener("change", () => { updateEventType(form); updateCourseReadOnly(); });
+  form.addEventListener("input", markEventDirty);
+  form.addEventListener("change", markEventDirty);
+  picker.onchange = () => changeEvent(picker.value);
+  $("newEvent").onclick = () => changeEvent("", true);
+  document.querySelectorAll(".admin-tabs button").forEach(button => {
+    button.onclick = () => showTab(button.dataset.tab);
+    button.onkeydown = async ev => {
+      const tabs = [...document.querySelectorAll(".admin-tabs button")], i = tabs.indexOf(button);
+      const index = ev.key === "ArrowRight" ? (i + 1) % tabs.length : ev.key === "ArrowLeft" ? (i + tabs.length - 1) % tabs.length : ev.key === "Home" ? 0 : ev.key === "End" ? tabs.length - 1 : null;
+      if (index == null) return;
+      ev.preventDefault();
+      if (await showTab(tabs[index].dataset.tab)) tabs[index].focus();
+    };
+  });
+  form.onsubmit = saveEvent;
+  $("cancelEvent").onclick = cancelEvent;
+  $("findCourse").onclick = findCourse;
+  $("courseQuery").onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); findCourse(); } };
+  $("refreshRsvps").onclick = loadResponses;
+  $("generateTees").onclick = generate;
+  $("loadTees").onclick = () => loadGroups(false);
+  $("saveTees").onclick = saveGroups;
+  $("teeStart").onchange = updateGroupTimes;
+  $("teeGap").onchange = updateGroupTimes;
+  $("scorecardTools").ontoggle = () => {
+    if ($("scorecardTools").open && activeTab === "tees") showLeagueTab("scorecards", selected);
+  };
+  $("memberRecovery").ontoggle = () => { if ($("memberRecovery").open) loadMemberRecovery(); };
+  window.addEventListener("barford:members-updated", () => { if (activeTab === "accounts") loadAccounts(); });
+  window.addEventListener("barford:member-account-saved", () => { if (activeTab === "accounts") showLeagueTab("handicaps", selected); });
+  try {
+    await loadEvents();
+    const params = new URLSearchParams(location.search), requested = params.get("event") || params.get("id");
+    selected = events.find(ev => String(ev.id) === requested) || events.find(ev => !ev.cancelled && ev.date >= britishToday()) || [...events].reverse().find(ev => !ev.cancelled) || null;
+    fillEvent();
+    gate.hidden = true; content.hidden = false;
+    const initial = params.get("tab"), tab = initial === "handicaps" ? "accounts" : initial === "scorecards" ? "tees" : panels[initial] ? initial : "details";
+    await showTab(tab, true);
+    if (initial === "scorecards") $("scorecardTools").open = true;
+  } catch (error) {
+    gate.innerHTML = b.empty("Could not load admin.", error.message) + '<button type="button" class="secondary" id="retryAdmin">Try again</button>';
+    $("retryAdmin").onclick = () => location.reload();
   }
-  const initialTab = new URLSearchParams(location.search).get("tab");
-  if (
-    [
-      "scoring",
-      "scorecards",
-      "handicaps",
-      ...Object.keys(operationTabs),
-    ].includes(initialTab)
-  )
-    document.querySelector(`[data-tab="${initialTab}"]`)?.click();
 }
-async function init() {
+async function loadEvents() {
   const { data, error } = await c.from("events").select("*").order("date");
-  if (error) {
-    gate.hidden = false;
-    gate.textContent = error.message;
-    return false;
-  }
-  events = data;
-  picker.innerHTML =
-    '<option value="">New event</option>' +
-    events
-      .map(
-        (ev) =>
-          `<option value="${ev.id}">${ev.round_number ? "R" + ev.round_number + " · " : ""}${e(ev.name)} · ${e(b.date(ev.date))}</option>`,
-      )
-      .join("");
+  if (error) throw error;
+  events = data || [];
+  renderEventPicker();
+}
+function mergeSavedEvent(data) {
+  selected = data;
+  events = [...events.filter(ev => ev.id !== data.id), data].sort((a, z) => a.date.localeCompare(z.date));
+  renderEventPicker();
+}
+function renderEventPicker() {
+  picker.innerHTML = '<option value="">New event</option>' + events.map(ev => `<option value="${ev.id}">${ev.round_number ? "Round " + ev.round_number + " · " : ""}${e(ev.name)} · ${e(b.date(ev.date))}${ev.cancelled ? " · Cancelled" : ""}</option>`).join("");
   picker.value = selected?.id || "";
-  const holes = document.getElementById("holeVideoInputs");
-  holes.innerHTML = Array.from(
-    { length: 18 },
-    (_, i) =>
-      `<label>Hole ${i + 1}<input name="hole${i + 1}" type="url" placeholder="YouTube URL"></label>`,
-  ).join("");
-  picker.onchange = async () => {
-    if (teeBusy || !canLeaveLeague()) {
-      picker.value = selected?.id || "";
-      return;
-    }
-    selected = events.find((ev) => ev.id === Number(picker.value)) || null;
-    groups = [];
-    document.getElementById("teeEditor").innerHTML = "";
-    await fillEvent();
-  };
-  document.getElementById("videoType").onchange = () =>
-    (holes.hidden = form.elements.video_type.value !== "per-hole");
-  document.querySelectorAll("[data-tab]").forEach(
-    (button) =>
-      (button.onclick = () => {
-        if (!canLeaveLeague()) return;
-        document.getElementById("eventToolbar").hidden = [
-          "accounts",
-          "handicaps",
-          "adjustments",
-          "committee",
-        ].includes(button.dataset.tab);
-        document
-          .querySelectorAll("[data-tab]")
-          .forEach((btn) => btn.classList.toggle("active", btn === button));
-        [
-          "accounts",
-          "details",
-          "responses",
-          "tees",
-          "handicaps",
-          "scoring",
-          "scorecards",
-        ].forEach(
-          (tab) =>
-            (document.getElementById(
-              "admin" +
-                {
-                  handicaps: "Handicaps",
-                  scoring: "Scoring",
-                  scorecards: "Scorecards",
-                  accounts: "Accounts",
-                  details: "Details",
-                  responses: "Responses",
-                  tees: "Tees",
-                }[tab],
-            ).hidden = tab !== button.dataset.tab),
-        );
-        for (const tab of Object.keys(operationTabs))
-          document.getElementById("adminOp-" + tab).hidden =
-            tab !== button.dataset.tab;
-        showLeagueTab(button.dataset.tab, selected);
-        showOperations(button.dataset.tab, selected);
-      }),
-  );
-  form.onsubmit = (ev) => {
-    ev.preventDefault();
-    b.submit(form, async () => {
-      if (coursePending) throw new Error("Your course details are still loading. Please save in a moment.");
-      savingEvent = true;
-      picker.disabled = true;
-      form.inert = true;
-      try {
-      const f = new FormData(form),
-        name = String(f.get("name")).trim();
-      if (!name) throw new Error("Enter an event name.");
-      const updates = {
-        ...eventFields(form),
-        course_layout_id: f.get('event_type') === 'social' ? null : await holeSetup.layoutId(),
-        name,
-        round_number: f.get("round_number")
-          ? Number(f.get("round_number"))
-          : null,
-        course_name: String(f.get("course_name") || "").trim() || null,
-        place_id: f.get("place_id") || null,
-        address: String(f.get("address") || "").trim() || null,
-        latitude: f.get("latitude") !== "" ? Number(f.get("latitude")) : null,
-        longitude:
-          f.get("longitude") !== "" ? Number(f.get("longitude")) : null,
-        cover_url: await coverUpload.saveUrl(),
-        cover_credit: null,
-        round_hours: Number(f.get("round_hours") || 5),
-        date: f.get("date"),
-        location: String(f.get("course_name") || f.get("address") || f.get("location") || "").trim(),
-        price: null,
-        first_time: f.get("first_time") || null,
-        max_players: f.get("max_players") ? Number(f.get("max_players")) : null,
-        description: f.get("description"),
-        course_link: f.get("course_link"),
-        weather_link: f.get("weather_link"),
-        video_type: f.get("video_type"),
-        video_link: f.get("video_link"),
-        per_hole_videos:
-          f.get("video_type") === "per-hole"
-            ? Object.fromEntries(
-                Array.from({ length: 18 }, (_, i) => [
-                  "hole" + (i + 1),
-                  f.get("hole" + (i + 1)),
-                ]),
-              )
-            : null,
-      };
-      if (selected?.max_players !== updates.max_players && selected) {
-        const confirmed = rows.filter((r) => r.attending && !r.reserve).length;
-        if (updates.max_players !== null && updates.max_players < confirmed)
-          throw new Error(
-            `There are already ${confirmed} confirmed players. Set capacity to at least ${confirmed}.`,
-          );
-      }
-      const query = selected
-        ? c.from("events").update(updates).eq("id", selected.id)
-        : c.from("events").insert(updates);
-      const { data, error } = await query.select().single();
-      if (error) throw error;
-      selected = data;
-      await init();
-      await fillEvent();
-      b.toast("Event saved.");
-      } finally {
-        savingEvent = false;
-        picker.disabled = false;
-        form.inert = false;
-      }
-    });
-  };
-  document.getElementById("cancelEvent").onclick = async () => {
-    if (!selected) return;
-    if (
-      !confirm(
-        selected.cancelled
-          ? "Reopen this event?"
-          : "Cancel this event? Members will see it as cancelled.",
-      )
-    )
-      return;
-    const { error } = await c
-      .from("events")
-      .update({ cancelled: !selected.cancelled })
-      .eq("id", selected.id);
-    if (error) return b.toast(error.message);
-    selected.cancelled = !selected.cancelled;
-    await fillEvent();
-    b.toast(selected.cancelled ? "Event cancelled." : "Event reopened.");
-  };
-  document.getElementById("deleteEvent").onclick = async () => {
-    if (
-      !selected ||
-      !confirm("Permanently delete this event and its RSVPs and tee times?")
-    )
-      return;
-    const { error } = await c.from("events").delete().eq("id", selected.id);
-    if (error) return b.toast(error.message);
-    selected = null;
-    await init();
-    await fillEvent();
-    b.toast("Event deleted.");
-  };
-  document.getElementById("generateTees").onclick = generate;
-  document.getElementById("loadTees").onclick = loadGroups;
-  document.getElementById("saveTees").onclick = saveGroups;
-  await fillEvent();
-  await loadEnquiries();
-  await loadMemberRecovery();
-  await loadAccounts();
-  document.getElementById("findCourse").onclick = async () => {
-    const token = ++courseGeneration;
-    const button = document.getElementById("findCourse"),
-      status = document.getElementById("courseLookupStatus");
-    coursePending = false;
-    button.disabled = true;
-    status.textContent = "Finding courses…";
-    try {
-      const result = await b.service("search_course", {
-        query: document.getElementById("courseQuery").value,
-      });
-      if (token !== courseGeneration) return;
-      status.textContent = result.places.length
-        ? "Select your course to fill its details and prepare the GPS hole layout automatically."
-        : "No matching courses found.";
-      const area = document.getElementById("courseResults");
-      area.innerHTML = result.places
-        .map(
-          (p, i) =>
-            `<button class="secondary" type="button" data-course="${i}">${e(p.displayName?.text)}<br><small>${e(p.formattedAddress)}</small></button>`,
-        )
-        .join("");
-      area.querySelectorAll("[data-course]").forEach(
-        (btn) =>
-          (btn.onclick = () => chooseCourse(result.places[Number(btn.dataset.course)])),
-      );
-    } catch (error) {
-      if (token === courseGeneration) status.textContent = error.message;
-    } finally {
-      if (token === courseGeneration) button.disabled = false;
-    }
-  };
+}
+async function changeEvent(id, newEvent = false) {
+  if (!canChangeEvent()) { picker.value = selected?.id || ""; return; }
+  selected = events.find(ev => String(ev.id) === String(id)) || null;
+  groups = []; rows = []; groupsLoadedFor = null; teeDirty = false;
+  $("teeEditor").innerHTML = ""; $("teeMessage").textContent = "";
+  $("scorecardTools").open = false; $("adminScorecards").innerHTML = "";
+  $("copyTeeUpdate")?.remove();
+  fillEvent();
+  await showTab(newEvent ? "details" : activeTab, true);
+}
+function fillEvent() {
+  ++courseGeneration; coursePending = false;
+  form.reset();
+  for (const [key, value] of Object.entries(selected || {})) if (form.elements[key]) form.elements[key].value = value ?? "";
+  if (!selected) form.elements.round_number.value = String([1,2,3,4,5,6,7].find(n => !events.some(ev => ev.round_number === n)) || "");
+  picker.value = selected?.id || "";
+  $("findCourse").disabled = false; $("courseResults").innerHTML = ""; $("courseLookupStatus").textContent = "";
+  $("courseQuery").value = selected?.course_name || "";
+  $("eventManagement").hidden = !selected;
+  $("cancelEvent").textContent = selected?.cancelled ? "Reopen event" : "Cancel event";
+  $("teeStart").value = /^\d{2}:\d{2}/.test(selected?.first_time || "") ? selected.first_time.slice(0, 5) : "09:00";
+  $("teeGap").value = selected?.tee_interval || 8;
+  updateEventType(form); updateCourseReadOnly(); coverUpload.reset(selected);
+  holeSetup.setEvent(selected).catch(error => { $("courseLookupStatus").textContent = error.message; });
+  eventDirty = false;
+  setSaveState("eventSaveState", selected ? "Saved" : "New event", selected ? "saved" : "new");
+  setSaveState("teeSaveState", selected?.tee_times_dirty ? "RSVPs changed · review groups" : selected?.tee_published_at ? "Published" : "Not published", selected?.tee_times_dirty ? "unsaved" : "saved");
+  form.querySelector(".form-status").textContent = "";
+  updateEventSummary(); syncControls();
+}
+async function showTab(tab, force = false) {
+  if (!panels[tab]) return false;
+  if (!force && (isBusy() || !canLeaveLeague())) return false;
+  activeTab = tab;
+  for (const [name, id] of Object.entries(panels)) $(id).hidden = name !== tab;
+  document.querySelectorAll(".admin-tabs button").forEach(button => {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle("active", active); button.setAttribute("aria-selected", String(active)); button.tabIndex = active ? 0 : -1;
+  });
+  if (tab === "scoring") await showLeagueTab("scoring", selected);
+  else if (tab === "accounts") await Promise.all([loadAccounts(), showLeagueTab("handicaps", selected)]);
+  else {
+    await showLeagueTab(tab, selected);
+    if (tab === "responses") await loadResponses();
+    if (tab === "tees" && groupsLoadedFor !== selected?.id) await loadGroups(true);
+    if (tab === "tees" && $("scorecardTools").open) await showLeagueTab("scorecards", selected);
+  }
   return true;
 }
+async function saveEvent(ev) {
+  ev.preventDefault();
+  if (isBusy()) return;
+  const invalid = form.querySelector(":invalid");
+  if (invalid) { const details = invalid.closest("details"); if (details) details.open = true; }
+  if (!form.reportValidity()) return;
+  const status = form.querySelector(".form-status");
+  savingEvent = true; form.inert = true; syncControls();
+  setSaveState("eventSaveState", "Saving…", "saving"); status.textContent = "Saving event…";
+  try {
+    if (coursePending) throw new Error("Course details are still loading. Please save in a moment.");
+    const f = new FormData(form), name = String(f.get("name") || "").trim();
+    if (!name) throw new Error("Enter an event name.");
+    const round = f.get("event_type") === "league" ? Number(f.get("round_number")) : null;
+    const duplicate = round && events.find(x => x.id !== selected?.id && x.round_number === round);
+    if (duplicate) throw new Error(`Round ${round} is already assigned to ${duplicate.name}. Choose that event above to edit it.`);
+    if (selected && f.get("max_players")) {
+      if (!(await loadResponses())) throw new Error("Could not check confirmed players. Try saving again.");
+      const count = rows.filter(r => r.attending && !r.reserve).length;
+      if (Number(f.get("max_players")) < count) throw new Error(`There are ${count} confirmed players. Maximum players must be at least ${count}.`);
+    }
+    const updates = {
+      ...eventFields(form), name, date: f.get("date"), round_number: round,
+      course_layout_id: f.get("event_type") === "social" ? null : await holeSetup.layoutId(),
+      course_name: String(f.get("course_name") || "").trim() || null,
+      place_id: f.get("place_id") || null, address: String(f.get("address") || "").trim() || null,
+      latitude: f.get("latitude") === "" ? null : Number(f.get("latitude")), longitude: f.get("longitude") === "" ? null : Number(f.get("longitude")),
+      cover_url: await coverUpload.saveUrl(), cover_credit: selected?.cover_credit || null,
+      round_hours: Number(f.get("round_hours") || 5), location: String(f.get("course_name") || f.get("address") || f.get("location") || "").trim(),
+      price: null, first_time: f.get("first_time") || null, max_players: f.get("max_players") ? Number(f.get("max_players")) : null,
+      description: f.get("description"), course_link: f.get("course_link") || null, weather_link: f.get("weather_link") || null,
+      video_type: f.get("video_type") || null, video_link: f.get("video_link") || null, per_hole_videos: selected?.per_hole_videos || null,
+    };
+    const query = selected ? c.from("events").update(updates).eq("id", selected.id) : c.from("events").insert(updates);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    mergeSavedEvent(data); eventDirty = false;
+    fillEvent();
+    form.querySelector(".form-status").textContent = "Event saved. You can now view RSVPs or set up tee times.";
+    b.toast("Event saved.");
+  } catch (error) {
+    status.textContent = error.message || "Could not save the event. Please try again.";
+    setSaveState("eventSaveState", "Not saved · check below", "unsaved");
+  } finally { savingEvent = false; form.inert = false; syncControls(); }
+}
+async function cancelEvent() {
+  if (!selected || isBusy()) return;
+  if (eventDirty) { b.toast("Save your event details before cancelling or reopening."); return; }
+  if (!confirm(selected.cancelled ? "Reopen this event for members?" : "Cancel this event? It will be shown as cancelled to members.")) return;
+  savingEvent = true; syncControls(); $("cancelEvent").disabled = true;
+  try {
+    const { data, error } = await c.from("events").update({ cancelled: !selected.cancelled }).eq("id", selected.id).select().single();
+    if (error) throw error;
+    mergeSavedEvent(data); fillEvent();
+    b.toast(selected.cancelled ? "Event cancelled." : "Event reopened.");
+  } catch (error) { b.toast(error.message); }
+  finally { savingEvent = false; $("cancelEvent").disabled = false; syncControls(); }
+}
+async function findCourse() {
+  if (savingEvent) return;
+  const query = $("courseQuery").value.trim(), status = $("courseLookupStatus");
+  if (query.length < 3) { status.textContent = "Enter at least three letters of the course name."; $("courseQuery").focus(); return; }
+  const ticket = ++courseGeneration;
+  $("findCourse").disabled = true; coursePending = false; status.textContent = "Finding courses…"; $("courseResults").innerHTML = "";
+  try {
+    const result = await b.service("search_course", { query });
+    if (ticket !== courseGeneration) return;
+    const places = result.places || [];
+    status.textContent = places.length ? "Choose the correct course. Its details and GPS hole view will be prepared automatically." : "No matching course found. Try the course name and town.";
+    $("courseResults").innerHTML = places.map((p, i) => `<button class="secondary" type="button" data-course="${i}">${e(p.displayName?.text || "Course")}<small>${e(p.formattedAddress || "")}</small></button>`).join("");
+    $("courseResults").querySelectorAll("[data-course]").forEach(button => button.onclick = () => chooseCourse(places[Number(button.dataset.course)]));
+  } catch (error) { if (ticket === courseGeneration) status.textContent = error.message; }
+  finally { if (ticket === courseGeneration) $("findCourse").disabled = false; }
+}
+
 async function chooseCourse(match) {
   if (savingEvent) return;
   const token = ++courseGeneration;
@@ -314,8 +257,11 @@ async function chooseCourse(match) {
     form.elements.longitude.value = p.location?.longitude ?? "";
     form.elements.course_link.value = p.websiteUri || "";
     form.elements.course_phone.value = p.nationalPhoneNumber || p.internationalPhoneNumber || "";
+    updateCourseReadOnly();
   }
   fill(match);
+  markEventDirty();
+  if (!form.elements.name.value.trim()) form.elements.name.value = `${form.elements.round_number.value ? "Round " + form.elements.round_number.value + " — " : ""}${match.displayName?.text || "Golf day"}`;
   const gps = holeSetup.setCourse(match);
   status.textContent = "Loading course details and preparing the GPS hole layout…";
   let course = match, detailError = null;
@@ -340,380 +286,171 @@ async function chooseCourse(match) {
   try { await gps; }
   catch (error) { if (token === courseGeneration) b.toast(error.message); }
 }
-async function fillEvent() {
-  courseGeneration++;
-  coursePending = false;
-  document.getElementById("findCourse").disabled = false;
-  document.getElementById("courseResults").innerHTML = "";
-  document.getElementById("courseLookupStatus").textContent = "";
-  form.reset();
-  for (const [key, value] of Object.entries(selected || {})) {
-    if (form.elements[key]) form.elements[key].value = value ?? "";
-  }
-  for (let i = 1; i <= 18; i++)
-    form.elements["hole" + i].value =
-      selected?.per_hole_videos?.["hole" + i] || "";
-  document.getElementById("holeVideoInputs").hidden =
-    form.elements.video_type.value !== "per-hole";
-  document.getElementById("cancelEvent").hidden = !selected;
-  document.getElementById("deleteEvent").hidden = !selected;
-  document.getElementById("cancelEvent").textContent = selected?.cancelled
-    ? "Reopen event"
-    : "Cancel event";
-  if (selected?.first_time && /^\d{2}:\d{2}$/.test(selected.first_time))
-    document.getElementById("teeStart").value = selected.first_time;
-  document.getElementById("teeGap").value = selected?.tee_interval || 8;
-  updateEventType(form);
-  coverUpload?.reset(selected);
-  await holeSetup?.setEvent(selected);
-  await loadResponses();
-  await showOperations(
-    document.querySelector("[data-tab].active")?.dataset.tab,
-    selected,
-  );
-  await showLeagueTab(
-    document.querySelector("[data-tab].active")?.dataset.tab,
-    selected,
-  );
-}
+
 async function loadResponses() {
-  const area = document.getElementById("adminRsvps");
-  if (!selected) {
-    rows = [];
-    area.innerHTML =
-      '<p class="muted">Choose an existing event to see responses.</p>';
-    return false;
-  }
-  const eventId = selected.id;
-  const { data, error } = await c
-    .from("rsvps")
-    .select("*,baseline_rsvp_contacts(phone)")
-    .eq("event_id", eventId)
-    .order("requested_at");
-  if (selected?.id !== eventId) return false;
-  if (error) {
-    rows = [];
-    area.textContent = error.message;
-    return false;
-  }
-  rows = data || [];
-  if (!rows.length) {
-    area.innerHTML = '<p class="muted">No responses yet.</p>';
+  const area = $("adminRsvps");
+  if (!selected) { rows = []; area.innerHTML = '<p class="notice">Save a new event or choose an existing event above to view RSVPs.</p>'; return false; }
+  const id = selected.id; $("refreshRsvps").disabled = true;
+  area.innerHTML = '<p class="muted" role="status">Loading RSVPs…</p>';
+  try {
+    const { data, error } = await c.from("rsvps").select("*,baseline_rsvp_contacts(phone)").eq("event_id", id).order("requested_at");
+    if (selected?.id !== id) return false;
+    if (error) throw error;
+    rows = data || [];
+    const playing = rows.filter(r => r.attending && !r.reserve).length, waiting = rows.filter(r => r.reserve).length;
+    area.innerHTML = `<p class="rsvp-counts"><strong>${playing} playing</strong><span>${waiting} waiting</span><span>${rows.length - playing - waiting} not playing</span></p>${selected.tee_published_at ? '<p class="notice">Tee times are published. Members must contact the committee to withdraw. Check and republish the groups after changing the player list.</p>' : ''}` + (rows.length ? rows.map(r => `<article class="simple-response-row"><div><h3>${e(r.name)}</h3><p>${r.buggy ? "Buggy" + (r.flexibility === "walk" ? " · can walk if needed" : "") : "Walking"}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</p></div><span class="status-pill ${!r.attending && !r.reserve ? "cancelled" : ""}">${r.reserve ? "Waiting list" : r.attending ? "Playing" : "Not playing"}</span><button class="secondary" type="button" data-edit-response="${r.user_id}">Edit response</button></article>`).join("") : '<p class="muted">No responses yet. Members RSVP from the event page.</p>');
+    area.querySelectorAll("[data-edit-response]").forEach(button => button.onclick = () => editResponse(rows.find(r => r.user_id === button.dataset.editResponse)));
     return true;
-  }
-  area.innerHTML =
-    `<p class="notice">${rows.filter((r) => r.attending && !r.reserve).length} playing · ${rows.filter((r) => r.reserve).length} waiting · ${rows.filter((r) => !r.attending && !r.reserve).length} not playing</p>` +
-    rows
-      .map(
-        (r) =>
-          `<form class="response-row" data-member="${r.user_id}"><div><strong>${e(r.name)}</strong><small>${e(r.baseline_rsvp_contacts?.phone || "No phone number saved")}</small></div><label>Status<select name="status"><option value="playing" ${r.attending ? "selected" : ""}>Playing</option><option value="waiting" ${r.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!r.attending && !r.reserve ? "selected" : ""}>Not playing</option></select></label><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${r.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${r.flexibility === "walk" ? "checked" : ""}> Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map((x) => `<option ${r.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><button>Save</button><p class="form-status full" role="status"></p></form>`,
-      )
-      .join("");
-  area.querySelectorAll("form").forEach(
-    (form) =>
-      (form.onsubmit = (ev) => {
-        ev.preventDefault();
-        b.submit(form, async () => {
-          const f = new FormData(form);
-          const { data, error } = await c.rpc("submit_rsvp", {
-            payload: {
-              event_id: selected.id,
-              user_id: form.dataset.member,
-              attending: f.get("status") !== "no",
-              reserve: f.get("status") === "waiting",
-              buggy: f.get("buggy") === "yes",
-              preferred_time: f.get("preferred_time") || null,
-              flexibility: f.get("flexibility") ? "walk" : null,
-            },
-          });
-          if (error) throw error;
-          await loadResponses();
-          b.toast(
-            data.reserve
-              ? "Response saved on the waiting list."
-              : "Member response updated.",
-          );
-        });
-      }),
-  );
-  return true;
+  } catch (error) {
+    if (selected?.id === id) { rows = []; area.innerHTML = b.empty("Could not load RSVPs.", error.message); }
+    return false;
+  } finally { $("refreshRsvps").disabled = false; }
+}
+function editResponse(person) {
+  if (!person || !selected || responseBusy) return;
+  const id = selected.id, dialog = document.createElement("dialog");
+  dialog.className = "simple-admin-dialog";
+  dialog.setAttribute("aria-labelledby", "responseTitle");
+  dialog.innerHTML = `<form class="form-stack"><h2 id="responseTitle">${e(person.name)}</h2><p class="muted">${e(selected.name)}${person.baseline_rsvp_contacts?.phone ? " · " + e(person.baseline_rsvp_contacts.phone) : ""}</p><label>Status<select name="status"><option value="playing" ${person.attending && !person.reserve ? "selected" : ""}>Playing</option><option value="waiting" ${person.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!person.attending && !person.reserve ? "selected" : ""}>Not playing</option></select></label><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${person.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${person.flexibility === "walk" ? "checked" : ""}>Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map(x => `<option ${person.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><p class="muted">If a place opens, the next member on the waiting list is moved in automatically.</p><div class="actions"><button type="submit">Save response</button><button type="button" class="secondary" data-close>Cancel</button></div><p class="form-status" role="status"></p></form>`;
+  document.body.append(dialog); dialog.showModal();
+  const editor = dialog.querySelector("form");
+  dialog.querySelector("[data-close]").onclick = () => { if (!responseBusy) dialog.close(); };
+  dialog.oncancel = ev => { if (responseBusy) ev.preventDefault(); };
+  dialog.onclose = () => dialog.remove();
+  editor.onsubmit = async ev => {
+    ev.preventDefault(); if (responseBusy) return;
+    const f = new FormData(editor), status = editor.querySelector(".form-status");
+    responseBusy = true; editor.inert = true; syncControls(); status.textContent = "Saving response…";
+    try {
+      const { data, error } = await c.rpc("submit_rsvp", { payload: { event_id: id, user_id: person.user_id, attending: f.get("status") !== "no", reserve: f.get("status") === "waiting", buggy: f.get("buggy") === "yes", preferred_time: f.get("preferred_time") || null, flexibility: f.get("flexibility") ? "walk" : null } });
+      if (error) throw error;
+      const refreshed = await c.from("events").select("*").eq("id", id).single();
+      if (!refreshed.error && selected?.id === id) { selected = refreshed.data; events = events.map(ev => ev.id === id ? selected : ev); }
+      if (!teeDirty) groupsLoadedFor = null;
+      await loadResponses(); updateEventSummary();
+      dialog.close(); b.toast(data?.reserve ? "Response saved on the waiting list." : "Response saved.");
+    } catch (error) { status.textContent = error.message || "Could not save this response. Try again."; }
+    finally { responseBusy = false; editor.inert = false; syncControls(); }
+  };
 }
 function setTeeBusy(value) {
   teeBusy = value;
-  document.querySelectorAll("#adminTees button, #adminTees input, #adminTees select").forEach(control => { control.disabled = value; });
-  picker.disabled = value || savingEvent;
+  $("adminTees").querySelectorAll("button, input, select").forEach(control => control.disabled = value);
+  syncControls();
 }
 async function teeAction(work) {
   if (teeBusy) return;
-  const eventId = selected?.id;
-  setTeeBusy(true);
-  try { await work(eventId); }
-  catch (error) { document.getElementById("teeMessage").textContent = error.message || "Tee groups could not load. Try again."; }
+  const id = selected?.id; setTeeBusy(true);
+  try { await work(id); }
+  catch (error) { $("teeMessage").textContent = error.message || "Could not update tee times. Please try again."; }
   finally { setTeeBusy(false); }
 }
+function requireGolfEvent() {
+  if (!selected) { $("teeMessage").textContent = "Choose an event above first."; return false; }
+  if (selected.event_type === "social" || selected.cancelled) { $("teeMessage").textContent = selected.cancelled ? "Reopen this event before setting up tee times." : "Social events do not need tee times."; return false; }
+  return true;
+}
+function timesFor(count) {
+  const start = $("teeStart").value, gap = Number($("teeGap").value);
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start) || !Number.isInteger(gap) || gap < 1 || gap > 60) throw new Error("Enter a first tee time and a whole-number gap from 1 to 60 minutes.");
+  const [h, m] = start.split(":").map(Number), first = h * 60 + m;
+  if (first + Math.max(0, count - 1) * gap >= 1440) throw new Error("These tee times would run into the next day. Use an earlier start or shorter gap.");
+  return Array.from({ length: count }, (_, i) => { const mins = first + i * gap; return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`; });
+}
+function markTeeDirty() { teeDirty = true; setSaveState("teeSaveState", "Unsaved changes", "unsaved"); syncControls(); }
+function updateGroupTimes() {
+  if (!groups.length || teeBusy) return;
+  try { const times = timesFor(groups.length); groups.forEach((g, i) => g.time = times[i]); markTeeDirty(); renderGroups(); $("teeMessage").textContent = "Times updated. Publish tee times to save."; }
+  catch (error) { $("teeMessage").textContent = error.message; }
+}
 async function generate() {
-  if (!selected) return b.toast("Choose an event first.");
-  if (selected.event_type === "social")
-    return b.toast("Social events do not use tee groups.");
-  return teeAction(async eventId => {
-  document.getElementById("teeMessage").textContent = "Preparing tee groups…";
-  if (!(await loadResponses())) throw new Error("Member responses could not load. Please try again.");
-  const players = rows.filter((r) => r.attending && !r.reserve);
-  if (!players.length) throw new Error("There are no confirmed players yet.");
-  const start = document.getElementById("teeStart").value,
-    gap = Number(document.getElementById("teeGap").value);
-  if (!start || gap < 1 || gap > 60)
-    throw new Error("Enter a start time and a gap from 1 to 60 minutes.");
-  const [h, m] = start.split(":").map(Number);
-  const pairData = await operation("admin", { event_id: eventId });
-  if (selected?.id !== eventId) return;
-  const packed = packPlayers(
-    players,
-    pairData.pairs.filter((p) => p.status === "confirmed"),
-  );
-  if (h * 60 + m + Math.max(0, packed.length - 1) * gap >= 1440)
-    throw new Error(
-      "The tee times would run into the next day. Adjust the start time or gap.",
-    );
-  groups = packed.map((people, i) => {
-    const mins = h * 60 + m + i * gap;
-    return {
-      time:
-        String(Math.floor(mins / 60)).padStart(2, "0") +
-        ":" +
-        String(mins % 60).padStart(2, "0"),
-      players: people.map((p) => p.user_id),
-    };
-  });
-  renderGroups();
-  document.getElementById("teeMessage").textContent =
-    "Draft groups generated. Review buggy pairs and preferences before publishing.";
-  const unpairedGuests = players.filter(
-    (p) =>
-      p.guest_host_id &&
-      !packed.some(
-        (g) =>
-          g.some((q) => q.user_id === p.user_id) &&
-          g.some((q) => q.user_id === p.guest_host_id),
-      ),
-  );
-  if (unpairedGuests.length)
-    document.getElementById("teeMessage").textContent +=
-      " Host pairing needs review: " +
-      unpairedGuests.map((p) => p.name).join(", ") +
-      ". Their host may not be booked or the group may be full.";
+  if (!requireGolfEvent() || teeBusy) return;
+  if (groups.length && !confirm("Create fresh groups? This replaces the groups shown below. Published tee times stay unchanged until you publish again.")) return;
+  return teeAction(async id => {
+    $("teeMessage").textContent = "Preparing groups from the latest confirmed players…";
+    if (!(await loadResponses())) throw new Error("Could not load the confirmed players. Try again.");
+    const players = rows.filter(r => r.attending && !r.reserve);
+    if (!players.length) throw new Error("No confirmed players yet. Check RSVPs first.");
+    const pairData = await operation("admin", { event_id: id });
+    if (selected?.id !== id) return;
+    const packed = packPlayers(players, (pairData.pairs || []).filter(p => p.status === "confirmed")), times = timesFor(packed.length);
+    groups = packed.map((people, i) => ({ time: times[i], players: people.map(p => p.user_id) }));
+    groupsLoadedFor = id; markTeeDirty(); renderGroups();
+    $("teeMessage").textContent = "Draft groups ready. Check names, buggy pairs and times, then publish.";
   });
 }
-async function loadGroups() {
-  if (!selected) return b.toast("Choose an event first.");
-  if (selected.event_type === "social")
-    return b.toast("Social events do not use tee groups.");
-  return teeAction(async eventId => {
-  document.getElementById("teeMessage").textContent = "Loading saved tee groups…";
-  if (!(await loadResponses())) throw new Error("Member responses could not load. Please try again.");
-  const { data, error } = await c
-    .from("tee_times")
-    .select("*")
-    .eq("event_id", eventId)
-    .order("group_number");
-  if (selected?.id !== eventId) return;
-  if (error) throw error;
-  groups = (data || []).map((g) => ({
-    time: g.tee_time,
-    players: g.players
-      .map((p) => p.user_id)
-      .filter((id) =>
-        rows.some((r) => r.user_id === id && r.attending && !r.reserve),
-      ),
-  }));
-  if (!groups.length)
-    throw new Error("No saved tee groups. Generate groups first.");
-  const assigned = new Set(groups.flatMap((g) => g.players)),
-    extra = rows.filter(
-      (r) => r.attending && !r.reserve && !assigned.has(r.user_id),
-    );
-  for (const r of extra) {
-    let g = groups.find((g) => g.players.length < 4);
-    if (!g) {
-      g = { time: "", players: [] };
-      groups.push(g);
-    }
-    g.players.push(r.user_id);
-  }
-  renderGroups();
-  document.getElementById("teeMessage").textContent =
-    "Saved groups loaded. Review any player changes, then publish.";
+async function loadGroups(automatic = false) {
+  if (!requireGolfEvent() || teeBusy) return;
+  if (!automatic && teeDirty && !confirm("Reload the saved tee times and discard the changes shown below?")) return;
+  return teeAction(async id => {
+    $("teeMessage").textContent = "Loading tee times…";
+    if (!(await loadResponses())) throw new Error("Could not load the confirmed players. Try again.");
+    const { data, error } = await c.from("tee_times").select("*").eq("event_id", id).order("group_number");
+    if (selected?.id !== id) return;
+    if (error) throw error;
+    groupsLoadedFor = id; teeDirty = false;
+    let changed = false;
+    groups = (data || []).map(g => ({ time: String(g.tee_time || "").slice(0,5), players: (g.players || []).map(p => p.user_id).filter(uid => { const valid = rows.some(r => r.user_id === uid && r.attending && !r.reserve); if (!valid) changed = true; return valid; }) })).filter(g => g.players.length);
+    if (!groups.length) { renderGroups(); setSaveState("teeSaveState", "Not published", "new"); $("teeMessage").textContent = "No saved tee times. Choose Create groups to get started."; return; }
+    const assigned = new Set(groups.flatMap(g => g.players)), extra = rows.filter(r => r.attending && !r.reserve && !assigned.has(r.user_id));
+    for (const person of extra) { let g = groups.find(g => g.players.length < 4); if (!g) { g = { time: "", players: [] }; groups.push(g); } g.players.push(person.user_id); }
+    if (extra.length || changed || selected.tee_times_dirty) markTeeDirty();
+    else setSaveState("teeSaveState", "Published", "saved");
+    renderGroups();
+    $("teeMessage").textContent = teeDirty ? "The player list has changed. Check the groups and publish the updated tee times." : "Saved tee times loaded. Change a player's group or tee time below if needed.";
   });
 }
 function renderGroups() {
-  const area = document.getElementById("teeEditor");
-  area.innerHTML = groups
-    .map(
-      (g, i) =>
-        `<section class="tee-group"><div class="section-heading"><h3>Group ${i + 1}</h3><label>Tee time<input type="time" value="${e(g.time)}" data-time="${i}"></label></div>${g.players
-          .map((id) => {
-            const r = rows.find((r) => r.user_id === id);
-            if (!r) return "";
-            return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"}${r.flexibility === "walk" ? " (can walk if needed)" : ""} · ${e(r.preferred_time || "No tee time")} preference</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${j === i ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`;
-          })
-          .join(
-            "",
-          )}${g.players.filter((id) => rows.find((r) => r.user_id === id)?.buggy).length % 2 !== 0 ? '<p class="muted">Check buggy pairing for this group.</p>' : ""}${g.players.length > 4 ? '<p class="error">Maximum four players per group.</p>' : ""}</section>`,
-    )
-    .join("");
-  area
-    .querySelectorAll("[data-time]")
-    .forEach(
-      (input) =>
-        (input.onchange = () =>
-          (groups[Number(input.dataset.time)].time = input.value)),
-    );
-  area.querySelectorAll("[data-player]").forEach(
-    (sel) =>
-      (sel.onchange = () => {
-        const from = Number(sel.dataset.from),
-          id = sel.dataset.player;
-        groups[from].players = groups[from].players.filter((x) => x !== id);
-        if (sel.value === "new") groups.push({ time: "", players: [id] });
-        else groups[Number(sel.value)].players.push(id);
-        renderGroups();
-      }),
-  );
+  $("teeEditor").innerHTML = groups.map((g, i) => `<section class="tee-group"><div class="section-heading"><h3>Group ${i + 1}<small>${g.players.length} players</small></h3><label>Tee time<input type="time" value="${e(g.time)}" data-time="${i}"></label></div>${g.players.map(id => { const r = rows.find(r => r.user_id === id); if (!r) return ""; return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"}${r.flexibility === "walk" ? " · can walk if needed" : ""}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${i === j ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`; }).join("")}${g.players.filter(id => rows.find(r => r.user_id === id)?.buggy).length % 2 ? '<p class="muted">Check the buggy pairing in this group.</p>' : ""}${g.players.length > 4 ? '<p class="error">Move a player out: maximum four per group.</p>' : ""}</section>`).join("");
+  $("teeEditor").querySelectorAll("[data-time]").forEach(input => input.onchange = () => { groups[Number(input.dataset.time)].time = input.value; markTeeDirty(); });
+  $("teeEditor").querySelectorAll("[data-player]").forEach(select => select.onchange = () => {
+    const id = select.dataset.player, from = Number(select.dataset.from), to = select.value;
+    if (to !== "new" && groups[Number(to)].players.length >= 4) { select.value = String(from); $("teeMessage").textContent = "That group already has four players. Move one out first or choose New group."; return; }
+    groups[from].players = groups[from].players.filter(uid => uid !== id);
+    if (to === "new") groups.push({ time: "", players: [id] }); else groups[Number(to)].players.push(id);
+    groups = groups.filter(g => g.players.length); markTeeDirty(); renderGroups();
+    $("teeEditor").querySelector(`[data-player="${id}"]`)?.focus();
+  });
+  syncControls();
+}
+function validateGroups() {
+  const active = groups.filter(g => g.players.length), seen = new Set(); let previous = "";
+  if (!active.length) throw new Error("Create groups first.");
+  for (const [i, g] of active.entries()) {
+    if (g.players.length > 4) throw new Error(`Group ${i + 1} has more than four players.`);
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(g.time)) throw new Error(`Enter a tee time for group ${i + 1}.`);
+    if (previous && g.time <= previous) throw new Error(`Group ${i + 1} must tee off after the previous group.`);
+    previous = g.time;
+    for (const id of g.players) { if (seen.has(id)) throw new Error("A player appears more than once. Reload or recreate groups."); seen.add(id); }
+  }
+  const confirmed = rows.filter(r => r.attending && !r.reserve);
+  if (seen.size !== confirmed.length || confirmed.some(r => !seen.has(r.user_id))) throw new Error("Include every confirmed player once. Reload the groups to check for new RSVPs.");
+  const odd = active.filter(g => g.players.filter(id => rows.find(r => r.user_id === id)?.buggy).length % 2);
+  if (odd.length > 1) throw new Error("There are unpaired buggy players in different groups. Put them together before publishing.");
+  return active;
 }
 async function saveGroups() {
-  if (teeBusy) return;
-  if (!selected) return b.toast("Choose an event first.");
-  if (!groups.length) return b.toast("Generate or load tee groups first.");
-  const odd = groups.filter(
-    (g) =>
-      g.players.filter((id) => rows.find((r) => r.user_id === id)?.buggy)
-        .length %
-        2 ===
-      1,
-  );
-  if (odd.length > 1)
-    return b.toast(
-      "There are unpaired buggy players in different groups. Move them into pairs before publishing.",
-    );
-  return teeAction(async eventId => {
-    const old = await c
-      .from("tee_times")
-      .select("*")
-      .eq("event_id", eventId);
-    if (selected?.id !== eventId) return;
-    if (old.error) throw old.error;
-    const moves = [];
-    for (const g of groups)
-      for (const id of g.players) {
-        const prev = old.data.find((t) =>
-          t.players.some((p) => p.user_id === id),
-        );
-        if (
-          prev &&
-          (prev.tee_time !== g.time ||
-            JSON.stringify(prev.players.map((p) => p.user_id).sort()) !==
-              JSON.stringify([...g.players].sort()))
-        )
-          moves.push(
-            `${rows.find((r) => r.user_id === id)?.name}: ${prev.tee_time} → ${g.time}${prev.tee_time === g.time ? " (group changed)" : ""}`,
-          );
-      }
-    if (!(await reviewPublication(moves, groups))) return;
-    if (selected?.id !== eventId) return;
-    const { error } = await c.rpc("save_tee_times", {
-      event: eventId,
-      groups: groups.filter((g) => g.players.length),
-    });
+  if (!requireGolfEvent() || teeBusy) return;
+  return teeAction(async id => {
+    const active = validateGroups();
+    $("teeMessage").textContent = "Checking published tee times…";
+    const { data, error } = await c.from("tee_times").select("*").eq("event_id", id);
     if (error) throw error;
-    if (selected?.id !== eventId) return;
-    document.getElementById("teeMessage").textContent =
-      "Tee times published. Members can view them on the event.";
-    b.toast("Tee times published.");
-    const refreshed = await c
-      .from("events")
-      .select("*")
-      .eq("id", eventId)
-      .single();
-    if (selected?.id !== eventId) return;
-    if (!refreshed.error) selected = refreshed.data;
-    let copy = document.getElementById("copyTeeUpdate");
-    if (!copy) {
-      copy = document.createElement("button");
-      copy.id = "copyTeeUpdate";
-      copy.className = "secondary";
-      copy.textContent = "Copy latest tee update for WhatsApp";
-      document.getElementById("teeMessage").after(copy);
+    const moves = [];
+    for (const g of active) for (const uid of g.players) {
+      const previous = (data || []).find(t => (t.players || []).some(p => p.user_id === uid));
+      if (previous && (previous.tee_time !== g.time || JSON.stringify(previous.players.map(p => p.user_id).sort()) !== JSON.stringify([...g.players].sort()))) moves.push(`${rows.find(r => r.user_id === uid)?.name || "Player"}: ${previous.tee_time} → ${g.time}${previous.tee_time === g.time ? " (group changed)" : ""}`);
     }
-    copy.onclick = async () => {
-      const lines = [
-        selected.name + " · " + b.date(selected.date),
-        "Latest tee groups — UK times",
-        ...groups
-          .filter((g) => g.players.length)
-          .map(
-            (g) =>
-              g.time +
-              " — " +
-              g.players
-                .map((id) => rows.find((r) => r.user_id === id)?.name)
-                .join(", "),
-          ),
-        new URL("event.html?id=" + selected.id, location.href).href,
-      ];
-      try {
-        await navigator.clipboard.writeText(lines.join("\n"));
-        b.toast("Copied. Review and paste into your society chat.");
-      } catch {
-        document.getElementById("teeMessage").textContent = lines.join("\n");
-      }
-    };
+    if (!(await reviewPublication(moves, active))) { $("teeMessage").textContent = "Nothing published. Continue editing below."; return; }
+    $("teeMessage").textContent = "Publishing tee times…";
+    const saved = await c.rpc("save_tee_times", { event: id, groups: active });
+    if (saved.error) throw saved.error;
+    teeDirty = false; setSaveState("teeSaveState", "Published", "saved");
+    $("teeMessage").textContent = "Tee times published. Members can see them on the event and must contact the committee to withdraw.";
+    const refreshed = await c.from("events").select("*").eq("id", id).single();
+    if (!refreshed.error && selected?.id === id) { selected = refreshed.data; events = events.map(ev => ev.id === id ? selected : ev); }
+    b.toast("Tee times published.");
   });
-}
-async function loadEnquiries() {
-  const area = document.getElementById("enquiries");
-  const { data, error } = await c
-    .from("signups")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) {
-    area.textContent = error.message;
-    return;
-  }
-  area.innerHTML = data.length
-    ? data
-        .map(
-          (row) =>
-            `<div class="panel"><strong>${e(row.name)}</strong><p>${e(row.email)} · ${e(row.phone)}</p><button data-approve-enquiry="${row.id}">Approve name for signup</button><button class="secondary" data-enquiry="${row.id}">Mark handled</button></div>`,
-        )
-        .join("")
-    : '<p class="muted">No outstanding enquiries. New members can create their own accounts.</p>';
-  area.querySelectorAll("[data-approve-enquiry]").forEach(
-    (btn) =>
-      (btn.onclick = async () => {
-        btn.disabled = true;
-        try {
-          await operation("approve_enquiry", {
-            id: Number(btn.dataset.approveEnquiry),
-          });
-          await loadEnquiries();
-          b.toast("Name approved. Ask the applicant to create their account.");
-        } catch (error) {
-          b.toast(error.message);
-          btn.disabled = false;
-        }
-      }),
-  );
-  area.querySelectorAll("[data-enquiry]").forEach(
-    (button) =>
-      (button.onclick = async () => {
-        const { error } = await c
-          .from("signups")
-          .delete()
-          .eq("id", Number(button.dataset.enquiry));
-        if (error) return b.toast(error.message);
-        await loadEnquiries();
-      }),
-  );
 }
 
 async function loadMemberRecovery() {
@@ -750,10 +487,11 @@ async function loadMemberRecovery() {
   };
 }
 
+
 function reviewPublication(moves, groups) {
   return new Promise((resolve) => {
     const dialog = document.createElement("dialog");
-    dialog.innerHTML = `<h2>Review tee publication</h2><p>${groups.filter((g) => g.players.length).length} groups · ${groups.reduce((n, g) => n + g.players.length, 0)} players</p>${moves.length ? `<p>${moves.length} existing players affected:</p><ul>${moves.map((x) => `<li>${e(x)}</li>`).join("")}</ul>` : "<p>No existing player times or groups changed.</p>"}<p>Members will see the current sheet and a notice if their group changes. No messages are sent automatically.</p><div class="actions"><button data-publish>Publish tee times</button><button class="secondary" data-back>Back to editing</button></div>`;
+    dialog.innerHTML = `<h2>Publish these tee times?</h2><p>${groups.filter((g) => g.players.length).length} groups · ${groups.reduce((n, g) => n + g.players.length, 0)} players</p>${moves.length ? `<p>${moves.length} existing players affected:</p><ul>${moves.map((x) => `<li>${e(x)}</li>`).join("")}</ul>` : "<p>No existing player times or groups changed.</p>"}<p>Members will see these tee times on the event. Their RSVP will be locked; they must contact the committee to withdraw.</p><div class="actions"><button data-publish>Publish tee times</button><button class="secondary" data-back>Back to editing</button></div>`;
     document.body.append(dialog);
     const finish = (value) => {
       dialog.close();

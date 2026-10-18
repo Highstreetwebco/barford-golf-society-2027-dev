@@ -1,10 +1,3 @@
-import { mountPayments } from "./operations.js?v=2027-results-1";
-import {
-  photoPickerHTML,
-  wirePhotoPicker,
-  savePhoto,
-  mountPhotoEditor,
-} from "./member-photos.js?v=2027-results-1";
 const b = await window.barfordReady;
 const { raw, state, escape: e, submit } = b;
 const isSignup = location.pathname.endsWith("signup.html");
@@ -39,14 +32,8 @@ if (isSignup) {
     selector.onchange();
   }
   const help = document.createElement("p");
-  help.innerHTML =
-    '<a href="about.html#join">My name isn’t listed / I’m new to the society</a>';
+  help.textContent = "Name missing or already registered? Contact the committee. Use your existing account if you have one.";
   selector.after(help);
-  const photoArea = document.createElement("div");
-  photoArea.className = "form-stack";
-  photoArea.innerHTML = photoPickerHTML();
-  document.querySelector("#signupForm button[type=submit]").before(photoArea);
-  const selectedPhoto = wirePhotoPicker(photoArea);
   document.getElementById("signupForm").onsubmit = (ev) => {
     ev.preventDefault();
     submit(ev.target, async () => {
@@ -56,7 +43,6 @@ if (isSignup) {
         throw new Error(
           "Choose your own available name. If it is already claimed, sign in or contact an organiser.",
         );
-      const portrait = await selectedPhoto();
       if (!(await confirmName(member.name))) return;
       const { data, error } = await raw.auth.signUp({
         email: "member-" + crypto.randomUUID() + "@members.barford2027.invalid",
@@ -80,14 +66,6 @@ if (isSignup) {
         throw new Error(
           "Your account needs organiser help to finish signing in. Please do not create another account.",
         );
-      if (portrait) {
-        try {
-          await savePhoto(portrait, data.user.id);
-        } catch (error) {
-          ev.target.innerHTML = `<h2>Your account is ready.</h2><p>Your photo could not be saved: ${e(error.message)}</p><p>You can add it later in My account.</p><a class="button" href="${e(redirect)}">Continue to the homepage</a><a href="account.html">Add my photo</a>`;
-          return;
-        }
-      }
       location.href = redirect;
     });
   };
@@ -113,6 +91,11 @@ if (isSignup) {
       .select("member_id,disabled")
       .eq("user_id", state.user.id)
       .maybeSingle();
+    if (membership.error) {
+      area.innerHTML = '<section class="panel"><h2>Your account could not load</h2><p>Please try again before changing your details.</p><button type="button" id="retryAccount">Try again</button></section>';
+      document.getElementById("retryAccount").onclick = async () => { await b.refresh(); await render(); };
+      return;
+    }
     const linked = !!membership.data?.member_id;
     if (membership.data?.disabled) {
       area.innerHTML =
@@ -125,16 +108,6 @@ if (isSignup) {
     }
 
     area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Username (your name)</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" ${linked ? "readonly" : ""} required>${state.user.email?.endsWith("@members.barford2027.invalid") ? "" : `<label for="profileEmail">Existing account email</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly>`}<label for="profilePhone">Mobile number</label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="25" required value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Visible to organisers and your assigned buggy partner.</small><button>Save details</button><p class="form-status" role="status"></p></form><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
-    const payments = document.createElement("section");
-    payments.id = "payments";
-    payments.className = "panel section full";
-    area.append(payments);
-    await mountPayments(payments);
-    if (location.hash === "#payments") payments.scrollIntoView();
-    const photoEditor = document.createElement("section");
-    photoEditor.className = "panel section";
-    area.querySelector("section").after(photoEditor);
-    await mountPhotoEditor(photoEditor);
     if (!linked) {
       const claim = document.createElement("section");
       claim.className = "panel section";
@@ -206,7 +179,7 @@ if (isSignup) {
       .filter(
         (r) =>
           r.baseline_events &&
-          r.baseline_events.date >= new Date().toLocaleDateString("en-CA"),
+          r.baseline_events.date >= new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" }),
       )
       .sort((a, c) =>
         a.baseline_events.date.localeCompare(c.baseline_events.date),
@@ -287,7 +260,7 @@ if (isSignup) {
 async function confirmName(name) {
   const dialog = document.createElement("dialog");
   dialog.setAttribute("aria-labelledby", "confirmNameTitle");
-  dialog.innerHTML = `<h2 id="confirmNameTitle">Are you ${e(name)}?</h2><p>You are creating an account under <strong>${e(name)}</strong>. This will be your username.</p><p class="notice">Only continue if this is you. Creating an account for someone else could ruin the setup for the season, so please don’t try to be funny.</p><div class="actions"><button data-confirm>Yes, I am ${e(name)}</button><button class="secondary" data-cancel>Go back</button></div>`;
+  dialog.innerHTML = `<h2 id="confirmNameTitle">Are you ${e(name)}?</h2><p>You are creating an account under <strong>${e(name)}</strong>. This will be your username.</p><p class="notice">Each society name can be registered once. Please choose only your own name.</p><div class="actions"><button data-confirm>Yes, this is me</button><button class="secondary" data-cancel>Go back</button></div>`;
   document.body.append(dialog);
   return new Promise((resolve) => {
     const finish = (x) => {

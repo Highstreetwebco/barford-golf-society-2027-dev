@@ -550,21 +550,12 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
         })),
       );
     if (p.endsWith("/baseline_rsvps")) {
-      return reply(
-        u.searchParams.get("user_id") &&
-          !u.searchParams.get("select")?.includes("baseline_events")
-          ? model.responses.find((r) => r.user_id === uid && (!u.searchParams.get("event_id") || "eq." + r.event_id === u.searchParams.get("event_id"))) || null
-          : model.responses.map((r) =>
-              u.searchParams.get("select")?.includes("baseline_events")
-                ? {
-                    ...r,
-                    baseline_events: model.events.find(
-                      (ev) => ev.id === r.event_id,
-                    ),
-                  }
-                : r,
-            ),
-      );
+      const rows = model.responses.filter((r) =>
+        (!u.searchParams.get("user_id") || "eq." + r.user_id === u.searchParams.get("user_id")) &&
+        (!u.searchParams.get("event_id") || "eq." + r.event_id === u.searchParams.get("event_id"))
+      ).map((r) => u.searchParams.get("select")?.includes("baseline_events")
+        ? { ...r, baseline_events: model.events.find((ev) => ev.id === r.event_id) } : r);
+      return reply(req.headers()["accept"]?.includes("vnd.pgrst.object") ? rows[0] || null : rows);
     }
     if (p.endsWith("/baseline_tee_times")) return reply(model.groups);
     if (p.endsWith("/rpc/baseline_submit_rsvp")) {
@@ -637,7 +628,10 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
   });
   return model;
 }
-(async () => {
+// Kept as legacy coverage and reusable isolated API fixtures. The current
+// simplified journeys are exercised by simple-site.cjs.
+module.exports = { mocks, fixture, server, base, backend, session, uid };
+if (require.main === module) (async () => {
   await new Promise((r) => server.listen(8765, "127.0.0.1", r));
   const browser = await chromium.launch();
   const report = [];

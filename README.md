@@ -1,3 +1,50 @@
+# Barford Golf Society — simple 2027 site
+
+Development site: https://highstreetwebco.github.io/barford-golf-society-2027-dev/
+
+## Current workflow · October 2026
+
+The 2027 site keeps the established navy, cream and tan identity and uses a small set of member journeys. Home has **RSVP**, **Leaderboard**, **Course hole view** and **All events**. Admins also see **Enter scores**. Gallery, shop, trips and the old payment screens are no longer part of the site navigation; their old page URLs return to the core pages. Existing stored records are not deleted by the simplification.
+
+### Members and RSVPs
+
+Members sign in to their own 2027 account. Signup uses the society roster: one account can claim each roster entry. A server-side unique constraint allows one RSVP per event and account, and the RSVP RPC updates that record. The browser loads the current event and response before editing, blocks repeat clicks while opening/saving, and keeps form values after a failed save. No editable name field is used to identify the member at RSVP time.
+
+Once tee times are published, member RSVP buttons become **Tee times** and withdrawals go through the committee. The existing six-day change cutoff remains. A fixed roster prevents duplicate registration under the same roster entry, but selecting a name is not proof of a person's real-world identity; admins must resolve a wrongly claimed name.
+
+### Admin
+
+Choose the event, then use **Event details**, **RSVPs**, **Tee times**, **Scores** or **Members**. Event details keeps the essential fields visible and optional details collapsed. Course search still prepares GPS/Hole View automatically. Cancellation is available separately from ordinary editing; permanent deletion is not offered in the normal workflow.
+
+The score grid accepts each player's **total Stableford points for 18 holes**. **Save draft** saves private work; **Complete round** publishes the completed round and updates the next handicaps. An incomplete score, invalid number, unresolved tied winner, missing starting handicap or incomplete earlier round blocks completion with an explanation. The established society convention remains: zero is recorded as DNP and excluded from the field average. Revisions reject conflicting saves by two admins. Correcting an earlier round rebuilds the subsequent published calculations.
+
+### Leaderboard and private rounds
+
+The season table shows all seven columns and sums each player's best five published scores. Four or fewer scores all count; six scores drop the lowest; seven scores drop the lowest two. Equal points use round wins, then equal rank. Tied round winners require organiser countback selection.
+
+Rounds 6 and 7, their scores, wins and aggregate effects remain admin-only. The database returns only published rounds 1–5 to members and anonymous viewers. The member table uses blurred dummy marks, never hidden scores in CSS, HTML, data attributes or totals. The client also applies its current viewer limit and clears previously rendered scores during refresh and sign-out. Round 7 playing handicaps remain protected because they could expose round 6 adjustments.
+
+### Hole View
+
+Course Hole View is retained and can now be opened before the event day from Home or the event page. The existing course-layout RPC continues to enforce member/admin access and verified coordinate visibility. Mapping, GPS and camera implementation remain in the existing modules; GPS accuracy still needs a real on-course device check.
+
+### Verification and deployment
+
+Static HTML/CSS/JavaScript on the existing GitHub Pages repository, with the isolated 2027 Supabase backend. No build step or framework migration.
+
+- `node tests/simple-scoring.mjs`: independent subset-enumeration checks for best-five totals, partial seasons, ties, DNP, privacy, malformed/duplicate data and handicap rules.
+- `node tests/simple-site.cjs`: current mobile/desktop journeys with isolated API fixtures; all writes are mocked. Runs in the existing GitHub Actions browser environment.
+- `node tests/course-mapping.mjs`, `node tests/course-scorecard.mjs`, `node tests/hole-setup.mjs`, `node tests/course-preparation.mjs`: retained mapping and course preparation checks.
+- SQL regression files in `tests/` use transactions and roll back their fixtures. They check the real database rules when explicitly executed against the 2027 project.
+
+The older large browser files are retained as historical test/fixture sources; their removed wizard/menu flows are not the current interface. The current workflow runs `simple-site.cjs` and the course logic checks.
+
+---
+
+## Implementation history
+
+The notes below record earlier implementation decisions. Where an old screen or journey differs from the current workflow above, follow the current workflow.
+
 # Barford Golf Society — 2027 starting point
 
 This is an isolated replica of the public pages in `Highstreetwebco/barford-golf-society` at commit `551434d40e5bf5d052d6fe30bf9fcb9648fffdd7`.

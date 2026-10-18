@@ -1,220 +1,158 @@
-import { mountPersonalResults } from "./league-view.js?v=2027-results-1";
-import { guestAction, shareInvite, mountGuestInvites } from "./guest-invites.js?v=2027-speed-1";
-import { mountEventOperations } from "./operations.js?v=2027-simple-events-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
-import { updateSlots, londonToday, mountBuggy } from "./event-experience.js?v=2027-simple-events-1";
-import { openRsvp, rsvpClosed, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-published-tees-1";
+import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-simple-1";
+import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-simple-1";
+
 const b = await window.barfordReady;
+const { escape: e, state } = b;
 const area = document.getElementById("nextEvent");
-const personal = document.getElementById("personalResults");
-function memberWelcome() {
-  if (!b.state.user) return;
-  document.body.classList.add("home-member");
-  const a = document.getElementById("homeAccount");
-  a.textContent = "My account";
-  a.href = "account.html";
-  document.querySelector(".home-hero h1").textContent = "Welcome back, " + (b.state.profile?.full_name?.split(" ")[0] || "golfer") + ".";
-  area.closest("section").after(personal);
-}
-memberWelcome();
-mountPersonalResults(personal, b);
-window.addEventListener("focus", () => mountPersonalResults(personal, b));
-setInterval(() => { if (!document.hidden) mountPersonalResults(personal, b); }, 30000);
+const gotoRsvp = document.getElementById("homeRsvp");
+const gotoHoles = document.getElementById("homeHoles");
 const requested = new URLSearchParams(location.search).get("event");
-const requestedId = requested && /^[1-9]\d*$/.test(requested) && Number.isSafeInteger(Number(requested)) ? Number(requested) : null;
-// Start independent requests together; guest access is checked before rendering.
-const guestHomePromise = b.state.user ? guestAction("mine").catch(() => null) : Promise.resolve(null);
-const requestedPromise = requestedId ? Promise.resolve(b.client.from("events").select("*").eq("id", requestedId).limit(1)) : null;
-const upcomingPromise = !requestedId ? Promise.resolve(b.client.from("events").select("*").gte("date", londonToday()).eq("cancelled", false).order("date").limit(1)) : null;
-const guestHome = await guestHomePromise;
-const guestNext = (guestHome?.bookings || []).find((x) => x.attending || x.reserve) || guestHome?.bookings?.[0];
-const unavailableRequest = requested !== null && (!requestedId || (guestHome?.category === "guest" && !(guestHome.bookings || []).some((x) => x.event_id === requestedId)));
-const eventRequest = requestedId
-  ? requestedPromise
-  : guestHome?.category === "guest" && guestNext
-    ? b.client.from("events").select("*").eq("id", guestNext.event_id).limit(1)
-    : upcomingPromise;
-const { data, error } = b.state.user && !guestHome ? { data: null, error: new Error("Account details unavailable") } : unavailableRequest || (guestHome?.category === "guest" && !guestNext && !requestedId) ? { data: [], error: null } : await eventRequest;
-if (error) area.innerHTML = b.empty("Unable to load the next event.", "Please try again shortly.");
-else if (!data?.length) area.innerHTML = b.empty(requested !== null ? "This event is unavailable." : guestHome?.category === "guest" ? "Your next invitation starts here." : "A new season is taking shape.", requested !== null ? "Choose another event from the Events page." : guestHome?.category === "guest" ? "Your invited rounds will appear here once you join them." : "The 2027 golf days will appear here as they’re announced.");
-else {
-  const ev = data[0];
-  if (requestedId) {
-    document.querySelector("#nextEvent").closest("section").querySelector(".eyebrow").textContent = "YOUR SELECTED EVENT";
-    area.closest("section").querySelector("h2").textContent = "Your event.";
-  }
-  area.classList.add("has-event");
-  area.innerHTML = `<div class="section-heading next-event-heading"><div><p class="eyebrow" data-event-date></p><h2 data-event-name></h2></div></div><p class="notice" data-withdrawal-notice hidden></p><div class="home-event-actions" data-home-actions></div><p class="home-invite-note muted" data-invite-note hidden></p><p role="status" data-home-status></p><div class="next-event-facts"><span><small data-time-label>FIRST TEE</small><strong data-event-time></strong></span><span class="home-availability"><small>LIVE AVAILABILITY</small><strong data-live-slots>Checking spaces…</strong><button type="button" class="home-players-toggle" aria-expanded="false" aria-controls="homePlayingList">See who’s playing <span aria-hidden="true">⌄</span></button></span><span><small>THE COURSE</small><strong data-event-course></strong></span></div><div id="homePlayingList" class="home-playing-list" hidden aria-live="polite"></div><a class="home-event-details" href="event.html?id=${ev.id}">View event details <span aria-hidden="true">→</span></a><div class="home-hole-action"></div><details class="home-invite-management" hidden><summary>Your guest invitations</summary><div data-home-invites></div></details><div class="home-member-grid"><section id="homeOperations" class="panel section"></section><section id="homeTeeGroup" class="panel section" ${b.state.user ? "" : "hidden"}></section></div><section id="homeBuggy" class="panel section" hidden></section>`;
-  function syncCover() {
-    const old = area.querySelector(".home-event-cover");
-    const url = b.safeUrl(ev.cover_url);
-    if (!url) { old?.remove(); return; }
-    if (old?.dataset.coverUrl === ev.cover_url) return;
-    old?.remove();
-    area.insertAdjacentHTML("afterbegin", `<img class="home-event-cover" data-cover-url="${b.escape(ev.cover_url)}" src="${url}" alt="" aria-hidden="true">`);
-    area.querySelector(".home-event-cover").onerror = (event) => event.currentTarget.remove();
-  }
-  syncCover();
-  const playingToggle = area.querySelector(".home-players-toggle");
-  const playingList = area.querySelector("#homePlayingList");
-  async function refreshPlayingList() {
-    if (playingList.hidden) return;
-    if (!b.state.user) {
-      playingList.innerHTML = '<p>Sign in to see who’s playing. <a href="account.html">Sign in</a></p>';
-      return;
-    }
-    const { data: bookings, error: playersError } = await b.client.from("rsvps")
-      .select("name,attending,reserve,guest_host_id")
-      .eq("event_id", ev.id)
-      .or("attending.eq.true,reserve.eq.true")
-      .order("requested_at");
-    if (playingList.hidden) return;
-    if (playersError) {
-      playingList.innerHTML = '<p>Player list could not load. Close and reopen to try again.</p>';
-      return;
-    }
-    const confirmed = (bookings || []).filter((p) => p.attending && !p.reserve);
-    const waiting = (bookings || []).filter((p) => p.reserve);
-    const names = (rows) => rows.map((p) => `<li>${b.escape(p.name)}${p.guest_host_id ? ' <small>(guest)</small>' : ""}</li>`).join("");
-    playingList.innerHTML = `<h3>${ev.event_type === "social" ? "Attending" : "Playing"} (${confirmed.length})</h3>${confirmed.length ? `<ul>${names(confirmed)}</ul>` : '<p>No one has confirmed yet.</p>'}${waiting.length ? `<h3>Waiting list (${waiting.length})</h3><ul>${names(waiting)}</ul>` : ""}`;
-  }
-  playingToggle.onclick = () => {
-    playingList.hidden = !playingList.hidden;
-    playingToggle.setAttribute("aria-expanded", String(!playingList.hidden));
-    if (!playingList.hidden) {
-      playingList.innerHTML = '<p>Loading players…</p>';
-      refreshPlayingList();
-    }
-  };
-  const actions = area.querySelector("[data-home-actions]");
-  const operationArea = document.getElementById("homeOperations");
-  const groupArea = document.getElementById("homeTeeGroup");
-  const buggyArea = document.getElementById("homeBuggy");
-  const inviteArea = area.querySelector("[data-home-invites]");
-  const inviteManagement = area.querySelector(".home-invite-management");
-  const options = { compact: true, showBookingLink: false, showInvites: false, showBrief: false };
-  let response = null;
-  let bookingRefresh = null;
-  let guestContext = guestHome;
-  let initialGuestContext = true;
-  let inviting = false;
-  let refreshing = false;
-  function updateFacts() {
-    area.querySelector("[data-event-date]").textContent = b.date(ev.date);
-    area.querySelector("[data-event-name]").textContent = ev.name;
-    area.querySelector("[data-event-time]").textContent = ev.first_time || "To be announced";
-    area.querySelector("[data-event-course]").textContent = ev.location || ev.course_name || ev.name;
-    area.querySelector("[data-time-label]").textContent = ev.event_type === "social" ? "START TIME" : "FIRST TEE";
-  }
-  function renderActions() {
-    const focusedAction = actions.contains(document.activeElement) ? (document.activeElement.hasAttribute("data-home-invite") ? "[data-home-invite]" : "[data-home-rsvp]") : null;
-    const closed = rsvpClosed(ev);
-    const published = teeTimesPublished(ev);
-    const withdrawal = area.querySelector("[data-withdrawal-notice]");
-    withdrawal.hidden = !published || closed; withdrawal.textContent = withdrawalNotice;
-    if (published && b.state.user) actions.after(groupArea);
-    const guestClosed = published || closed || (ev.rsvp_deadline && ev.rsvp_deadline < londonToday());
-    const canInvite = !!b.state.user && guestContext && guestContext.category !== "guest" && !guestClosed;
-    const note = area.querySelector("[data-invite-note]");
-    actions.innerHTML = `${closed ? `<span class="status-pill">${ev.cancelled ? "Event cancelled" : "Event complete"}</span>` : published ? `<button type="button" data-home-tees>Tee times</button>` : `<button type="button" data-home-rsvp>${!b.state.user ? "Sign in to RSVP" : response ? "Change RSVP" : "RSVP"}</button>`}${canInvite ? `<button type="button" class="secondary" data-home-invite ${ev.guest_price == null || inviting ? "disabled" : ""}>Invite a guest</button>` : ""}`;
-    note.hidden = !canInvite || ev.guest_price != null;
-    note.textContent = "The organiser needs to confirm the guest price before invitations can be sent.";
-    const teeButton = actions.querySelector("[data-home-tees]");
-    if (teeButton) teeButton.onclick = async () => {
-      if (!b.state.user && !(await b.requireMember())) return;
-      groupArea.hidden = false;
-      await mountMemberTees(groupArea, ev.id, { home: true });
-      groupArea.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    const rsvpButton = actions.querySelector("[data-home-rsvp]");
-    if (rsvpButton) rsvpButton.onclick = () => openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
-    const inviteButton = actions.querySelector("[data-home-invite]");
-    if (inviteButton) inviteButton.onclick = async () => {
-      if (inviting) return;
-      inviting = true;
-      inviteButton.disabled = true;
-      const status = area.querySelector("[data-home-status]");
-      status.textContent = "";
-      try {
-        const link = await guestAction("create", { event_id: ev.id });
-        shareInvite(ev, link.token, link.host_name);
-        await refreshInvites({ fresh: true });
-      } catch (error) { status.textContent = error.message || "Your invitation could not be created. Please try again."; }
-      finally { inviting = false; inviteButton.disabled = ev.guest_price == null; }
-    };
-    if (focusedAction) (actions.querySelector(focusedAction) || area.querySelector(".home-event-details"))?.focus({ preventScroll: true });
-  }
-  async function refreshInvites({ fresh = false } = {}) {
-    if (!b.state.user || guestContext?.category === "guest") { inviteManagement.hidden = true; return; }
-    if (inviteArea.contains(document.activeElement)) return;
-    if (fresh) guestContext = await guestAction("mine", { event_id: ev.id }).catch(() => guestContext);
-    await mountGuestInvites(inviteArea, ev, guestContext?.category, { showCreate: false, showManagement: true, data: guestContext });
-    inviteManagement.hidden = inviteArea.hidden || !inviteArea.querySelector("[data-invites]")?.childElementCount;
-  }
-  async function refreshBooking({ force = false, background = false } = {}) {
-    if (bookingRefresh) {
-      await bookingRefresh;
-      if (force) return refreshBooking({ force: true });
-      return;
-    }
-    const task = (async () => {
-      if (b.state.user) {
-        const guestsPromise = initialGuestContext ? Promise.resolve(guestContext) : guestAction("mine", { event_id: ev.id }).catch(() => null);
-        initialGuestContext = false;
-        const [own, guests] = await Promise.all([
-          b.client.from("rsvps").select("*").eq("event_id", ev.id).eq("user_id", b.state.user.id).maybeSingle(),
-          guestsPromise,
-        ]);
-        if (!own.error) response = own.data;
-        guestContext = guests;
-      }
-      if (background && document.querySelector("dialog[open]")) return;
-      renderActions();
-      groupArea.hidden = !b.state.user || ev.event_type === "social";
-      await Promise.all([
-        operationArea.contains(document.activeElement) ? Promise.resolve() : mountEventOperations(operationArea, ev, options),
-        refreshInvites(),
-        b.state.user && ev.event_type !== "social" ? mountMemberTees(groupArea, ev.id, { home: true }) : Promise.resolve().then(() => { groupArea.hidden = true; }),
-        b.state.user && ev.event_type !== "social" ? mountBuggy(buggyArea, ev).then(() => { buggyArea.hidden = !buggyArea.innerHTML; }) : Promise.resolve().then(() => { buggyArea.hidden = true; }),
-      ]);
-    })();
-    bookingRefresh = task;
-    try { await task; }
-    finally { if (bookingRefresh === task) bookingRefresh = null; }
-  }
-  const holeArea = area.querySelector(".home-hole-action");
-  function refreshHoleAction() {
-    holeArea.hidden = !b.state.user || ev.cancelled || ev.event_type === "social" || ev.date !== londonToday();
-    if (holeArea.hidden || holeArea.childElementCount) return;
-    holeArea.innerHTML = '<div><strong>On the course today</strong><p>Choose your hole for the course map and GPS distances.</p></div><button type="button" data-view-hole>View hole</button>';
-    holeArea.querySelector("button").onclick = async (event) => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      try { const { openHolePicker } = await import("./hole-view.js?v=2027-par-camera-1"); await openHolePicker(ev, b); }
-      catch (error) { b.toast(error.message); }
-      finally { button.disabled = false; }
-    };
-  }
-  updateFacts();
-  renderActions();
-  refreshHoleAction();
-  const initialRefresh = Promise.all([refreshBooking(), updateSlots(ev, area)]);
-  if (location.hash === "#rsvp") await openRsvp(ev, b, { onSaved: async () => { memberWelcome(); await initialRefresh; await refreshBooking({ force: true }); refreshHoleAction(); await Promise.all([updateSlots(ev, area), refreshPlayingList()]); } });
-  await initialRefresh;
-  async function refreshEvent() {
-    if (document.hidden || refreshing || document.querySelector("dialog[open]")) return;
-    refreshing = true;
-    try {
-      const current = await b.client.from("events").select("*").eq("id", ev.id).single();
-      if (document.querySelector("dialog[open]")) return;
-      if (!current.error && current.data) Object.assign(ev, current.data);
-      syncCover();
-      updateFacts();
-      refreshHoleAction();
-      await Promise.all([updateSlots(ev, area), refreshBooking({ background: true }), refreshPlayingList()]);
-    } finally { refreshing = false; }
-  }
-  setInterval(refreshEvent, 25000);
-  window.addEventListener("focus", refreshEvent);
+document.getElementById("nextEventTitle").textContent = requested !== null ? "Your event" : "Next event";
+const requestedId = /^[1-9]\d*$/.test(requested || "") && Number.isSafeInteger(Number(requested)) ? Number(requested) : null;
+let currentEvent = null, holeEvent = null, response = null, responseError = false;
+let contentKey = "", loading = null;
+
+function welcome() {
+  const name = state.profile?.full_name?.trim().split(/\s+/)[0];
+  document.getElementById("homeWelcome").textContent = state.user
+    ? `Welcome back${name ? ", " + name : ""}. Everything you need for your next golf day.`
+    : "RSVP, check the leaderboard and open your course hole view.";
 }
+function resetActions() {
+  gotoRsvp.href = "#nextEvent";
+  gotoRsvp.querySelector("strong").textContent = "RSVP";
+  gotoRsvp.querySelector("small").textContent = "Book your place";
+  gotoHoles.href = "events.html";
+}
+function syncActions() {
+  resetActions();
+  if (holeEvent) gotoHoles.href = `event.html?id=${holeEvent.id}#hole-view`;
+  if (!currentEvent) return;
+  const published = teeTimesPublished(currentEvent);
+  if (rsvpClosed(currentEvent)) {
+    gotoRsvp.href = `event.html?id=${currentEvent.id}`;
+    gotoRsvp.querySelector("strong").textContent = "Event details";
+    gotoRsvp.querySelector("small").textContent = currentEvent.cancelled ? "Event cancelled" : "Event finished";
+  } else if (published) {
+    gotoRsvp.href = `event.html?id=${currentEvent.id}#tees`;
+    gotoRsvp.querySelector("strong").textContent = "Tee times";
+    gotoRsvp.querySelector("small").textContent = "See your playing group";
+  } else if (response && !responseError) {
+    gotoRsvp.querySelector("strong").textContent = "Your RSVP";
+    gotoRsvp.querySelector("small").textContent = rsvpStatus(currentEvent, response).label;
+  }
+}
+async function saveRsvp() {
+  if (!currentEvent) { area.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  if (responseError) { await load({ force: true }).catch(showError); return; }
+  const before = state.user?.id;
+  await openRsvp(currentEvent, b, { onSaved: () => load({ force: true }) });
+  if (state.user?.id !== before) await load({ force: true });
+}
+gotoRsvp.onclick = (event) => {
+  if (!currentEvent || teeTimesPublished(currentEvent) || rsvpClosed(currentEvent)) return;
+  event.preventDefault();
+  saveRsvp().catch(() => b.toast("Your RSVP could not open. Please try again."));
+};
+gotoHoles.onclick = async (event) => {
+  if (!holeEvent) return;
+  event.preventDefault();
+  const before = state.user?.id;
+  await openCourseHoles(holeEvent, b, gotoHoles);
+  if (state.user?.id !== before) await load({ force: true }).catch(() => {});
+};
+
+function bookingHTML(ev) {
+  if (ev.cancelled) return '<p class="notice">This event has been cancelled.</p>';
+  if (rsvpClosed(ev)) return '<p class="simple-booking neutral">This event has finished.</p>';
+  if (teeTimesPublished(ev)) {
+    return `<p class="notice">${withdrawalNotice}</p><a class="button" href="event.html?id=${ev.id}#tees">View tee times</a>`;
+  }
+  if (responseError) return '<p class="notice">Your RSVP status could not load.</p><button type="button" class="secondary" data-retry-booking>Check your RSVP</button>';
+  const status = rsvpStatus(ev, response);
+  const locked = rsvpChangeLocked(ev, response, state.admin);
+  return `${state.user ? `<p class="simple-booking ${status.tone}"><span class="booking-dot" aria-hidden="true"></span><strong>${e(status.label)}</strong></p>` : '<p class="muted">Sign in to save your place under your own name.</p>'}
+    ${locked ? '<p class="muted">Online changes are now closed. Contact the committee if you need to change your RSVP.</p>' : `<button type="button" data-home-rsvp>${!state.user ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP"}</button>`}
+    ${response ? '<p class="simple-booking-note">Your response is saved. You only need to change it if your plans change.</p>' : ""}`;
+}
+
+async function render(ev, count) {
+  welcome();
+  syncActions();
+  if (!ev) {
+    area.innerHTML = `<div class="simple-empty"><h3>${requested !== null ? "Event unavailable" : "The 2027 dates are on their way"}</h3><p>${requested !== null ? "Choose another event to see the latest details." : "Your next golf day will appear here as soon as the committee adds it."}</p><a class="button secondary" href="events.html">View all events</a></div>`;
+    return;
+  }
+  const course = ev.course_name || ev.location || "";
+  const fee = ev.member_price != null ? b.money(ev.member_price) : ev.price && ev.price !== "null" ? String(ev.price) : "To be confirmed";
+  const image = b.safeUrl(ev.cover_url);
+  const kind = ev.event_type === "social" ? "Society event" : ev.round_number ? `Round ${ev.round_number} of 7` : "Society golf";
+  area.innerHTML = `<div class="simple-next-event">
+    <div class="simple-next-copy"><p class="eyebrow">${e(kind)}</p><h2>${e(ev.name)}</h2>${course && course !== ev.name ? `<p class="muted">${e(course)}</p>` : ""}
+      <dl class="simple-event-facts"><div><dt>Date</dt><dd>${e(b.date(ev.date))}</dd></div><div><dt>${ev.event_type === "social" ? "Start time" : "First tee"}</dt><dd>${e(ev.first_time || "To be confirmed")}</dd></div><div><dt>${ev.member_price != null ? "Member price" : "Price"}</dt><dd>${e(fee)}</dd></div></dl>
+    </div>${image ? `<div class="simple-next-image"><img src="${image}" alt="" loading="lazy">${ev.cover_credit ? `<small>${e(ev.cover_credit)}</small>` : ""}</div>` : ""}
+    <div class="simple-next-booking">${bookingHTML(ev)}</div>
+    <div class="simple-next-footer"><span class="muted">${e(slots(ev, count))}</span><a href="event.html?id=${ev.id}">Event details &amp; players <span aria-hidden="true">→</span></a></div>
+  </div>${teeTimesPublished(ev) && state.user && !ev.cancelled ? '<section id="homeTeeGroup" class="simple-home-tees" aria-label="Your tee group">Loading tee times…</section>' : ""}`;
+  const img = area.querySelector(".simple-next-image img");
+  if (img) img.onerror = () => img.parentElement.remove();
+  area.querySelector("[data-home-rsvp]")?.addEventListener("click", () => saveRsvp().catch(() => b.toast("Your RSVP could not open. Please try again.")));
+  area.querySelector("[data-retry-booking]")?.addEventListener("click", () => load({ force: true }).catch(showError));
+  const tees = document.getElementById("homeTeeGroup");
+  if (tees) await mountMemberTees(tees, ev.id, { home: true });
+}
+
+async function load({ force = false } = {}) {
+  if (loading) { await loading; if (force) return load({ force: true }); return; }
+  loading = (async () => {
+    const [eventResult, countResult] = await Promise.all([
+      b.client.from("events").select("*").order("date"),
+      b.client.rpc("event_counts"),
+    ]);
+    if (eventResult.error) throw eventResult.error;
+    const events = eventResult.data || [];
+    currentEvent = requested !== null
+      ? events.find((ev) => Number(ev.id) === requestedId) || null
+      : events.find((ev) => !ev.cancelled && ev.date >= londonToday()) || null;
+    const golf = events.filter((ev) => !ev.cancelled && ev.event_type !== "social");
+    holeEvent = requested !== null && !currentEvent ? null
+      : currentEvent && currentEvent.event_type !== "social" && !currentEvent.cancelled
+        ? currentEvent : golf.find((ev) => ev.date >= londonToday()) || golf.at(-1) || null;
+    response = null;
+    responseError = false;
+    if (state.user && currentEvent) {
+      const own = await b.client.from("rsvps").select("attending,reserve,buggy").eq("event_id", currentEvent.id).eq("user_id", state.user.id).maybeSingle();
+      responseError = !!own.error;
+      if (!own.error) response = own.data;
+    }
+    const count = countResult.error ? null : (countResult.data || []).find((row) => Number(row.event_id) === Number(currentEvent?.id))?.playing || 0;
+    const key = JSON.stringify([currentEvent, holeEvent?.id, response, responseError, count, state.user?.id]);
+    welcome();
+    syncActions();
+    if (force || key !== contentKey) {
+      if (!force && document.querySelector("dialog[open]")) return;
+      const focused = area.contains(document.activeElement) ? document.activeElement?.hasAttribute("data-home-rsvp") : false;
+      await render(currentEvent, count);
+      contentKey = key;
+      if (focused && !document.querySelector("dialog[open]")) area.querySelector("[data-home-rsvp]")?.focus({ preventScroll: true });
+    }
+  })();
+  try { await loading; }
+  finally { loading = null; }
+}
+
+function showError() {
+  area.innerHTML = '<div class="simple-empty"><h3>Your next event could not load</h3><p>Check your connection and try again.</p><button type="button" data-retry>Try again</button></div>';
+  area.querySelector("[data-retry]").onclick = () => load({ force: true }).catch(showError);
+}
+welcome();
+try {
+  await load();
+  if (currentEvent && location.hash === "#rsvp" && !teeTimesPublished(currentEvent)) await saveRsvp();
+  if (currentEvent && location.hash === "#tees") area.scrollIntoView({ block: "start" });
+} catch { showError(); }
+const refresh = () => { if (!document.hidden && !document.querySelector("dialog[open]")) load().catch(() => {}); };
+window.addEventListener("focus", refresh);
+setInterval(refresh, 60000);
 window.addEventListener("barford-signout", () => location.reload());

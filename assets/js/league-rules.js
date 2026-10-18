@@ -37,7 +37,7 @@ export function adjustment(points, average, handicap) {
                 : 1.25),
       ),
     ),
-  );
+  ) || 0;
 }
 export function roundAverage(entries) {
   const points = entries

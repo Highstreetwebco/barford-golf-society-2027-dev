@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <meta name="theme-color" content="#153e75" />
+    <meta name="theme-color" content="#203b4d" />
     <meta
       http-equiv="Content-Security-Policy"
       content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co https://*.googleapis.com https://*.gstatic.com https://*.google.com;"
@@ -18,12 +18,11 @@
     <link rel="apple-touch-icon" href="icon-logo.png" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
-    <link rel="stylesheet" href="assets/css/home-booking.css?v=2027-player-list-1" />
-    <link rel="stylesheet" href="assets/css/holes.css?v=2027-hole-ux-1" media="print" onload="this.media='all'" />
-    <script src="assets/js/baseline.js?v=2027-par-camera-1" defer></script>
-    <script type="module" src="assets/js/home.js?v=2027-published-tees-1"></script>
+    <link rel="stylesheet" href="assets/css/simple.css?v=2027-simple-1" />
+    <script src="assets/js/baseline.js?v=2027-simple-1" defer></script>
+    <script type="module" src="assets/js/home.js?v=2027-simple-1"></script>
   </head>
-  <body class="page-index">
+  <body class="page-index simple-site">
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
@@ -49,15 +48,7 @@
         </button>
         <nav class="site-nav" id="siteNav" aria-label="Main navigation">
           <a href="index.html" aria-current="page">Home</a
-          ><a href="events.html">Events</a><a href="scores.html">Scores</a>
-          <details class="more-nav">
-            <summary>More</summary>
-            <div>
-              <a href="worldevents.html">World events</a
-              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
-              ><a href="about.html">About us</a>
-            </div>
-          </details>
+          ><a href="events.html">Events</a><a href="scores.html">Leaderboard</a>
           <a class="account-link" href="account.html" id="accountNav"
             >Sign in</a
           >
@@ -66,109 +57,29 @@
       </div>
     </header>
     <main id="main" class="container">
-      <section class="home-hero">
-        <div class="hero-copy">
-          <p class="eyebrow">
-            <span class="season-dot"></span> BARFORD GOLF SOCIETY · 2027
-          </p>
-          <h1>A new season.<br /><em>More to play for.</em></h1>
-          <p>Great courses. Good company. A season to look forward to.</p>
-          <div class="actions">
-            <a class="button" href="signup.html" id="homeAccount"
-              >Create an account <span aria-hidden="true">↗</span></a
-            ><a class="button secondary" href="events.html"
-              >View events <span aria-hidden="true">→</span></a
-            >
-          </div>
-          <div class="season-chips">
-            <span>7 rounds</span><span>Best 5 count</span
-            ><span>One society.</span>
-          </div>
-        </div>
-        <div
-          class="season-panel"
-          aria-label="The 2027 season. Seven rounds. Your best five count."
-        >
-          <div class="season-panel-label">
-            <span>BARFORD GOLF SOCIETY</span><span>2027</span>
-          </div>
-          <img
-            class="season-logo"
-            src="icon-logo.png"
-            alt="Barford Golf Society"
-            width="280"
-            height="280"
-            fetchpriority="high"
-          />
-          <div class="season-panel-footer">
-            <span><b>07</b> ROUNDS</span><span><b>05</b> TO COUNT</span>
-          </div>
-        </div>
+      <section class="simple-home-heading" aria-labelledby="homeTitle">
+        <div><p class="eyebrow">BARFORD GOLF SOCIETY · 2027</p><h1 id="homeTitle">Your next round starts here.</h1><p id="homeWelcome">RSVP, check the leaderboard and open your course hole view.</p></div>
+        <a class="button simple-admin-action" href="admin.html?tab=scoring" data-admin hidden>Enter scores <span aria-hidden="true">→</span></a>
       </section>
-      <section
-        id="personalResults"
-        class="panel section"
-        aria-live="polite"
-        hidden
-      ></section>
-      <section class="section">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">YOUR NEXT EVENT</p>
-            <h2>Next on the tee.</h2>
-          </div>
-          <a href="events.html">All events <span aria-hidden="true">→</span></a>
-        </div>
-        <div id="nextEvent" class="panel" aria-live="polite">
-          Loading the next event…
-        </div>
+      <nav class="simple-go-grid" aria-label="Quick actions">
+        <a id="homeRsvp" class="simple-go-card is-primary" href="#nextEvent"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-12 5 3 3 5-5"/></svg></span><span><strong>RSVP</strong><small>Book your place</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
+        <a class="simple-go-card" href="scores.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21v-8h5v8m1 0V5h5v16m1 0v-11h5v11M2 21h21"/></svg></span><span><strong>Leaderboard</strong><small>Best 5 rounds count</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
+        <a id="homeHoles" class="simple-go-card" href="events.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 21V3l12 4-12 5M3 21h9"/></svg></span><span><strong>Course hole view</strong><small>Maps &amp; distances</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
+        <a class="simple-go-card" href="events.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg></span><span><strong>All events</strong><small>Dates &amp; details</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
+      </nav>
+      <section class="simple-next-section" aria-labelledby="nextEventTitle">
+        <div class="section-heading"><h2 id="nextEventTitle">Next event</h2><a href="events.html">All events <span aria-hidden="true">→</span></a></div>
+        <div id="nextEvent" class="panel simple-next-panel" aria-live="polite"><p class="muted">Loading your next event…</p></div>
       </section>
-
-      <section class="quick-links" aria-label="Explore the society">
-        <a href="scores.html"
-          ><span class="tile-tag">THE LEADERBOARD</span>
-          <h3>Season standings</h3>
-          <p>Follow the leaderboard and your progress.</p>
-          <span class="arrow" aria-hidden="true">↗</span></a
-        ><a href="gallery.html"
-          ><span class="tile-tag">THE GALLERY</span>
-          <h3>On the course</h3>
-          <p>Share photos from our days together.</p>
-          <span class="arrow" aria-hidden="true">↗</span></a
-        ><a href="worldevents.html"
-          ><span class="tile-tag">SOCIETY TRIPS</span>
-          <h3>Further afield</h3>
-          <p>Explore trips and register your interest.</p>
-          <span class="arrow" aria-hidden="true">↗</span></a
-        >
-      </section>
-      <details class="panel section install-help">
-        <summary>Add Barford to your phone</summary>
-        <p>
-          Open this website on your phone. It does not need an App Store
-          download.
-        </p>
-        <p>
-          <strong>iPhone:</strong> open in Safari, tap Share, then Add to Home
-          Screen.
-        </p>
-        <p>
-          <strong>Android:</strong> open in Chrome, open the menu, then Add to
-          Home screen or Install app.
-        </p>
-        <p>
-          Sign in once on your own device. Your account stays signed in until
-          you sign out or clear your browser data.
-        </p>
-      </details>
+      <p class="simple-season-note">7 rounds. Your best 5 scores count towards the Order of Merit.</p>
     </main>
     <footer class="site-footer">
       <div>
         <a class="footer-brand" href="index.html">Barford Golf Society</a
-        ><span>2027 season · Development site</span>
+        ><span>2027 season · Best 5 of 7 rounds</span>
       </div>
       <div class="footer-actions">
-        <a href="admin.html" data-admin hidden>Organiser tools</a
+        <a href="admin.html" data-admin hidden>Admin</a
         ><button id="themeToggle" class="text-button" aria-pressed="false">
           Dark mode</button
         ><button id="installButton" class="text-button" hidden>
@@ -187,10 +98,10 @@
           <rect x="3" y="5" width="18" height="16" rx="3" />
           <path d="M7 3v4m10-4v4M3 11h18m-13 5h3" /></svg
         ><span>Events</span></a
-      ><a href="scores.html" aria-label="Scores tab"
+      ><a href="scores.html" aria-label="Leaderboard tab"
         ><svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 20v-6h5v6m1 0V5h5v15m1 0v-10h5v10M2 21h21" /></svg
-        ><span>Scores</span></a
+        ><span>Leaderboard</span></a
       ><a href="account.html" aria-label="Account tab"
         ><svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="8" r="4" />

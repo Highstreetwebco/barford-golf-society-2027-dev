@@ -71,8 +71,9 @@ window.barfordReady = (async () => {
   const nextPath = () => {
     const value =
       new URLSearchParams(location.search).get("next") || "index.html";
-    const allowed = /^(index|events|scores|gallery|shop|worldevents|admin|account|event)\.html(?:\?id=\d+)?(?:#[\w-]+)?$/.test(value)
-      || /^index\.html\?event=[1-9]\d*(?:#[\w-]+)?$/.test(value);
+    const allowed = /^(index|events|scores|admin|account|event)\.html(?:\?id=[1-9]\d*)?(?:#[\w-]+)?$/.test(value)
+      || /^index\.html\?event=[1-9]\d*(?:#[\w-]+)?$/.test(value)
+      || /^admin\.html\?tab=(details|responses|tees|scoring|accounts|handicaps|scorecards)(?:#[\w-]+)?$/.test(value);
     return allowed
       ? value
       : "events.html";
@@ -161,7 +162,7 @@ window.barfordReady = (async () => {
     el.setAttribute("aria-labelledby", "signInTitle");
     const current =
       location.pathname.split("/").pop() + location.search + location.hash;
-    el.innerHTML = `<form class="form-stack"><h2 id="signInTitle">Member sign in</h2><p class="muted">Sign in to save your response.</p><label for="dialogEmail">Username (your name)</label><input id="dialogEmail" name="email" type="text" autocomplete="username" required><label for="dialogPassword">Password</label><input id="dialogPassword" name="password" type="password" autocomplete="current-password" required><p class="form-status" role="status"></p><div class="dialog-actions"><button>Sign in</button><button type="button" class="secondary" data-cancel>Cancel</button></div></form><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(current)}">Create an account</a><a href="account.html?mode=reset">Forgot password?</a></div>`;
+    el.innerHTML = `<form class="form-stack"><h2 id="signInTitle">Member sign in</h2><p class="muted">Use your usual account. We’ll remember you on this device.</p><label for="dialogEmail">Username (your name)</label><input id="dialogEmail" name="email" type="text" autocomplete="username" required><label for="dialogPassword">Password</label><input id="dialogPassword" name="password" type="password" autocomplete="current-password" required><p class="form-status" role="status"></p><div class="dialog-actions"><button>Sign in</button><button type="button" class="secondary" data-cancel>Cancel</button></div></form><div class="dialog-links"><a href="signup.html?next=${encodeURIComponent(current)}">Create an account</a><a href="account.html?mode=reset">Forgot password?</a></div>`;
     document.body.append(el);
     pendingSignIn = new Promise((resolve) => {
       const finish = (value) => {
@@ -299,7 +300,8 @@ window.barfordReady = (async () => {
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     installPrompt = e;
-    document.getElementById("installButton").hidden = false;
+    const installButton = document.getElementById("installButton");
+    if (installButton) installButton.hidden = false;
   });
   document
     .getElementById("installButton")

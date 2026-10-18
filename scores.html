@@ -18,10 +18,12 @@
     <link rel="apple-touch-icon" href="icon-logo.png" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
-    <script src="assets/js/baseline.js?v=2027-speed-1" defer></script>
-    <script type="module" src="assets/js/scores.js?v=2027-results-1"></script>
+    <link rel="stylesheet" href="assets/css/simple.css?v=2027-simple-1" />
+    <link rel="stylesheet" href="assets/css/simple-scores.css?v=2027-simple-1" />
+    <script src="assets/js/baseline.js?v=2027-simple-1" defer></script>
+    <script type="module" src="assets/js/scores.js?v=2027-simple-1"></script>
   </head>
-  <body class="page-scores">
+  <body class="simple-site page-scores">
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
@@ -47,15 +49,7 @@
         </button>
         <nav class="site-nav" id="siteNav" aria-label="Main navigation">
           <a href="index.html">Home</a><a href="events.html">Events</a
-          ><a href="scores.html" aria-current="page">Scores</a>
-          <details class="more-nav">
-            <summary>More</summary>
-            <div>
-              <a href="worldevents.html">World events</a
-              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
-              ><a href="about.html">About us</a>
-            </div>
-          </details>
+          ><a href="scores.html" aria-current="page">Leaderboard</a>
           <a class="account-link" href="account.html" id="accountNav"
             >Sign in</a
           >
@@ -64,28 +58,21 @@
       </div>
     </header>
     <main id="main" class="container">
-      <div class="page-heading">
-        <p class="eyebrow">THE SEASON SO FAR</p>
-        <h1>The leaderboard.</h1>
-        <p class="lede">
-          Seven rounds. Your best five scores count towards the season total.
-        </p>
+      <div class="page-heading score-page-heading">
+        <div><p class="eyebrow">2027 SEASON</p><h1>Leaderboard</h1>
+        <p class="lede">Seven rounds. Your best five scores count.</p></div>
+        <div class="actions"><a class="button" href="admin.html?tab=scoring" data-admin hidden>Enter scores</a><button id="refreshLeague" class="secondary">Refresh</button></div>
       </div>
-      <div class="toolbar">
-        <button id="refreshLeague" class="secondary">Refresh leaderboard</button
-        ><a class="button" href="admin.html?tab=scoring" data-admin hidden
-          >Enter event scores</a
-        >
-      </div>
-      <p id="leagueVisibility" class="notice"></p>
-      <section class="panel">
+      <p id="leagueVisibility" class="notice" role="status">Loading the season…</p>
+      <section class="panel leaderboard-panel" aria-labelledby="standingsTitle">
+        <div class="leaderboard-heading"><h2 id="standingsTitle">Order of Merit</h2><p id="standingsStatus">Published results</p></div>
         <div id="leagueBoard" aria-live="polite">Loading scores…</div>
-        <div class="round-selector">
-          <label for="leagueRound">Choose round</label
-          ><select id="leagueRound"></select>
-        </div>
-        <div id="roundResults"></div>
       </section>
+      <details id="roundDetails" class="panel section round-details" hidden>
+        <summary>Scores and handicaps by round</summary>
+        <div class="round-selector"><label for="leagueRound">Choose a round</label><select id="leagueRound"></select></div>
+        <div id="roundResults" aria-live="polite"></div>
+      </details>
       <div id="leagueRules"></div>
     </main>
     <footer class="site-footer">
@@ -94,7 +81,7 @@
         ><span>2027 season · Development site</span>
       </div>
       <div class="footer-actions">
-        <a href="admin.html" data-admin hidden>Organiser tools</a
+        <a href="admin.html" data-admin hidden>Admin</a
         ><button id="themeToggle" class="text-button" aria-pressed="false">
           Dark mode</button
         ><button id="installButton" class="text-button" hidden>
@@ -113,10 +100,10 @@
           <rect x="3" y="5" width="18" height="16" rx="3" />
           <path d="M7 3v4m10-4v4M3 11h18m-13 5h3" /></svg
         ><span>Events</span></a
-      ><a href="scores.html" aria-current="page" aria-label="Scores tab"
+      ><a href="scores.html" aria-current="page" aria-label="Leaderboard tab"
         ><svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 20v-6h5v6m1 0V5h5v15m1 0v-10h5v10M2 21h21" /></svg
-        ><span>Scores</span></a
+        ><span>Leaderboard</span></a
       ><a href="account.html" aria-label="Account tab"
         ><svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="8" r="4" />

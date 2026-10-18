@@ -1,7 +1,27 @@
 export function rankPlayers(data, through = 7) {
-  const rounds = data.rounds.filter(
-    (r) => r.round <= through && r.round <= data.visible_rounds,
-  );
+  if (!data || !Array.isArray(data.rounds) || !Array.isArray(data.players))
+    throw new Error("The score data is incomplete. Please refresh the leaderboard.");
+  // Only published, visible rounds may contribute to any displayed statistic.
+  // A missing visibility limit fails closed to the member view.
+  const visible = Number.isInteger(data.visible_rounds)
+    ? Math.max(0, Math.min(7, data.visible_rounds)) : 5;
+  const cutoff = Math.min(visible, Number.isInteger(through) ? through : 5);
+  const rounds = data.rounds.filter((r) =>
+    Number.isInteger(r.round) && r.round >= 1 && r.round <= cutoff,
+  ).sort((a, b) => a.round - b.round);
+  if (new Set(rounds.map((r) => r.round)).size !== rounds.length ||
+      new Set(data.players.map((p) => p.id)).size !== data.players.length)
+    throw new Error("Duplicate score records were found. Please ask an admin to check this round.");
+  for (const round of rounds) {
+    if (!Array.isArray(round.results) ||
+        new Set(round.results.map((s) => s.user_id)).size !== round.results.length)
+      throw new Error("A round contains duplicate or incomplete results. Please ask an admin to check it.");
+    for (const result of round.results) {
+      if (result.points != null &&
+          (!Number.isInteger(result.points) || result.points < 0 || result.points > 108))
+        throw new Error("A round contains an invalid score. Please ask an admin to check it.");
+    }
+  }
   const list = data.players
     .map((p) => {
       const scores = rounds.flatMap((r) =>
@@ -9,18 +29,17 @@ export function rankPlayers(data, through = 7) {
           .filter((s) => s.user_id === p.id)
           .map((s) => ({ ...s, round: r.round })),
       );
-      const points = scores
-        .filter((s) => s.points !== null)
-        .map((s) => Number(s.points));
+      const played = scores.filter((s) => s.points != null);
+      const best = [...played].sort((a, b) => b.points - a.points || a.round - b.round).slice(0, 5);
+      const countedRounds = new Set(best.map((s) => s.round));
       return {
         ...p,
-        scores,
-        total: points
-          .sort((a, b) => b - a)
-          .slice(0, 5)
-          .reduce((a, b) => a + b, 0),
-        wins: scores.filter((s) => s.winner).length,
-        played: points.length,
+        scores: scores.map((s) => ({ ...s, counted: s.points != null && countedRounds.has(s.round) })),
+        total: best.reduce((sum, s) => sum + s.points, 0),
+        wins: played.filter((s) => s.winner === true).length,
+        played: played.length,
+        counted: best.map((s) => s.points),
+        dropped: played.filter((s) => !countedRounds.has(s.round)).map((s) => s.points),
       };
     })
     .sort(

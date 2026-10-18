@@ -1,311 +1,110 @@
 <!doctype html>
 <html lang="en-GB">
   <head>
-    <link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin />
-    <link rel="preload" as="script" href="assets/vendor/supabase-2.116.0.js" />
-
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <meta name="theme-color" content="#153e75" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co https://*.googleapis.com https://*.gstatic.com https://*.google.com;"
-    />
-    <title>Organiser tools | Barford Golf Society</title>
+    <meta name="theme-color" content="#192b36" />
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://xspzmthygrajzktydvvj.supabase.co wss://xspzmthygrajzktydvvj.supabase.co https://*.googleapis.com https://*.gstatic.com https://*.google.com;" />
+    <title>Admin | Barford Golf Society</title>
+    <link rel="preconnect" href="https://xspzmthygrajzktydvvj.supabase.co" crossorigin />
+    <link rel="preload" as="script" href="assets/vendor/supabase-2.116.0.js" />
     <link rel="icon" href="icon-logo.png" />
-    <link rel="manifest" href="manifest.json?v=2027-results-1" />
+    <link rel="manifest" href="manifest.json?v=2027-simple-1" />
     <link rel="apple-touch-icon" href="icon-logo.png" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
+    <link rel="stylesheet" href="assets/css/simple.css?v=2027-simple-1" />
+    <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-simple-1" />
     <link rel="stylesheet" href="assets/css/holes.css?v=2027-hole-ux-1" media="print" onload="this.media='all'" />
-    <script src="assets/js/baseline.js?v=2027-speed-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-map-format-3"></script>
+    <script src="assets/js/baseline.js?v=2027-simple-1" defer></script>
+    <script type="module" src="assets/js/admin.js?v=2027-simple-1"></script>
   </head>
-  <body class="page-admin">
+  <body class="page-admin simple-site">
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="header-inner">
-        <a
-          href="index.html"
-          class="brand"
-          aria-label="Barford Golf Society home"
-          ><img
-            class="brand-icon"
-            src="icon-logo.png"
-            alt="Barford Golf Society logo"
-            width="70"
-            height="70"
-          /><span>Barford<small>GOLF SOCIETY</small></span
-          ><span class="brand-year">2027</span></a
-        ><button
-          class="menu-toggle secondary"
-          id="menuToggle"
-          aria-expanded="false"
-          aria-controls="siteNav"
-        >
-          Menu
-        </button>
+        <a href="index.html" class="brand" aria-label="Barford Golf Society home"><img class="brand-icon" src="icon-logo.png" alt="Barford Golf Society logo" width="70" height="70" /><span>Barford<small>GOLF SOCIETY</small></span><span class="brand-year">2027</span></a>
+        <button class="menu-toggle secondary" id="menuToggle" aria-expanded="false" aria-controls="siteNav">Menu</button>
         <nav class="site-nav" id="siteNav" aria-label="Main navigation">
-          <a href="index.html">Home</a><a href="events.html">Events</a
-          ><a href="scores.html">Scores</a>
-          <details class="more-nav">
-            <summary>More</summary>
-            <div>
-              <a href="worldevents.html">World events</a
-              ><a href="shop.html">Shop</a><a href="gallery.html">Gallery</a
-              ><a href="about.html">About us</a>
-            </div>
-          </details>
-          <a class="account-link" href="account.html" id="accountNav"
-            >Sign in</a
-          >
-          <a href="admin.html" aria-current="page" data-admin hidden>Admin</a>
+          <a href="index.html">Home</a><a href="events.html">Events</a><a href="scores.html">Leaderboard</a><a class="account-link" href="account.html" id="accountNav">Sign in</a><a href="admin.html" aria-current="page" data-admin hidden>Admin</a>
         </nav>
       </div>
     </header>
     <main id="main" class="container">
       <div class="page-heading">
-        <p class="eyebrow">ORGANISER AREA</p>
-        <h1>Society administration.</h1>
-        <p class="lede">
-          Manage the season, member accounts, events and scorecards.
-        </p>
+        <p class="eyebrow">2027 SEASON</p><h1>Admin.</h1>
+        <p class="lede">Choose an event. Everything you need is below.</p>
       </div>
-      <div id="adminGate" class="panel">Checking organiser access…</div>
+      <div id="adminGate" class="panel" role="status">Checking admin access…</div>
       <div id="adminContent" hidden>
-        <div class="toolbar" id="eventToolbar" hidden>
-          <label for="adminEvent">Choose an event</label
-          ><select id="adminEvent">
-            <option value="">New event</option></select
-          ><a class="button secondary" href="events.html">View member page</a>
+        <div class="panel admin-event-bar" id="eventToolbar">
+          <label for="adminEvent">Working on<select id="adminEvent"><option value="">New event</option></select></label>
+          <div class="actions"><button id="newEvent" type="button" class="secondary">New event</button><a class="button secondary" id="viewAdminEvent" href="events.html">View event</a></div>
+          <p id="adminEventSummary" class="muted full" role="status"></p>
         </div>
-        <div class="segmented admin-tabs">
-          <button data-tab="accounts" class="active">Accounts</button
-          ><button data-tab="details">Event details</button
-          ><button data-tab="responses">RSVPs</button
-          ><button data-tab="tees">Tee groups</button
-          ><button data-tab="handicaps">Starting handicaps</button
-          ><button data-tab="scoring">Enter scores</button
-          ><button data-tab="scorecards">Setup next round score cards</button>
+        <div class="admin-tabs" role="tablist" aria-label="Admin tasks">
+          <button id="tabDetails" data-tab="details" role="tab" aria-controls="adminDetails" aria-selected="true" class="active">Event details</button>
+          <button id="tabResponses" data-tab="responses" role="tab" aria-controls="adminResponses" aria-selected="false" tabindex="-1">RSVPs</button>
+          <button id="tabTees" data-tab="tees" role="tab" aria-controls="adminTees" aria-selected="false" tabindex="-1">Tee times</button>
+          <button id="tabScoring" data-tab="scoring" role="tab" aria-controls="adminScoring" aria-selected="false" tabindex="-1">Scores</button>
+          <button id="tabAccounts" data-tab="accounts" role="tab" aria-controls="adminAccounts" aria-selected="false" tabindex="-1">Members</button>
         </div>
-        <section id="adminHandicaps" class="panel" hidden></section>
-        <section id="adminScoring" class="panel" hidden></section>
-        <section id="adminScorecards" class="panel" hidden></section>
-        <section id="adminAccounts" class="panel">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">MEMBER MANAGEMENT</p>
-              <h2>All accounts</h2>
-              <p id="accountSummary" class="muted">Loading accounts…</p>
-            </div>
-            <button id="refreshAccounts" class="secondary">
-              Refresh accounts
-            </button>
-          </div>
-          <label for="accountSearch">Find a member</label
-          ><input
-            id="accountSearch"
-            type="search"
-            placeholder="Name or mobile number"
-            autocomplete="off"
-          />
-          <p class="muted">
-            Edit member details and choose who can administer the society. You
-            cannot remove your own admin access.
-          </p>
-          <div id="accountList" class="account-list" aria-live="polite">
-            Loading…
-          </div>
-        </section>
-        <section id="adminDetails" class="panel" hidden>
+        <section id="adminDetails" class="panel admin-panel" role="tabpanel" aria-labelledby="tabDetails">
+          <div class="section-heading"><div><h2>Event details</h2><p class="muted">Fill in the essentials, then save.</p></div><span id="eventSaveState" class="save-state" role="status">New event</span></div>
           <form id="eventForm" class="form-grid">
-            <label class="full">Event type
-              <select name="event_type" required>
-                <option value="league">League round</option>
-                <option value="pairs">Pairs golf</option>
-                <option value="social">Social event</option>
-              </select>
-            </label>
-            <label class="full" data-league-round>Round
-              <select name="round_number" required>
-                <option value="">Choose a round</option>
-                <option value="1">Round 1</option>
-                <option value="2">Round 2</option>
-                <option value="3">Round 3</option>
-                <option value="4">Round 4</option>
-                <option value="5">Round 5</option>
-                <option value="6">Round 6</option>
-                <option value="7">Round 7</option>
-              </select>
-            </label>
-            <label>Event name<input name="name" required maxlength="200" /></label>
+            <label data-league-round>League round<select name="round_number" required><option value="">Choose a round</option><option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option><option value="4">Round 4</option><option value="5">Round 5</option><option value="6">Round 6 · scores private</option><option value="7">Round 7 · scores private</option></select></label>
             <label>Date<input name="date" type="date" required /></label>
-            <div class="full">
-              <p>Find the course to fill its details and prepare the hole view.</p>
-              <div class="actions">
-                <input id="courseQuery" aria-label="Find golf course" placeholder="e.g. The Warwickshire" />
-                <button type="button" class="secondary" id="findCourse">Find course and GPS hole layout</button>
-              </div>
-              <p id="courseLookupStatus" role="status"></p>
-              <div id="courseResults" class="course-results"></div>
-            </div>
-            <label>Course / venue name<input name="course_name" maxlength="160" /></label>
-            <label>Address<input name="address" maxlength="300" placeholder="Address and postcode" /></label>
-            <input type="hidden" name="place_id" />
-            <input type="hidden" name="latitude" />
-            <input type="hidden" name="longitude" />
-            <input type="hidden" name="location" />
-            <label>Course / venue website<input name="course_link" type="url" placeholder="Filled from course lookup" /></label>
-            <label>Course / venue telephone<input name="course_phone" type="tel" maxlength="40" placeholder="Filled from course lookup" /></label>
-            <label>Refreshments ready from<input name="refreshment_time" type="time" /></label>
+            <label class="full">Event name<input name="name" required maxlength="200" placeholder="e.g. Round 1 — The Warwickshire" /></label>
+            <div class="full course-search-box"><label for="courseQuery">Find the golf course</label><div class="actions"><input id="courseQuery" placeholder="Course name and town" /><button type="button" class="secondary" id="findCourse">Find course and hole view</button></div><p id="courseLookupStatus" role="status"></p><div id="courseResults" class="course-results"></div></div>
+            <label class="full">Course / venue name<input name="course_name" maxlength="160" placeholder="Filled in when you choose a course" /><small>Use the search above to change the golf course and its hole view together.</small></label>
             <label>First tee time<input name="first_time" type="time" /></label>
+            <label>Meet from<input name="refreshment_time" type="time" /></label>
             <label>Member price (£)<input name="member_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="To be confirmed" /></label>
-            <label>Guest price (£)<input name="guest_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="To be confirmed" /></label>
-            <label>Maximum players<input name="max_players" type="number" min="1" step="1" placeholder="Leave blank for no limit" /></label>
-            <label>Estimated round duration (hours)<input name="round_hours" type="number" min="2" max="8" value="5" /></label>
-            <label class="full">Description<textarea name="description" rows="4"></textarea></label>
-            <div class="full event-cover-picker">
-              <label for="eventCoverFile">Cover photo</label>
-              <input id="eventCoverFile" name="cover_file" type="file" accept="image/jpeg,image/png,image/webp" />
-              <input name="cover_url" type="hidden" />
-              <p class="muted">Choose a landscape photo from your device. JPEG, PNG or WebP, up to 10 MB. An available course photo is shown if you do not upload one.</p>
-              <img id="eventCoverPreview" alt="Event cover preview" hidden style="width:100%;max-width:640px;max-height:280px;object-fit:cover;border-radius:16px" />
-              <button id="removeEventCover" type="button" class="secondary" hidden>Remove cover photo</button>
-              <p id="eventCoverStatus" role="status"></p>
-            </div>
-            <div class="full" data-event-extra-fields></div>
-            <details class="full">
-              <summary>Course links &amp; videos</summary>
-              <div class="form-grid">
-                <label>Weather link<input name="weather_link" type="url" /></label>
-                <label>Video type<select name="video_type" id="videoType">
-                  <option value="">None</option>
-                  <option value="whole">Whole course</option>
-                  <option value="per-hole">By hole</option>
-                </select></label>
-                <label>Course video (YouTube URL)<input name="video_link" type="url" /></label>
-              </div>
-              <div id="holeVideoInputs" class="form-grid" hidden></div>
-            </details>
-            <div class="actions full">
-              <button>Save event</button>
-              <button type="button" class="secondary" id="cancelEvent" hidden>Cancel event</button>
-              <button type="button" class="danger" id="deleteEvent" hidden>Delete event</button>
-            </div>
-            <p class="full form-status" role="status"></p>
+            <label>Maximum players<input name="max_players" type="number" min="1" max="200" step="1" placeholder="Leave blank for no limit" /></label>
+            <label>RSVP closing date<input name="rsvp_deadline" type="date" /><small>Closes at the end of this day, UK time. Optional.</small></label>
+            <label>Tee time gap (minutes)<input name="tee_interval" type="number" min="1" max="60" step="1" value="8" /></label>
+            <label class="full">Message for members<textarea name="description" rows="3" placeholder="Meeting arrangements, what is included or anything members need to know"></textarea></label>
+            <details class="full admin-extra"><summary>Optional details and cover photo</summary><div class="form-grid section">
+              <label>Event type<select name="event_type" required><option value="league">League round</option><option value="pairs">Pairs golf</option><option value="social">Social event</option></select></label>
+              <label>Estimated round (hours)<input name="round_hours" type="number" min="2" max="8" step="0.5" value="5" /></label>
+              <label class="full">Address<input name="address" maxlength="300" /></label>
+              <label>Course website<input name="course_link" type="url" placeholder="https://" /></label>
+              <label>Course telephone<input name="course_phone" type="tel" maxlength="40" /></label>
+              <label>Guest price (£)<input name="guest_price" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+              <label class="full">Important event notice<textarea name="event_notice" rows="2"></textarea></label>
+              <div class="full event-cover-picker"><label for="eventCoverFile">Cover photo</label><input id="eventCoverFile" name="cover_file" type="file" accept="image/jpeg,image/png,image/webp" /><input name="cover_url" type="hidden" /><small>Optional landscape photo, up to 10 MB.</small><img id="eventCoverPreview" alt="Event cover preview" hidden /><button id="removeEventCover" type="button" class="secondary" hidden>Remove cover photo</button><p id="eventCoverStatus" role="status"></p></div>
+            </div></details>
+            <input type="hidden" name="place_id" /><input type="hidden" name="latitude" /><input type="hidden" name="longitude" /><input type="hidden" name="location" />
+            <input type="hidden" name="course_member_price" /><input type="hidden" name="included" /><input type="hidden" name="practice" /><input type="hidden" name="payment_due" /><input type="hidden" name="cancellation_deadline" /><input type="hidden" name="cancellation_terms" /><input type="hidden" name="committed_places" value="0" /><input type="hidden" name="weather_link" /><input type="hidden" name="video_type" /><input type="hidden" name="video_link" />
+            <div class="actions full admin-save-bar"><button id="saveEvent" type="submit">Save event</button><p class="form-status" role="status"></p></div>
           </form>
+          <details id="eventManagement" class="admin-extra event-management" hidden><summary>Cancel or reopen this event</summary><p class="muted">Cancelled events remain in the history and are labelled clearly for members.</p><button type="button" class="secondary" id="cancelEvent">Cancel event</button></details>
         </section>
-        <section id="adminResponses" class="panel" hidden>
-          <h2>Member responses</h2>
-          <p class="muted">
-            One response per member. Moving a player out automatically gives the
-            next waiting member a space.
-          </p>
-          <div id="adminRsvps" class="stack"></div>
+        <section id="adminResponses" class="panel admin-panel" role="tabpanel" aria-labelledby="tabResponses" hidden>
+          <div class="section-heading"><div><h2>RSVPs</h2><p class="muted">One saved response per member for this event. Editing a response updates it.</p></div><button id="refreshRsvps" class="secondary" type="button">Refresh</button></div>
+          <div id="adminRsvps" class="stack" aria-live="polite"></div>
         </section>
-        <section id="adminTees" class="panel" hidden>
-          <h2>Tee groups</h2>
-          <p class="muted">
-            Generate groups from confirmed players, then adjust the groups and
-            times before publishing.
-          </p>
-          <div class="form-grid">
-            <label
-              >Start time<input
-                id="teeStart"
-                type="time"
-                value="09:00" /></label
-            ><label
-              >Gap in minutes<input
-                id="teeGap"
-                type="number"
-                min="1"
-                max="60"
-                value="8"
-            /></label>
-          </div>
-          <div class="actions">
-            <button id="generateTees">Generate groups</button
-            ><button class="secondary" id="loadTees">Load saved groups</button
-            ><button id="saveTees">Publish tee times</button>
-          </div>
-          <p id="teeMessage" role="status"></p>
-          <div id="teeEditor" class="stack"></div>
+        <section id="adminTees" class="panel admin-panel" role="tabpanel" aria-labelledby="tabTees" hidden>
+          <div class="section-heading"><div><h2>Tee times</h2><p class="muted">Create groups, check the names and times, then publish.</p></div><span id="teeSaveState" class="save-state" role="status">No changes</span></div>
+          <div class="form-grid tee-settings"><label>First tee time<input id="teeStart" type="time" value="09:00" /></label><label>Gap in minutes<input id="teeGap" type="number" min="1" max="60" step="1" value="8" /></label></div>
+          <div class="actions"><button id="generateTees" type="button" class="secondary">Create groups</button><button id="loadTees" type="button" class="text-button">Reload saved groups</button></div>
+          <p id="teeMessage" class="form-status" role="status"></p><div id="teeEditor" class="stack"></div>
+          <div class="actions admin-save-bar"><button id="saveTees" type="button" disabled>Publish tee times</button></div>
+          <details id="scorecardTools" class="admin-extra"><summary>Print names and handicaps for scorecards</summary><div id="adminScorecards" class="section"></div></details>
         </section>
-        <details class="panel section">
-          <summary>Other organiser tools</summary>
-          <div class="actions">
-            <a href="scores.html">Scores</a
-            ><a href="shop.html">Shop &amp; orders</a
-            ><a href="worldevents.html">World events</a
-            ><a href="gallery.html">Gallery</a>
-          </div>
-          <p class="muted">
-            WhatsApp delivery is not connected on the development site.
-          </p>
-          <h3>Member account recovery</h3>
-          <p>
-            Release a name only after checking with the member. This blocks the
-            incorrectly claimed account from RSVPs, cancels its future places,
-            and frees the name for a new account. Existing history is retained.
-          </p>
-          <form id="releaseMember" class="member-management">
-            <label
-              >Claimed name<select id="claimedNames" required></select></label
-            ><button class="secondary">Release name</button>
-            <p role="status"></p>
-          </form>
-          <p>
-            Use the Accounts tab to reset a member’s password. Name-only
-            accounts cannot receive email reset links.
-          </p>
-          <h3>Membership enquiries</h3>
-          <div id="enquiries"></div>
-        </details>
+        <section id="adminScoring" class="panel admin-panel" role="tabpanel" aria-labelledby="tabScoring" hidden></section>
+        <section id="adminAccounts" class="panel admin-panel" role="tabpanel" aria-labelledby="tabAccounts" hidden>
+          <div class="section-heading"><div><h2>Members</h2><p id="accountSummary" class="muted">Loading members…</p></div><button id="refreshAccounts" class="secondary" type="button">Refresh</button></div>
+          <details id="handicapSetup" class="admin-extra"><summary id="handicapSetupLabel">Starting handicaps</summary><div id="adminHandicaps" class="section"></div></details>
+          <label for="accountSearch">Find a member</label><input id="accountSearch" type="search" placeholder="Name or mobile number" autocomplete="off" />
+          <div id="accountList" class="account-list" aria-live="polite">Loading…</div>
+          <details class="admin-extra" id="memberRecovery"><summary>Help with a wrongly claimed name</summary><p class="muted">Check with the member first. Releasing a name blocks the incorrect account and cancels its future bookings. Previous scores remain in the history.</p><form id="releaseMember" class="member-management"><label>Claimed name<select id="claimedNames" required></select></label><button type="submit" class="secondary">Release name</button><p class="form-status" role="status"></p></form></details>
+        </section>
       </div>
     </main>
-    <footer class="site-footer">
-      <div>
-        <a class="footer-brand" href="index.html">Barford Golf Society</a
-        ><span>2027 season · Development site</span>
-      </div>
-      <div class="footer-actions">
-        <a href="admin.html" data-admin hidden>Organiser tools</a
-        ><button id="themeToggle" class="text-button" aria-pressed="false">
-          Dark mode</button
-        ><button id="installButton" class="text-button" hidden>
-          Install app
-        </button>
-      </div>
-    </footer>
-    <nav class="mobile-dock" aria-label="Quick navigation">
-      <a href="index.html" aria-label="Home tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m3 10 9-7 9 7v10H3Z" />
-          <path d="M9 20v-7h6v7" /></svg
-        ><span>Home</span></a
-      ><a href="events.html" aria-label="Events tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="16" rx="3" />
-          <path d="M7 3v4m10-4v4M3 11h18m-13 5h3" /></svg
-        ><span>Events</span></a
-      ><a href="scores.html" aria-label="Scores tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 20v-6h5v6m1 0V5h5v15m1 0v-10h5v10M2 21h21" /></svg
-        ><span>Scores</span></a
-      ><a href="account.html" aria-label="Account tab"
-        ><svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg
-        ><span>Account</span></a
-      >
-    </nav>
-    <div id="toast" role="status" aria-live="polite"></div>
-    <noscript
-      ><p class="notice">
-        Please enable JavaScript to sign in and use the member features.
-      </p></noscript
-    >
+    <footer class="site-footer"><div><a class="footer-brand" href="index.html">Barford Golf Society</a><span>2027 season</span></div><div class="footer-actions"><a href="index.html">Back to home</a><button id="themeToggle" class="text-button" aria-pressed="false">Dark mode</button><button id="installButton" class="text-button" hidden>Install app</button></div></footer>
+    <nav class="mobile-dock" aria-label="Quick navigation"><a href="index.html"><span>Home</span></a><a href="events.html"><span>Events</span></a><a href="scores.html"><span>Leaderboard</span></a><a href="account.html"><span>Account</span></a></nav>
+    <div id="toast" role="status" aria-live="polite"></div><noscript><p class="notice">Please enable JavaScript to sign in and use admin.</p></noscript>
   </body>
 </html>

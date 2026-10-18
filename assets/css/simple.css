@@ -1,0 +1,263 @@
+/* A quiet, practical member experience using Barford's existing identity. */
+:root {
+  --ink: #203543;
+  --green: #274b62;
+  --gold: #c9ac7e;
+  --paper: #f4f3ef;
+  --surface: #ffffff;
+  --muted: #657078;
+  --line: #dce1e2;
+  --soft: #edf1f2;
+  --lime: #d7b98d;
+}
+body.dark-mode {
+  --ink: #e8edf0;
+  --green: #b4d3e5;
+  --paper: #15232d;
+  --surface: #203340;
+  --muted: #b3c0c8;
+  --line: #405361;
+  --soft: #293f4d;
+}
+.simple-site .container { max-width: 1140px; padding-top: 26px; }
+.simple-site .site-header { border-bottom: 1px solid var(--line); }
+.simple-site .header-inner { max-width: 1204px; }
+.simple-site .site-nav > a { padding-inline: 13px; }
+.simple-site .brand-year { background: #ebdfca; border-color: #dfcbae; color: #624b28; }
+.simple-site button,
+.simple-site .button { background: #274b62; border-color: #274b62; min-height: 48px; }
+.simple-site button:hover,
+.simple-site .button:hover { background: #1e3c50; transform: none; }
+.simple-site button.secondary,
+.simple-site .button.secondary { background: var(--surface); border-color: var(--line); color: var(--ink); }
+.simple-site button.secondary:hover,
+.simple-site .button.secondary:hover { background: var(--soft); }
+.simple-site button.text-button { background: transparent; border: 0; color: var(--muted); }
+.simple-site .segmented button { background: transparent; color: var(--ink); border-color: transparent; }
+.simple-site .segmented button.active { background: #274b62; color: #fff; }
+.simple-site .panel { box-shadow: none; border: 1px solid var(--line); }
+.simple-site .eyebrow { color: var(--green); letter-spacing: .11em; font-size: .72rem; }
+.simple-site .page-heading { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; margin-bottom: 26px; }
+.simple-site .page-heading::after { display: none; }
+.simple-site .page-heading h1 { font-size: clamp(2rem, 4vw, 2.75rem); margin: 6px 0 12px; }
+.simple-site .page-heading .lede { max-width: 680px; font-size: 1rem; }
+.simple-site .site-footer { max-width: 1140px; margin-top: 44px; }
+.simple-site a:focus-visible,
+.simple-site button:focus-visible,
+.simple-site summary:focus-visible { outline: 3px solid #b89453; outline-offset: 4px; }
+.simple-site [aria-busy="true"] { cursor: progress; opacity: .7; }
+.simple-site .notice { line-height: 1.6; }
+.simple-home-heading { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 14px 0 28px; }
+.simple-home-heading .eyebrow { margin: 0 0 12px; }
+.simple-home-heading h1 { max-width: 800px; font-size: clamp(2.05rem, 4vw, 3rem); margin: 0 0 14px; line-height: 1.13; }
+.simple-home-heading p:last-child { margin: 0; color: var(--muted); }
+.simple-home-heading .simple-admin-action { white-space: nowrap; flex-shrink: 0; }
+.simple-go-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 32px; }
+.simple-go-card { position: relative; display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 22px 17px; min-height: 112px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; text-decoration: none; transition: background .15s, border-color .15s; }
+.simple-go-card:hover { background: var(--soft); color: var(--ink); border-color: #9aabb5; }
+.simple-go-card > span:nth-child(2) { min-width: 0; }
+.simple-go-card strong { display: block; font-size: .97rem; line-height: 1.4; letter-spacing: -.015em; }
+.simple-go-card small { display: block; color: var(--muted); font-size: .78rem; line-height: 1.5; margin-top: 6px; }
+.simple-go-icon { display: grid; place-items: center; color: var(--green); flex: 0 0 25px; margin-top: 2px; }
+.simple-go-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.simple-go-card .simple-go-arrow { margin-left: auto; color: var(--muted); line-height: 1.5; }
+.simple-go-card.is-primary { background: #243f51; border-color: #243f51; color: #fff; }
+.simple-go-card.is-primary:hover { background: #1a3447; }
+.simple-go-card.is-primary .simple-go-icon { color: #dec498; }
+.simple-go-card.is-primary small,
+.simple-go-card.is-primary .simple-go-arrow { color: #d8e3e9; }
+.simple-next-section > .section-heading { margin-bottom: 14px; }
+.simple-next-section > .section-heading h2 { font-size: 1.3rem; margin: 0; }
+.simple-next-section > .section-heading a { font-size: .88rem; font-weight: 650; }
+.simple-next-panel { padding: 0; overflow: hidden; scroll-margin-top: 20px; }
+.simple-next-panel > p { margin: 26px; }
+.simple-next-event { display: grid; grid-template-columns: 1fr 220px; min-width: 0; }
+.simple-next-copy { padding: 28px 28px 0; grid-column: 1; min-width: 0; }
+.simple-next-copy .eyebrow { margin: 0 0 8px; }
+.simple-next-copy h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.18; margin: 0 0 10px; overflow-wrap: anywhere; }
+.simple-next-copy > .muted { margin: 0 0 15px; }
+.simple-next-event:not(:has(.simple-next-image)) .simple-next-copy,
+.simple-next-event:not(:has(.simple-next-image)) .simple-next-booking { grid-column: 1 / -1; }
+.simple-next-image { grid-column: 2; grid-row: 1 / 3; position: relative; min-height: 230px; margin: 24px 24px 24px 0; border-radius: 10px; overflow: hidden; background: var(--soft); }
+.simple-next-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.simple-next-image small { position: absolute; bottom: 0; left: 0; right: 0; padding: 5px 9px; background: #122a39b8; color: #fff; font-size: .58rem; }
+.simple-event-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 22px 0; }
+.simple-event-facts dt { text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-size: .67rem; font-weight: 700; }
+.simple-event-facts dd { margin: 5px 0 0; font-size: .94rem; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
+.simple-next-booking { padding: 0 28px 24px; grid-column: 1; }
+.simple-next-booking > :last-child { margin-bottom: 0; }
+.simple-booking { display: flex; align-items: center; gap: 9px; margin: 0 0 14px; line-height: 1.5; font-size: 1rem; color: var(--ink); }
+.simple-booking.confirmed { color: #24603d; }
+.simple-booking.waiting { color: #876219; }
+.booking-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex: 0 0 9px; }
+.simple-booking-note { color: var(--muted); font-size: .8rem; line-height: 1.55; margin: 13px 0 0; }
+.simple-next-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; grid-column: 1 / -1; padding: 16px 28px; border-top: 1px solid var(--line); background: var(--soft); font-size: .83rem; }
+.simple-next-footer a { font-weight: 700; text-decoration: none; }
+.simple-home-tees { border-top: 1px solid var(--line); padding: 24px 28px; }
+.simple-home-tees > h2 { font-size: 1.3rem; margin-top: 0; }
+.simple-home-tees .member-tee-card { margin-bottom: 16px; }
+.simple-home-tees .all-tee-groups { margin-bottom: 0; }
+.simple-home-tees .all-tee-groups > summary { max-width: 100%; }
+.simple-season-note { margin: 24px 0 0; text-align: center; color: var(--muted); font-size: .82rem; }
+.simple-empty { padding: 40px 28px; text-align: center; }
+.simple-empty h2,
+.simple-empty h3 { margin-top: 0; font-size: 1.45rem; letter-spacing: -.035em; }
+.simple-empty p { color: var(--muted); max-width: 480px; margin: 0 auto 20px; }
+.page-events.simple-site #eventList { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.simple-event-row { display: grid; grid-template-columns: 72px 1fr auto; align-items: center; gap: 22px; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; scroll-margin-top: 20px; }
+.simple-date-box { align-self: start; display: flex; flex-direction: column; text-align: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.simple-date-box span { padding: 4px; background: #e9dfce; color: #55492f; text-transform: uppercase; letter-spacing: .08em; font-size: .7rem; font-weight: 800; }
+.simple-date-box strong { padding: 5px 12px; font-size: 1.6rem; line-height: 1.55; }
+.simple-event-row-copy { min-width: 0; }
+.simple-event-row-copy .eyebrow { margin: 0 0 4px; font-size: .66rem; }
+.simple-event-row h2 { margin: 0 0 8px; font-size: 1.45rem; line-height: 1.3; }
+.simple-event-row h2 a { color: var(--ink); text-decoration: none; }
+.simple-event-row h2 a:hover { text-decoration: underline; }
+.simple-event-row p { margin: 3px 0; font-size: .83rem; }
+.simple-event-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; font-size: .8rem; }
+.simple-booking-badge { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 7px; background: var(--soft); font-size: .73rem; line-height: 1.5; font-weight: 700; }
+.simple-booking-badge.confirmed { background: #e5f0e6; color: #23573b; }
+.simple-booking-badge.waiting { background: #f7edd4; color: #735520; }
+.simple-event-row-action { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; min-width: 172px; }
+.simple-event-row-action .button { font-size: .86rem; }
+.simple-event-row-action small { color: var(--muted); font-size: .75rem; text-align: right; }
+.simple-site .event-back { display: flex; justify-content: space-between; align-items: center; margin: 0 0 20px; font-size: .88rem; }
+.simple-site .event-back a { text-decoration: none; font-weight: 650; }
+.simple-event-header { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 210px; gap: 32px; background: #243f51; color: #fff; border-radius: 18px; overflow: hidden; }
+.simple-event-header > div { position: relative; padding: 32px; min-width: 0; flex: 1; }
+.simple-event-header .eyebrow { color: #dec498; margin: 0 0 12px; }
+.simple-event-header h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.14; color: #fff; overflow-wrap: anywhere; }
+.simple-event-header p:last-child:not(.eyebrow) { color: #dbe4e9; margin-bottom: 0; }
+.simple-event-header > img { width: 30%; min-height: 210px; height: 230px; object-fit: cover; align-self: stretch; }
+.simple-cover-credit { margin: 5px 2px 0; color: var(--muted); font-size: .6rem; text-align: right; }
+.simple-event-summary { padding: 26px 28px; margin-top: 20px; }
+.simple-event-summary .simple-event-facts { margin-top: 0; margin-bottom: 25px; gap: 24px; }
+.simple-event-booking { padding-top: 20px; border-top: 1px solid var(--line); }
+.simple-event-booking > .notice:first-child { margin-top: 0; }
+.simple-event-buttons { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 20px; }
+.simple-event-buttons .button,
+.simple-event-buttons button { font-size: .87rem; }
+.simple-tee-section { padding: 26px 28px; margin-top: 18px; scroll-margin-top: 20px; }
+.simple-tee-section h3 { margin-top: 0; }
+.simple-details { padding: 0; margin-top: 18px; }
+.simple-details > summary { min-height: 64px; padding: 19px 24px; cursor: pointer; font-weight: 700; }
+.simple-details[open] > summary { border-bottom: 1px solid var(--line); }
+.simple-details > div { padding: 4px 24px 24px; }
+.simple-details > div h3 { margin: 20px 0 10px; font-size: 1.1rem; }
+.simple-player-list { list-style: none; margin: 0; padding: 0; }
+.simple-player-list li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.simple-player-list li:last-child { border-bottom: 0; }
+.simple-player-list small { font-size: .75rem; }
+.simple-player-list.waiting-list { counter-reset: waiting; }
+.simple-player-list.waiting-list li { counter-increment: waiting; justify-content: flex-start; }
+.simple-player-list.waiting-list li::before { content: counter(waiting) "."; color: var(--muted); }
+.simple-day-details { margin-top: 18px; padding: 26px 28px; }
+.simple-day-details h2 { font-size: 1.3rem; margin-top: 0; }
+.simple-day-details h3 { font-size: 1rem; margin: 22px 0 7px; }
+.simple-day-details p { font-size: .91rem; }
+.simple-terms { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 16px; }
+.simple-terms > summary { cursor: pointer; font-size: .86rem; font-weight: 700; }
+.simple-rsvp-dialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: 0 20px 80px #10212e40; }
+.simple-rsvp-dialog::backdrop { background: #10212eb3; }
+.simple-rsvp-dialog .rsvp-form { margin: 0; padding: 0; border: 0; background: none; }
+.simple-rsvp-dialog h2 { margin: 0 0 12px; font-size: 1.75rem; }
+.simple-rsvp-dialog .rsvp-event-name { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
+.simple-rsvp-identity { padding: 13px 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); margin: 0 0 24px; }
+.simple-rsvp-identity strong,
+.simple-rsvp-identity span { display: block; }
+.simple-rsvp-identity strong { font-size: .96rem; }
+.simple-rsvp-identity span { color: var(--muted); font-size: .78rem; margin-top: 3px; }
+.simple-rsvp-dialog fieldset { min-width: 0; margin: 0 0 20px; padding: 0; border: 0; }
+.simple-rsvp-dialog legend { font-weight: 750; margin-bottom: 11px; }
+.simple-rsvp-dialog .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.simple-rsvp-dialog .choices label { min-width: 0; }
+.simple-rsvp-dialog .choices span { min-height: 52px; padding: 12px; text-align: center; line-height: 1.5; font-size: .88rem; }
+.simple-rsvp-dialog .choices input:checked + span { background: #274b62; color: #fff; border-color: #274b62; }
+.simple-rsvp-dialog .choices input:disabled + span { opacity: .45; cursor: not-allowed; }
+.simple-rsvp-dialog .check { display: flex; align-items: flex-start; gap: 11px; line-height: 1.6; font-size: .91rem; }
+.simple-rsvp-dialog .check input { margin-top: 5px; width: 18px; height: 18px; flex-shrink: 0; accent-color: #274b62; }
+.simple-buggy-choice { margin: 4px 0 16px; }
+.simple-rsvp-options { margin: 0 0 12px; }
+.simple-rsvp-options > summary { padding: 5px 0; cursor: pointer; color: var(--green); font-size: .85rem; }
+.simple-rsvp-options label { display: block; font-size: .8rem; margin: 10px 0 5px; }
+.simple-rsvp-options p { font-size: .77rem; margin: 8px 0; }
+.simple-rsvp-dialog [data-playing] > small { display: block; margin: 9px 0 20px; color: var(--muted); font-size: .75rem; }
+.simple-rsvp-dialog .actions { display: grid; grid-template-columns: 1.3fr 1fr; gap: 11px; margin-top: 23px; }
+.simple-rsvp-dialog .actions button { min-height: 50px; }
+.simple-rsvp-dialog .form-status:empty { display: none; }
+.simple-rsvp-dialog .form-status { padding: 10px 0 0; font-size: .85rem; }
+.dark-mode .simple-booking.confirmed { color: #a8daba; }
+.dark-mode .simple-booking.waiting { color: #e8cb86; }
+.dark-mode .simple-booking-badge.confirmed { color: #b9e5c4; background: #294a3c; }
+.dark-mode .simple-booking-badge.waiting { color: #efdbab; background: #524628; }
+@media (max-width: 1050px) {
+  .simple-go-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .simple-go-card { min-height: 92px; padding: 20px; align-items: center; }
+  .simple-next-event { grid-template-columns: 1fr 190px; }
+}
+@media (max-width: 700px) {
+  .simple-site .container { padding-top: 20px; }
+  .simple-site .header-inner { min-height: 80px; padding-block: 12px; gap: 15px; }
+  .simple-site .brand-icon { width: 52px; height: 52px; }
+  .simple-home-heading { display: block; padding: 5px 0 23px; }
+  .simple-home-heading h1 { font-size: 2.05rem; line-height: 1.14; }
+  .simple-home-heading .eyebrow { font-size: .65rem; }
+  .simple-home-heading p:last-child { font-size: .9rem; }
+  .simple-home-heading .simple-admin-action { margin-top: 18px; width: 100%; }
+  .simple-go-grid { gap: 11px; margin-bottom: 28px; }
+  .simple-go-card { min-height: 114px; padding: 16px 14px; flex-wrap: wrap; gap: 9px; align-content: flex-start; align-items: center; }
+  .simple-go-card .simple-go-icon { flex-basis: 24px; margin: 0; }
+  .simple-go-card > span:nth-child(2) { flex-basis: 100%; }
+  .simple-go-card strong { font-size: .9rem; }
+  .simple-go-card small { margin-top: 4px; font-size: .72rem; }
+  .simple-go-card .simple-go-arrow { position: absolute; top: 16px; right: 14px; }
+  .simple-next-event { grid-template-columns: 1fr; }
+  .simple-next-copy { padding: 22px 20px 0; }
+  .simple-next-image { display: none; }
+  .simple-next-booking { padding: 0 20px 22px; }
+  .simple-next-booking > button,
+  .simple-next-booking > .button { width: 100%; }
+  .simple-event-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 22px 0; }
+  .simple-event-facts dd { font-size: .9rem; }
+  .simple-next-footer { align-items: flex-start; flex-direction: column; gap: 9px; padding: 16px 20px; }
+  .simple-home-tees { padding: 22px 20px; }
+  .simple-home-tees .tee-grid { grid-template-columns: 1fr; }
+  .simple-season-note { font-size: .77rem; line-height: 1.7; }
+  .simple-site .site-footer { margin-top: 34px; }
+  .simple-site .site-footer > div:first-child > span { font-size: .73rem; }
+  .simple-event-row { grid-template-columns: 53px 1fr; gap: 14px; padding: 18px 16px; }
+  .simple-date-box strong { font-size: 1.5rem; padding: 5px 8px; }
+  .simple-event-row h2 { font-size: 1.25rem; }
+  .simple-event-row-copy .eyebrow { font-size: .6rem; }
+  .simple-event-row p { font-size: .76rem; }
+  .simple-event-row-meta { gap: 8px; }
+  .simple-event-row-action { grid-column: 2; align-items: flex-start; min-width: 0; width: 100%; gap: 8px; }
+  .simple-event-row-action .button { width: 100%; font-size: .8rem; }
+  .simple-event-row-action small { text-align: left; font-size: .7rem; }
+  .simple-event-header { min-height: 170px; }
+  .simple-event-header > div { padding: 27px 22px; }
+  .simple-event-header > img { display: none; }
+  .simple-event-header h1 { font-size: 2rem; }
+  .simple-event-header p { font-size: .85rem; }
+  .simple-cover-credit { display: none; }
+  .simple-event-summary,
+  .simple-day-details,
+  .simple-tee-section { padding: 22px 20px; }
+  .simple-event-summary .simple-event-facts { gap: 18px; }
+  .simple-event-booking > button { width: 100%; }
+  .simple-event-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+  .simple-event-buttons > :only-child { grid-column: 1 / -1; }
+  .simple-event-buttons .button,
+  .simple-event-buttons button { padding-inline: 12px; font-size: .8rem; gap: 7px; }
+  .simple-details > summary { padding: 18px 20px; font-size: .9rem; }
+  .simple-details > div { padding: 2px 20px 20px; }
+  .simple-player-list li { font-size: .82rem; }
+  .simple-player-list small { font-size: .7rem; }
+  .simple-rsvp-dialog { padding: 24px 20px; }
+  .simple-rsvp-dialog .choices span { padding: 12px 8px; font-size: .81rem; }
+  .simple-rsvp-dialog .actions { grid-template-columns: 1.3fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .simple-go-card { transition: none; }
+  .simple-site * { scroll-behavior: auto !important; }
+}

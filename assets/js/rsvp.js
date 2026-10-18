@@ -1,58 +1,60 @@
-// One member RSVP flow, shared by the homepage and older event links.
-const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
-export const rsvpClosed = (event) => event.cancelled || event.date < today();
+// A member edits one saved RSVP. submit_rsvp also enforces this in the database.
+import { londonToday } from "./event-experience.js?v=2027-simple-1";
+
+export const rsvpClosed = (event) => event.cancelled || event.date < londonToday();
 export const rsvpChangeLocked = (event, response, admin = false) => {
   if (!response || admin) return false;
   const cutoff = new Date(`${event.date}T00:00:00Z`);
   cutoff.setUTCDate(cutoff.getUTCDate() - 6);
-  return today() >= cutoff.toISOString().slice(0, 10);
+  return londonToday() >= cutoff.toISOString().slice(0, 10);
 };
-export const teeTimesPublished = event => event.event_type !== "social" && !!event.tee_published_at;
-export const withdrawalNotice = "If you need to withdraw from the event please contact the committee";
+export const teeTimesPublished = (event) => event.event_type !== "social" && !!event.tee_published_at;
+export const withdrawalNotice = "If you need to withdraw from the event please contact the committee.";
+export function rsvpStatus(event, response) {
+  if (event.cancelled) return { label: "Event cancelled", tone: "neutral" };
+  if (!response) return { label: "You haven’t replied yet", tone: "neutral" };
+  if (response.reserve) return { label: "You’re on the waiting list", tone: "waiting" };
+  if (response.attending) return { label: event.event_type === "social" ? "You’re attending" : "You’re playing", tone: "confirmed" };
+  return { label: "You’re not attending this time", tone: "neutral" };
+}
+export function rsvpButtonLabel(event, response, signedIn) {
+  if (teeTimesPublished(event)) return "View tee times";
+  return !signedIn ? "Sign in to RSVP" : response ? "Change your RSVP" : "RSVP";
+}
 let opening = false;
 
-function radio(e, name, legend, options, selected) {
-  return `<fieldset><legend>${legend}</legend><div class="choices">${options.map(([value, label]) => `<label><input type="radio" name="${name}" value="${e(value)}" ${selected === value ? "checked" : ""} required><span>${label}</span></label>`).join("")}</div></fieldset>`;
-}
-
-export async function openRsvp(ev, b, { onSaved } = {}) {
+export async function openRsvp(event, b, { onSaved } = {}) {
   if (opening || document.querySelector("dialog.rsvp-dialog[open]")) return;
   opening = true;
-  ev = { ...ev };
+  const ev = { ...event };
   const trigger = document.activeElement;
-  let dialog;
+  let dialog, saving = false;
   try {
     if (!b.state.user && !(await b.requireMember())) return;
-    if (rsvpClosed(ev)) {
-      b.toast(ev.cancelled ? "This event has been cancelled." : "Bookings for this event are closed.");
-      return;
-    }
     const e = b.escape;
     dialog = document.createElement("dialog");
-    dialog.id = `form-${ev.id}`;
-    dialog.className = "rsvp-dialog";
+    dialog.id = `rsvp-${ev.id}`;
+    dialog.className = "rsvp-dialog simple-rsvp-dialog";
     dialog.setAttribute("aria-labelledby", `rsvp-title-${ev.id}`);
     document.body.append(dialog);
-    let saving = false;
-    dialog.addEventListener("cancel", (event) => { if (saving) event.preventDefault(); });
+    dialog.addEventListener("cancel", (cancelEvent) => { if (saving) cancelEvent.preventDefault(); });
     dialog.addEventListener("close", () => {
       dialog.remove();
       if (trigger?.isConnected && !trigger.disabled) trigger.focus({ preventScroll: true });
-      else document.querySelector("[data-home-rsvp], [data-rsvp]")?.focus({ preventScroll: true });
+      else document.querySelector("[data-home-rsvp], [data-rsvp], #homeRsvp")?.focus({ preventScroll: true });
     }, { once: true });
+
     async function loadResponse() {
-      dialog.innerHTML = `<h2 id="rsvp-title-${ev.id}">Your RSVP</h2><p>${e(ev.name)}</p><p role="status">Loading your response…</p><button type="button" class="secondary" data-cancel>Cancel</button>`;
+      dialog.innerHTML = `<h2 id="rsvp-title-${ev.id}">Your RSVP</h2><p>${e(ev.name)}</p><p role="status">Checking your saved response…</p><button type="button" class="secondary" data-cancel>Close</button>`;
       dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
-      const [own, current, guests] = await Promise.all([
+      // Always read the latest record, including after signing in on another device.
+      const [own, current] = await Promise.all([
         b.client.from("rsvps").select("*").eq("event_id", ev.id).eq("user_id", b.state.user.id).maybeSingle(),
         b.client.from("events").select("*").eq("id", ev.id).maybeSingle(),
-        b.client.rpc("guest_invitations", { action: "mine", payload: { event_id: ev.id } }),
       ]);
-      const { data: r } = own;
-      const error = own.error || current.error || guests.error || (!guests.data?.category ? new Error("Account type unavailable") : null);
-      if (!dialog.isConnected) return;
-      if (error) {
-        dialog.querySelector("[role=status]").textContent = "Your response could not load. Please try again.";
+      if (!dialog.isConnected || !dialog.open) return;
+      if (own.error || current.error) {
+        dialog.querySelector("[role=status]").textContent = "We couldn’t check your saved RSVP. Try again before making any changes.";
         const retry = document.createElement("button");
         retry.type = "button";
         retry.textContent = "Try again";
@@ -60,78 +62,101 @@ export async function openRsvp(ev, b, { onSaved } = {}) {
         dialog.append(retry);
         return;
       }
+      const r = own.data;
       if (!current.data || Number(current.data.id) !== Number(ev.id)) {
         dialog.querySelector("[role=status]").textContent = "This event is no longer available.";
         return;
       }
       Object.assign(ev, current.data);
-      if (rsvpClosed(ev)) {
-        dialog.querySelector("[role=status]").textContent = ev.cancelled ? "This event has been cancelled." : "Bookings for this event are closed.";
+      if (rsvpClosed(ev) || teeTimesPublished(ev) || rsvpChangeLocked(ev, r, b.state.admin)) {
+        dialog.querySelector("[role=status]").textContent = ev.cancelled ? "This event has been cancelled. Contact the committee if you have a booking."
+          : ev.date < londonToday() ? "This event has finished."
+          : teeTimesPublished(ev) ? `Tee times are published. ${withdrawalNotice}`
+          : "Online changes close six days before the event. Please contact the committee to change your RSVP.";
         return;
       }
-      if (teeTimesPublished(ev)) {
-        dialog.querySelector("[role=status]").textContent = withdrawalNotice;
-        return;
-      }
-      if (rsvpChangeLocked(ev, r, b.state.admin)) {
-        dialog.querySelector("[role=status]").textContent = "Online RSVP changes close six days before the event. Contact the committee to change your RSVP.";
-        return;
-      }
-      if (guests.data.category === "guest" && !(guests.data.bookings || []).some((booking) => Number(booking.event_id) === Number(ev.id))) {
-        dialog.querySelector("[role=status]").textContent = "A member needs to invite you to this event. Open their invitation link to book your guest place.";
-        return;
-      }
-      const late = ev.rsvp_deadline && ev.rsvp_deadline < today() && !(r?.attending || r?.reserve) && !b.state.admin;
-      dialog.innerHTML = `<form class="rsvp-form"><h2 id="rsvp-title-${ev.id}">${r ? "Update your RSVP" : "Your RSVP"}</h2><p class="rsvp-event-name">${e(ev.name)} · ${e(b.date(ev.date))}</p><p class="identity">For ${e(b.state.profile?.full_name || "your account")}</p>${late ? '<p class="notice">The RSVP deadline has passed. Contact an organiser if you would like a place.</p>' : ""}${r?.reserve ? '<p class="notice">You’re on the waiting list. Your preferences are saved while you wait for a place.</p>' : ""}${radio(e, "attending", ev.event_type === "social" ? "Attending?" : "Playing?", [["yes", ev.event_type === "social" ? "Yes, I’m attending" : "Yes, I’m playing"], ["no", "Not this time"]], r ? (r.attending || r.reserve ? "yes" : "no") : null)}<div data-playing>${radio(e, "buggy", "Buggy?", [["yes", "Yes, please"], ["no", "No, I’ll walk"]], r?.buggy ? "yes" : "no")}${radio(e, "preferred_time", "Preferred tee time (optional)", [["", "No preference"], ["First", "First"], ["Middle", "Middle"], ["End", "End"]], r?.preferred_time || "")}<label class="check"><input type="checkbox" name="flexibility" ${r?.flexibility === "walk" ? "checked" : ""}> Happy to walk if there is an odd number of buggy players</label><small>We’ll do our best to match your preference. A buggy request is subject to availability.</small></div>${ev.cancellation_terms ? `<div data-terms><p class="notice preserve-lines">${e(ev.cancellation_terms)}</p><label class="check"><input type="checkbox" name="accept_terms" ${r?.terms_snapshot === ev.cancellation_terms ? "checked" : ""}> I accept the cancellation terms</label></div>` : ""}<p class="muted" data-withdraw-note hidden>Withdrawing does not automatically cancel a fee or issue a refund. An organiser will review your booking.</p><div class="actions"><button type="submit">${r ? "Save changes" : "Save RSVP"}</button><button type="button" class="secondary" data-cancel>Cancel</button></div><p class="form-status" role="status" aria-live="polite"></p></form>`;
+      const late = ev.rsvp_deadline && ev.rsvp_deadline < londonToday() && !(r?.attending || r?.reserve) && !b.state.admin;
+      const isSocial = ev.event_type === "social";
+      dialog.innerHTML = `<form class="rsvp-form">
+        <h2 id="rsvp-title-${ev.id}">${r ? "Change your RSVP" : "Your RSVP"}</h2>
+        <p class="rsvp-event-name">${e(ev.name)}<br>${e(b.date(ev.date))}</p>
+        <p class="simple-rsvp-identity"><strong>${e(b.state.profile?.full_name || "Your account")}</strong><span>${r ? "Your saved response will be updated." : "Your RSVP is saved to your account."}</span></p>
+        ${late ? '<p class="notice">The RSVP deadline has passed. Please contact the committee if you would like to attend.</p>' : ""}
+        ${r?.reserve ? '<p class="notice">Your place is on the waiting list. Your preferences are already saved.</p>' : ""}
+        <fieldset><legend>${isSocial ? "Will you attend?" : "Are you playing?"}</legend><div class="choices">
+          <label><input type="radio" name="attending" value="yes" ${r && (r.attending || r.reserve) ? "checked" : ""} ${late ? "disabled" : ""} required><span>${isSocial ? "Yes, I’m attending" : "Yes, I’m playing"}</span></label>
+          <label><input type="radio" name="attending" value="no" ${r && !r.attending && !r.reserve ? "checked" : ""} required><span>Not this time</span></label>
+        </div></fieldset>
+        <div data-playing hidden>
+          <label class="check simple-buggy-choice"><input type="checkbox" name="buggy" ${r?.buggy ? "checked" : ""}> I need a buggy</label>
+          <details class="simple-rsvp-options"><summary>Tee time preference (optional)</summary>
+            <label for="rsvp-time-${ev.id}">Preferred tee time</label><select id="rsvp-time-${ev.id}" name="preferred_time">
+              ${[["", "No preference"], ["First", "Early"], ["Middle", "Middle"], ["End", "Late"]].map(([value, label]) => `<option value="${value}" ${(r?.preferred_time || "") === value ? "selected" : ""}>${label}</option>`).join("")}
+            </select><p class="muted">The committee will do its best to accommodate requests.</p>
+          </details>
+          <small>Buggy requests are subject to availability.</small>
+        </div>
+        ${ev.cancellation_terms ? `<div data-terms hidden><p class="notice preserve-lines">${e(ev.cancellation_terms)}</p><label class="check"><input type="checkbox" name="accept_terms" ${r?.terms_snapshot === ev.cancellation_terms ? "checked" : ""}> I accept the cancellation terms</label></div>` : ""}
+        <p class="muted" data-withdraw-note hidden>The committee will review any outstanding fee or refund.</p>
+        <p class="form-status" role="status" aria-live="polite"></p>
+        <div class="actions"><button type="submit">${r ? "Save changes" : "Save RSVP"}</button><button type="button" class="secondary" data-cancel>Cancel</button></div>
+      </form>`;
       const form = dialog.querySelector("form");
-      if (late) form.querySelector('[name="attending"][value="yes"]').disabled = true;
       const toggle = () => {
-        const no = form.elements.attending.value === "no";
+        const playing = form.elements.attending.value === "yes";
         const choices = form.querySelector("[data-playing]");
-        choices.hidden = no || ev.event_type === "social";
-        choices.querySelectorAll("input").forEach((input) => { input.disabled = choices.hidden; });
-        const terms = form.elements.accept_terms;
-        if (terms) {
-          terms.required = form.elements.attending.value === "yes";
-          terms.disabled = no;
-          form.querySelector("[data-terms]").hidden = no;
+        choices.hidden = !playing || isSocial;
+        choices.querySelectorAll("input, select").forEach((input) => { input.disabled = choices.hidden; });
+        if (form.elements.accept_terms) {
+          form.elements.accept_terms.required = playing;
+          form.elements.accept_terms.disabled = !playing;
+          form.querySelector("[data-terms]").hidden = !playing;
         }
-        form.querySelector("[data-withdraw-note]").hidden = !(no && (r?.attending || r?.reserve));
+        form.querySelector("[data-withdraw-note]").hidden = !(form.elements.attending.value === "no" && (r?.attending || r?.reserve));
       };
       form.querySelectorAll("[name=attending]").forEach((input) => { input.onchange = toggle; });
       form.querySelector("[data-cancel]").onclick = () => { if (!saving) dialog.close(); };
-      form.onsubmit = (event) => {
-        event.preventDefault();
+      form.onsubmit = (submitEvent) => {
+        submitEvent.preventDefault();
+        if (saving) return;
         b.submit(form, async () => {
           saving = true;
           form.querySelector("[data-cancel]").disabled = true;
           try {
-            const f = new FormData(form);
-            const playing = f.get("attending") === "yes";
-            const golf = playing && ev.event_type !== "social";
-            const payload = { event_id: ev.id, attending: playing, buggy: golf && f.get("buggy") === "yes", preferred_time: golf ? f.get("preferred_time") || null : null, flexibility: golf && f.get("flexibility") ? "walk" : null, accept_terms: playing && f.get("accept_terms") === "on" };
+            const fields = new FormData(form);
+            const playing = fields.get("attending") === "yes";
+            const buggy = playing && !isSocial && fields.get("buggy") === "on";
+            const payload = {
+              event_id: ev.id,
+              attending: playing,
+              buggy,
+              preferred_time: playing && !isSocial ? fields.get("preferred_time") || null : null,
+              flexibility: buggy ? r?.flexibility || null : null,
+              accept_terms: playing && fields.get("accept_terms") === "on",
+            };
             const { data, error } = await b.client.rpc("submit_rsvp", { payload });
             if (error) throw error;
-            const message = data.reserve ? "Saved. You’re on the waiting list." : data.attending ? ev.event_type === "social" ? "Saved. You’re attending!" : "Saved. You’re playing!" : "Saved. You’re not playing this time.";
+            if (!data) throw new Error("The RSVP confirmation could not be read. Close and reopen to check your saved response.");
+            const message = `RSVP saved. ${rsvpStatus(ev, data).label}.`;
             try { await onSaved?.(data); }
-            catch { b.toast("Your RSVP is saved. Refresh the page to see the latest booking details."); dialog.close(); return; }
+            catch { b.toast("Your RSVP is saved. Refresh the page to see your booking."); dialog.close(); return; }
             b.toast(message);
             dialog.close();
           } finally {
             saving = false;
-            form.querySelector("[data-cancel]").disabled = false;
+            const cancel = form.querySelector("[data-cancel]");
+            if (cancel) cancel.disabled = false;
           }
         });
       };
       toggle();
-      form.querySelector("input:not(:disabled)")?.focus({ preventScroll: true });
+      form.querySelector("input:checked:not(:disabled), input:not(:disabled)")?.focus({ preventScroll: true });
     }
-    const loading = loadResponse();
     dialog.showModal();
-    await loading;
+    await loadResponse();
     return dialog;
-  } catch (error) {
+  } catch {
     dialog?.close();
-    b.toast(error.message || "Your RSVP could not open. Please try again.");
+    b.toast("Your RSVP could not open. Please try again.");
   } finally { opening = false; }
 }
