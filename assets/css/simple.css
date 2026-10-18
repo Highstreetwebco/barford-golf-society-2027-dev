@@ -284,3 +284,19 @@ body.dark-mode {
   .simple-site .site-header .brand .brand-lockup { width: clamp(145px, 43vw, 200px); }
   .simple-site .site-header .brand-year { display: none; }
 }
+
+/* The cream lettering of the horizontal crest needs a dark, unobtrusive
+   surface against the site's pale member-page headers. */
+.simple-site .site-header .brand {
+  background: #153a4b;
+  border: 1px solid rgba(218,194,146,.45);
+  border-radius: 12px;
+  padding: 7px 11px;
+  box-shadow: none;
+}
+@media (max-width: 1000px) and (min-width: 761px) {
+  .simple-site .site-header .brand .brand-lockup { width: 198px; }
+}
+@media (max-width: 760px) {
+  .simple-site .site-header .brand { padding: 5px 8px; border-radius: 9px; }
+}
