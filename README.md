@@ -37,6 +37,8 @@ Static HTML/CSS/JavaScript on the existing GitHub Pages repository, with the iso
 - `node tests/course-mapping.mjs`, `node tests/course-scorecard.mjs`, `node tests/hole-setup.mjs`, `node tests/course-preparation.mjs`: retained mapping and course preparation checks.
 - SQL regression files in `tests/` use transactions and roll back their fixtures. They check the real database rules when explicitly executed against the 2027 project.
 
+On 18 October 2026, the mobile/desktop workflow and all listed Node checks passed at commit `8da0a149ccc3f0a5fad44255a4e6cef9bb6e605f`. The real 2027 database also passed `season-scoring.sql`, `member-rsvp.sql`, `published-rsvp.sql` and `member-tee-profiles.sql`, including rejection of a second account for the same roster member. All SQL fixtures rolled back; no production data or schema changes were needed.
+
 The older large browser files are retained as historical test/fixture sources; their removed wizard/menu flows are not the current interface. The current workflow runs `simple-site.cjs` and the course logic checks.
 
 ---

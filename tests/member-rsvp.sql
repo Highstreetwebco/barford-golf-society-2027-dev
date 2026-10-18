@@ -7,6 +7,15 @@ insert into public.baseline_members(id,name) select u1,'QA Test One' from qa_ids
 insert into auth.users(id,email,raw_user_meta_data,aud,role,created_at,updated_at)
 select u1,'barford-test-a-'||u1||'@example.invalid',jsonb_build_object('roster_id',u1,'full_name','Forged Name','phone','07000000001','name_confirmation',true),'authenticated','authenticated',now(),now() from qa_ids
 union all select u2,'barford-test-b-'||u2||'@example.invalid',jsonb_build_object('roster_id',u2,'full_name','Forged Name','phone','07000000002','name_confirmation',true),'authenticated','authenticated',now(),now() from qa_ids;
+do $$ begin
+ begin
+  insert into auth.users(id,email,raw_user_meta_data,aud,role)
+  values(gen_random_uuid(),'duplicate-roster-'||gen_random_uuid()||'@example.invalid',jsonb_build_object('roster_id',(select u1 from qa_ids),'phone','07000000001','name_confirmation',true),'authenticated','authenticated');
+  raise exception 'Second account claimed the same roster member';
+ exception when raise_exception then
+  if sqlerrm<>'This name already has an account' then raise;end if;
+ end;
+end $$;
 with ev as (insert into public.baseline_events(name,date,max_players) values('Temporary RSVP verification',current_date+60,1) returning id)
 update qa_ids set event_id=(select id from ev);
 with trip as (insert into public.baseline_trip_events(name) values('Temporary trip verification') returning id)
@@ -62,12 +71,24 @@ reset role;
 select set_config('request.jwt.claim.sub',(select u2::text from qa_ids),true);
 set local role authenticated;
 do $$ begin
- perform public.baseline_submit_rsvp(jsonb_build_object('event_id',(select event_id from qa_ids),'attending',false));
- if not exists(select 1 from public.baseline_events where id=(select event_id from qa_ids) and tee_times_dirty) then raise exception 'Stale tee times were not flagged';end if;
+ begin
+  perform public.baseline_submit_rsvp(jsonb_build_object('event_id',(select event_id from qa_ids),'attending',false));
+  raise exception 'Member changed an RSVP after tee publication';
+ exception when raise_exception then
+  if sqlerrm<>'If you need to withdraw from the event please contact the committee' then raise;end if;
+ end;
+ if not exists(select 1 from public.baseline_rsvps where event_id=(select event_id from qa_ids) and user_id=(select u2 from qa_ids) and attending and not reserve) then raise exception 'Blocked withdrawal changed the booking';end if;
  begin
   perform public.baseline_save_tee_times((select event_id from qa_ids),'[]'::jsonb);
   raise exception 'Member was able to publish tee times';
  exception when raise_exception then if sqlerrm<>'Organiser access required' then raise;end if;end;
+end $$;
+reset role;
+select set_config('request.jwt.claim.sub',(select organiser::text from qa_ids),true);
+set local role authenticated;
+do $$ begin
+ perform public.baseline_submit_rsvp(jsonb_build_object('event_id',(select event_id from qa_ids),'user_id',(select u2 from qa_ids),'attending',false));
+ if not exists(select 1 from public.baseline_events where id=(select event_id from qa_ids) and tee_times_dirty) then raise exception 'Admin withdrawal did not flag stale tee times';end if;
 end $$;
 reset role;
 select set_config('request.jwt.claim.sub','',true);
@@ -83,4 +104,4 @@ do $$ begin
 end $$;
 reset role;
 rollback;
-select 'PASS: account creation trigger, repeated RSVP, editing, capacity, distinct roster members, waiting-list promotion, contact privacy, ownership, signed-out access, trip uniqueness and tee publication. All test records rolled back.' as verification;
+select 'PASS: account creation trigger, duplicate roster-account rejection, repeated RSVP, editing, capacity, distinct roster members, waiting-list promotion, contact privacy, ownership, signed-out access, trip uniqueness, tee publication lock and admin withdrawal. All test records rolled back.' as verification;

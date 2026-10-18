@@ -32,3 +32,4 @@ set local role authenticated;
 select public.baseline_submit_rsvp(jsonb_build_object('event_id',(select event_id from qa_ids),'user_id',(select u1 from qa_ids),'attending',false));
 reset role;
 rollback;
+select 'PASS: members cannot change published tee-time RSVPs; admins can perform the withdrawal. Fixtures rolled back.' as verification;
