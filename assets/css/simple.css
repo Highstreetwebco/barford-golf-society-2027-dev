@@ -261,3 +261,26 @@ body.dark-mode {
   .simple-go-card { transition: none; }
   .simple-site * { scroll-behavior: auto !important; }
 }
+
+/* New Barford horizontal wordmark. Keep letterforms legible without cropping
+   or placing the transparent image on a circular/white background. */
+.simple-site .site-header .brand { gap: 9px; min-width: 0; }
+.simple-site .site-header .brand .brand-lockup {
+  display: block;
+  width: clamp(205px, 21vw, 250px);
+  height: auto;
+  aspect-ratio: 480 / 152;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  flex-shrink: 1;
+}
+.simple-site .site-header .brand-year { align-self: center; margin-left: 2px; }
+@media (max-width: 760px) {
+  .simple-site .site-header .brand .brand-lockup { width: clamp(145px, 43vw, 200px); }
+  .simple-site .site-header .brand-year { display: none; }
+}

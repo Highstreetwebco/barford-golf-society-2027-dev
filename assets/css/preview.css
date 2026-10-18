@@ -49,3 +49,20 @@ header .brand .preview-logo {
 @media (max-width: 550px) {
   header .brand .preview-logo { width: 132px; }
 }
+
+/* October 2026: display the supplied horizontal Barford wordmark clearly.
+   Override the old circular 43px avatar rules; no badge or white square. */
+header .brand .preview-logo {
+  width: clamp(205px, 24vw, 290px);
+  height: auto;
+  aspect-ratio: 480 / 152;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+@media (max-width: 550px) {
+  header .brand .preview-logo { width: clamp(173px, 53vw, 235px); }
+}
