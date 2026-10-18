@@ -10,6 +10,8 @@ const b = await window.barfordReady, { client: c, escape: e } = b;
 const $ = id => document.getElementById(id);
 const gate = $("adminGate"), content = $("adminContent"), form = $("eventForm"), picker = $("adminEvent");
 const panels = { details: "adminDetails", responses: "adminResponses", tees: "adminTees", scoring: "adminScoring", accounts: "adminAccounts" };
+const requestedTab = new URLSearchParams(location.search).get("tab");
+const adminSignIn = "account.html?next=" + encodeURIComponent("admin.html" + (Object.hasOwn(panels, requestedTab) ? "?tab=" + requestedTab : ""));
 let events = [], selected = null, rows = [], groups = [], activeTab = "details", groupsLoadedFor = null;
 let eventDirty = false, teeDirty = false, savingEvent = false, responseBusy = false, teeBusy = false;
 let courseGeneration = 0, coursePending = false, holeSetup, coverUpload;
@@ -53,7 +55,7 @@ window.addEventListener("beforeunload", ev => {
   if (eventDirty || teeDirty || isBusy()) { ev.preventDefault(); ev.returnValue = ""; }
 });
 if (!b.state.admin) {
-  gate.innerHTML = `<h2>Admin sign in</h2><p>${b.state.user ? "Your account does not have admin access." : "Sign in with your admin account to manage the society."}</p><a class="button" href="account.html?next=admin.html">${b.state.user ? "My account" : "Sign in"}</a>`;
+  gate.innerHTML = `<h2>Admin sign in</h2><p>${b.state.user ? "Your account does not have admin access." : "Sign in with your admin account to manage the society."}</p><a class="button" href="${e(adminSignIn)}">${b.state.user ? "My account" : "Sign in"}</a>`;
 } else {
   coverUpload = mountCoverUpload(form, b);
   holeSetup = mountHoleSetup(form, b);

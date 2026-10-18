@@ -156,6 +156,8 @@ function resultBoard() {
       await page.goto(base+'scores.html');
       await page.locator('.season-table tbody tr').first().waitFor();
       assert.equal(await page.locator('.season-table tbody tr').count(),2);
+      const totalBox = await page.locator('.season-table tbody .total-col').first().boundingBox();
+      assert(totalBox.x + totalBox.width <= page.viewportSize().width, 'Season total must be visible on a phone without scrolling');
       assert.equal(await page.locator('.season-table .is-locked').count(),admin?0:6);
       if(admin) assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['176','164']);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
@@ -174,6 +176,20 @@ function resultBoard() {
       }
       assert.deepEqual(errors,[]);
       report.push(`PASS ${admin?'admin':'member'} leaderboard, best-five totals, hidden rounds, sign-out redaction`);
+      await context.close();
+    }
+
+    {
+      const {context,page,errors}=await setup(browser,{admin:true,signedIn:false});
+      await page.goto(base+'admin.html?tab=scoring');
+      await page.locator('#adminGate a.button').click();
+      await page.locator('#loginForm [name=email]').fill('Test Member');
+      await page.locator('#loginForm [name=password]').fill('fixture-password-only');
+      await page.locator('#loginForm button').first().click();
+      await page.waitForURL('**/admin.html?tab=scoring');
+      await page.locator('#adminScoring').waitFor({state:'visible'});
+      assert.deepEqual(errors,[]);
+      report.push('PASS sign in resumes the requested Scores admin tab');
       await context.close();
     }
 

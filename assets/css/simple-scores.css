@@ -7,13 +7,14 @@
 .leaderboard-heading p { margin:0; font-size:.85rem; color:var(--muted); }
 .score-scroll { overscroll-behavior-x:contain; scrollbar-color:#9aaab4 transparent; }
 .simple-score-table { width:100%; border-collapse:separate; border-spacing:0; font-variant-numeric:tabular-nums; font-size:.93rem; }
+.season-table { table-layout:fixed; min-width:820px; }
 .simple-score-table th,.simple-score-table td { padding:17px 10px; border-bottom:1px solid var(--line); text-align:center; background:var(--surface); vertical-align:middle; white-space:nowrap; }
 .simple-score-table thead th { font-size:.73rem; letter-spacing:.055em; text-transform:uppercase; color:var(--muted); background:var(--soft); font-weight:700; }
 .simple-score-table tbody tr:last-child > * { border-bottom:0; }
 .simple-score-table .position-col { width:52px; padding-left:20px; color:var(--muted); }
 .simple-score-table .player-col,.round-detail-table th:first-child { text-align:left; min-width:175px; position:sticky; left:0; z-index:1; white-space:normal; line-height:1.4; }
-.simple-score-table .player-col { border-right:1px solid var(--line); }
-.simple-score-table .total-col { min-width:78px; background:var(--soft); color:var(--ink); }
+.simple-score-table .player-col { width:175px; border-right:1px solid var(--line); }
+.simple-score-table .total-col { min-width:70px; width:70px; background:var(--soft); color:var(--ink); }
 .simple-score-table .total-col strong { font-size:1.12rem; }
 .simple-score-table tr.is-you > * { background:#f5efe5; }
 .simple-score-table tr.is-you .total-col { background:#eee2d0; }
@@ -45,4 +46,4 @@
 .dark-mode .simple-score-table tr.is-you > * { background:#2e3639; }
 .dark-mode .simple-score-table tr.is-you .total-col { background:#3a4143; }
 @media(max-width:900px) { .score-page-heading { align-items:flex-start; flex-direction:column; gap:18px; } .season-table { min-width:820px; } .table-mobile-hint { display:block; } }
-@media(max-width:600px) { .leaderboard-heading { padding:20px; align-items:flex-start; flex-direction:column; gap:5px; } .leaderboard-heading h2 { font-size:1.2rem; } .simple-score-table th,.simple-score-table td { padding:15px 9px; } .simple-score-table .player-col { min-width:145px; max-width:155px; } .score-key { padding:18px 20px; gap:9px 16px; } .round-details { padding:20px; } }
+@media(max-width:600px) { .leaderboard-heading { padding:20px; align-items:flex-start; flex-direction:column; gap:5px; } .leaderboard-heading h2 { font-size:1.2rem; } .simple-score-table th,.simple-score-table td { padding:15px 9px; } .simple-score-table .player-col { width:145px; min-width:145px; max-width:155px; } .score-key { padding:18px 20px; gap:9px 16px; } .round-details { padding:20px; } }
