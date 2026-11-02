@@ -91,3 +91,21 @@ test('Forecast cache follows event date and address, with bounded stale fallback
 test('A missing map and postcode reports unavailable location without guessing', async () => {
   const s=services();assert.equal((await eventWeather({...event,address:''},s)).status,'no_location');assert.equal(s.writes.length,0);
 });
+
+test('The deployed service keeps weather behind the app key and coming-soon gate', async t => {
+  const originalFetch=globalThis.fetch, originalDeno=globalThis.Deno;
+  t.after(()=>{globalThis.fetch=originalFetch;globalThis.Deno=originalDeno;});
+  let handler, preview=false, eventReads=0;
+  globalThis.Deno={env:{get:key=>({SUPABASE_URL:'https://backend.invalid',SUPABASE_SERVICE_ROLE_KEY:'test-service',SUPABASE_ANON_KEY:'test-anon'})[key]},serve:fn=>{handler=fn;}};
+  globalThis.fetch=async url=>{
+    if(String(url).endsWith('/rpc/baseline_site_gate'))return Response.json({live:false,preview});
+    if(String(url).includes('/baseline_events?')){eventReads++;return Response.json([{...event,date:'2100-01-01'}]);}
+    throw new Error('Unexpected service request: '+url);
+  };
+  await import('../supabase/functions/baseline-services/index.ts');
+  const request=key=>new Request('https://backend.invalid/functions/v1/baseline-services',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({action:'weather',event_id:110})});
+  assert.equal((await handler(request('wrong'))).status,401);
+  assert.equal((await handler(request('test-anon'))).status,403);assert.equal(eventReads,0);
+  preview=true;const response=await handler(request('test-anon'));assert.equal(response.status,200);
+  assert.equal((await response.json()).status,'too_early');assert.equal(eventReads,1);
+});

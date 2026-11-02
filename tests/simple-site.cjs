@@ -99,7 +99,7 @@ function resultBoard() {
       assert.equal(await page.evaluate(()=>window.copiedDestination),address);
       await page.screenshot({path:path.join(out,`event-directions-${width}.png`)});
       await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'});
-      assert(await directions.evaluate(el=>el===document.activeElement),'Closing restores focus to the directions button');
+      await page.waitForFunction(()=>document.querySelector('#homeTeeGroup [data-event-directions]')===document.activeElement);
       await group.locator('.all-tee-groups > summary').click();
       assert(await weather.evaluate(el=>el.getBoundingClientRect().top>=document.querySelector('#homeTeeGroup .all-tee-groups').getBoundingClientRect().bottom));
       own.tee_time='09:16';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));

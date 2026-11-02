@@ -21,6 +21,7 @@ export function navigationLinks(event) {
 export function openDirections(event, b, trigger = document.activeElement) {
   if (document.querySelector("dialog.event-directions-dialog[open]")) return;
   const { destination, links } = navigationLinks(event), e = b.escape;
+  const region = trigger?.closest("#homeTeeGroup, #nextEvent, #eventList")?.id;
   const dialog = document.createElement("dialog");
   dialog.className = "event-directions-dialog";
   dialog.setAttribute("aria-labelledby", "directionsTitle");
@@ -36,7 +37,14 @@ export function openDirections(event, b, trigger = document.activeElement) {
       dialog.querySelector('[role="status"]').textContent = "Address copied.";
     } catch { dialog.querySelector('[role="status"]').textContent = "Select and copy the address above."; }
   };
-  dialog.addEventListener("close", () => { dialog.remove(); if (trigger?.isConnected) trigger.focus({ preventScroll: true }); }, { once: true });
+  dialog.addEventListener("keydown", key => { if (key.key === "Escape") key.stopPropagation(); });
+  dialog.addEventListener("close", () => {
+    dialog.remove();
+    requestAnimationFrame(() => {
+      const target = trigger?.isConnected ? trigger : document.getElementById(region)?.querySelector("[data-event-directions]");
+      target?.focus({ preventScroll: true });
+    });
+  }, { once: true });
   dialog.showModal();
   dialog.querySelector("a, [data-close-directions]").focus({ preventScroll: true });
 }
