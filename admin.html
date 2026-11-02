@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-member-view-1" />
     <link rel="stylesheet" href="assets/css/holes.css?v=2027-hole-ux-1" media="print" onload="this.media='all'" />
     <script src="assets/js/baseline.js?v=2027-member-view-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-member-view-1"></script>
+    <script type="module" src="assets/js/admin.js?v=2027-admin-bookings-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 </head>
   <body class="page-admin simple-site">
@@ -88,7 +88,7 @@
           <details id="eventManagement" class="admin-extra event-management" hidden><summary>Cancel or reopen this event</summary><p class="muted">Cancelled events remain in the history and are labelled clearly for members.</p><button type="button" class="secondary" id="cancelEvent">Cancel event</button></details>
         </section>
         <section id="adminResponses" class="panel admin-panel" role="tabpanel" aria-labelledby="tabResponses" hidden>
-          <div class="section-heading"><div><h2>RSVPs</h2><p class="muted">One saved response per member for this event. Editing a response updates it.</p></div><button id="refreshRsvps" class="secondary" type="button">Refresh</button></div>
+          <div class="section-heading"><div><h2>RSVPs</h2><p class="muted">One saved response per member for this event. Editing a response updates it.</p></div><div class="actions"><button id="addEventMember" type="button">Add member</button><button id="refreshRsvps" class="secondary" type="button">Refresh</button></div></div>
           <div id="adminRsvps" class="stack" aria-live="polite"></div>
         </section>
         <section id="adminTees" class="panel admin-panel" role="tabpanel" aria-labelledby="tabTees" hidden>

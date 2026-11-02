@@ -59,6 +59,69 @@ function resultBoard() {
   await new Promise(resolve=>server.listen(8765,'127.0.0.1',resolve));
   const browser = await chromium.launch();
   try {
+    for (const width of [390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width});
+      const offline=people[1], registeredRoster=people[2];
+      const members=[{id:offline,name:'Offline Member',user_id:null},{id:registeredRoster,name:'Test Member',user_id:uid}];
+      let attempts=0,fail=false;
+      model.league={revision:0,players:[{id:offline,name:'Offline Member',starting_handicap:20,offline:true,adjustments:[]},{id:uid,name:'Test Member',starting_handicap:20,adjustments:[]}],rounds:[]};
+      await context.route(backend+'/rest/v1/rpc/baseline_admin_booking_members',route=>route.fulfill({json:members.map(m=>({...m,booking_id:model.responses.find(r=>r.member_id===m.id)?.id||null}))}));
+      await context.route(backend+'/rest/v1/rpc/baseline_submit_rsvp',async route=>{
+        attempts++; const p=route.request().postDataJSON().payload;
+        if(fail){fail=false;return route.fulfill({status:503,json:{message:'Temporary booking failure'}});}
+        assert.equal(p.event_id,999); assert(p.member_id);
+        const member=members.find(m=>m.id===p.member_id);
+        let r=model.responses.find(r=>r.member_id===p.member_id);
+        if(!r){r={id:model.responses.length+1,user_id:member.user_id,member_id:member.id,participant_id:member.user_id||member.id,name:member.name};model.responses.push(r);}
+        Object.assign(r,p,{attending:p.attending&&!p.reserve,reserve:p.attending&&p.reserve});
+        await new Promise(resolve=>setTimeout(resolve,80));
+        return route.fulfill({json:r});
+      });
+      await page.goto(base+'admin.html?tab=responses&event=999');
+      await page.locator('#addEventMember').click();
+      await page.locator('dialog [name=member_id]').selectOption(offline);
+      await page.locator('dialog [name=buggy]').selectOption('yes');
+      await page.locator('dialog [name=preferred_time]').selectOption('End');
+      await page.screenshot({path:path.join(out,`admin-add-member-${width}.png`),fullPage:true});
+      fail=true;
+      await page.locator('dialog button[type=submit]').click();
+      await page.getByText('Temporary booking failure',{exact:true}).waitFor();
+      assert.equal(await page.locator('dialog [name=member_id]').inputValue(),offline);
+      await page.locator('dialog form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+      await page.locator('dialog').waitFor({state:'detached'});
+      assert.equal(attempts,2,'Double click must not duplicate the booking request');
+      assert.equal(model.responses.length,1);
+      assert.equal(model.responses[0].user_id,null,'No fabricated login account');
+      await page.locator('#addEventMember').click();
+      await page.locator('dialog [name=member_id]').selectOption(offline);
+      assert.match(await page.locator('[data-member-info]').textContent(),/already has a response/);
+      await page.locator('dialog button[type=submit]').click();
+      await page.locator('dialog').waitFor({state:'detached'});
+      assert.equal(model.responses.length,1);
+      await page.locator('#addEventMember').click();
+      await page.locator('dialog [name=member_id]').selectOption(registeredRoster);
+      await page.locator('dialog button[type=submit]').click();
+      await page.locator('dialog').waitFor({state:'detached'});
+      await page.locator('[data-edit-response="'+offline+'"]').click();
+      await page.locator('dialog [name=status]').selectOption('waiting');
+      await page.locator('dialog button[type=submit]').click();
+      await page.locator('dialog').waitFor({state:'detached'});
+      assert.equal(model.responses[0].reserve,true);
+      await page.locator('[data-edit-response="'+offline+'"]').click();
+      await page.locator('dialog [name=status]').selectOption('playing');
+      await page.locator('dialog button[type=submit]').click();
+      await page.locator('dialog').waitFor({state:'detached'});
+      await page.locator('#tabTees').click(); await page.locator('#generateTees').click();
+      await page.locator('[data-player="'+offline+'"]').waitFor();
+      assert.equal(await page.locator('.tee-player').count(),2,'Unregistered participants must remain distinct');
+      await page.locator('#tabScoring').click();
+      await page.locator('[data-score="'+offline+'"]').waitFor();
+      assert.equal(await page.locator('[data-score]').count(),2);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),true);
+      assert.deepEqual(errors,[]);
+      report.push(`PASS admin member bookings ${width}: registered/unregistered, failed save retry, double submit, existing booking edit, waiting status, tees and scores`);
+      await context.close();
+    }
     {
       const launch={live:false,publishes:0};
       const context=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}}),page=await context.newPage();

@@ -1,9 +1,9 @@
 import { mountHoleSetup } from "./hole-admin.js?v=2027-map-format-3";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import { eventFields, updateEventType } from "./event-fields.js?v=2027-accurate-gps-1";
-import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-simple-1";
+import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-admin-bookings-1";
 import { loadAccounts } from "./account-admin.js?v=2027-simple-1";
-import { packPlayers } from "./tee-groups.js?v=2027-results-1";
+import { packPlayers, participantId } from "./tee-groups.js?v=2027-admin-bookings-1";
 import { operation } from "./operations.js?v=2027-results-1";
 import { mountSiteControls } from "./admin-site-controls.js?v=2027-member-view-1";
 
@@ -36,6 +36,7 @@ const britishToday = () => {
 function setSaveState(id, text, state = "saved") { $(id).textContent = text; $(id).dataset.state = state; }
 function markEventDirty() { eventDirty = true; setSaveState("eventSaveState", "Unsaved changes", "unsaved"); }
 function syncControls() {
+  $("addEventMember").disabled = isBusy() || !selected || !!selected.cancelled;
   picker.disabled = isBusy(); $("newEvent").disabled = isBusy();
   document.querySelectorAll(".admin-tabs button").forEach(button => button.disabled = isBusy());
   $("saveTees").disabled = teeBusy || !groups.some(g => g.players.length) || !!selected?.cancelled;
@@ -81,6 +82,7 @@ if (!b.state.adminAccess) {
   $("findCourse").onclick = findCourse;
   $("courseQuery").onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); findCourse(); } };
   $("refreshRsvps").onclick = loadResponses;
+  $("addEventMember").onclick = addMember;
   $("generateTees").onclick = generate;
   $("loadTees").onclick = () => loadGroups(false);
   $("saveTees").onclick = saveGroups;
@@ -302,31 +304,62 @@ async function loadResponses() {
     if (error) throw error;
     rows = data || [];
     const playing = rows.filter(r => r.attending && !r.reserve).length, waiting = rows.filter(r => r.reserve).length;
-    area.innerHTML = `<p class="rsvp-counts"><strong>${playing} playing</strong><span>${waiting} waiting</span><span>${rows.length - playing - waiting} not playing</span></p>${selected.tee_published_at ? '<p class="notice">Tee times are published. Members must contact the committee to withdraw. Check and republish the groups after changing the player list.</p>' : ''}` + (rows.length ? rows.map(r => `<article class="simple-response-row"><div><h3>${e(r.name)}</h3><p>${r.buggy ? "Buggy" + (r.flexibility === "walk" ? " · can walk if needed" : "") : "Walking"}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</p></div><span class="status-pill ${!r.attending && !r.reserve ? "cancelled" : ""}">${r.reserve ? "Waiting list" : r.attending ? "Playing" : "Not playing"}</span><button class="secondary" type="button" data-edit-response="${r.user_id}">Edit response</button></article>`).join("") : '<p class="muted">No responses yet. Members RSVP from the event page.</p>');
-    area.querySelectorAll("[data-edit-response]").forEach(button => button.onclick = () => editResponse(rows.find(r => r.user_id === button.dataset.editResponse)));
+    area.innerHTML = `<p class="rsvp-counts"><strong>${playing} playing</strong><span>${waiting} waiting</span><span>${rows.length - playing - waiting} not playing</span></p>${selected.tee_published_at ? '<p class="notice">Tee times are published. Members must contact the committee to withdraw. Check and republish the groups after changing the player list.</p>' : ''}` + (rows.length ? rows.map(r => `<article class="simple-response-row"><div><h3>${e(r.name)}</h3><p>${r.buggy ? "Buggy" + (r.flexibility === "walk" ? " · can walk if needed" : "") : "Walking"}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</p></div><span class="status-pill ${!r.attending && !r.reserve ? "cancelled" : ""}">${r.reserve ? "Waiting list" : r.attending ? "Playing" : "Not playing"}</span><button class="secondary" type="button" data-edit-response="${participantId(r)}">Edit response</button></article>`).join("") : '<p class="muted">No responses yet. Add a member here or let members RSVP from the event page.</p>');
+    area.querySelectorAll("[data-edit-response]").forEach(button => button.onclick = () => editResponse(rows.find(r => participantId(r) === button.dataset.editResponse)));
     return true;
   } catch (error) {
     if (selected?.id === id) { rows = []; area.innerHTML = b.empty("Could not load RSVPs.", error.message); }
     return false;
   } finally { $("refreshRsvps").disabled = false; }
 }
-function editResponse(person) {
+async function addMember() {
+  if (!selected || selected.cancelled || isBusy()) return;
+  const id = selected.id;
+  responseBusy = true; syncControls();
+  try {
+    if (!(await loadResponses())) return;
+    const { data, error } = await c.rpc("admin_booking_members", { event: id });
+    if (error) throw error;
+    if (selected?.id !== id || !b.state.adminAccess) return;
+    if (!data?.length) { b.toast("No available members in the list."); return; }
+    responseBusy = false;
+    editResponse({ name: "", attending: true, reserve: false, buggy: false }, data);
+  } catch (error) { b.toast(error.message || "Could not load members. Try again."); }
+  finally { responseBusy = false; syncControls(); }
+}
+function editResponse(person, choices = null) {
   if (!person || !selected || responseBusy) return;
   const id = selected.id, dialog = document.createElement("dialog");
   dialog.className = "simple-admin-dialog";
   dialog.setAttribute("aria-labelledby", "responseTitle");
-  dialog.innerHTML = `<form class="form-stack"><h2 id="responseTitle">${e(person.name)}</h2><p class="muted">${e(selected.name)}${person.baseline_rsvp_contacts?.phone ? " · " + e(person.baseline_rsvp_contacts.phone) : ""}</p><label>Status<select name="status"><option value="playing" ${person.attending && !person.reserve ? "selected" : ""}>Playing</option><option value="waiting" ${person.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!person.attending && !person.reserve ? "selected" : ""}>Not playing</option></select></label><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${person.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${person.flexibility === "walk" ? "checked" : ""}>Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map(x => `<option ${person.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label><p class="muted">If a place opens, the next member on the waiting list is moved in automatically.</p><div class="actions"><button type="submit">Save response</button><button type="button" class="secondary" data-close>Cancel</button></div><p class="form-status" role="status"></p></form>`;
+  dialog.innerHTML = `<form class="form-stack"><h2 id="responseTitle">${choices ? "Add member" : e(person.name)}</h2>${choices ? `<label>Member<select name="member_id" required><option value="">Choose member</option>${choices.map(m => `<option value="${e(m.id)}">${e(m.name)}${m.booking_id ? " · response saved" : ""}</option>`).join("")}</select></label><p class="muted" data-member-info>Choose the member who contacted you. They do not need an online account.</p>` : ""}<p class="muted">${e(selected.name)}${person.baseline_rsvp_contacts?.phone ? " · " + e(person.baseline_rsvp_contacts.phone) : ""}</p><label>Status<select name="status"><option value="playing" ${person.attending && !person.reserve ? "selected" : ""}>Playing</option><option value="waiting" ${person.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!person.attending && !person.reserve ? "selected" : ""}>Not playing</option></select></label><div data-golf-options ${selected.event_type === "social" ? "hidden" : ""}><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${person.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${person.flexibility === "walk" ? "checked" : ""}>Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map(x => `<option ${person.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><p class="muted">If the event is full, the booking joins the waiting list. If a place opens, the next member on the waiting list is moved in automatically.</p><div class="actions"><button type="submit">Save response</button><button type="button" class="secondary" data-close>Cancel</button></div><p class="form-status" role="status"></p></form>`;
   document.body.append(dialog); dialog.showModal();
   const editor = dialog.querySelector("form");
+  if (choices) editor.elements.member_id.onchange = () => {
+    const chosen = choices.find(m => m.id === editor.elements.member_id.value);
+    if (!chosen) return;
+    const existing = rows.find(r => r.id === chosen.booking_id);
+    person = existing || { member_id: chosen.id, user_id: chosen.user_id, name: chosen.name, attending: true, reserve: false, buggy: false };
+    editor.elements.status.value = person.reserve ? "waiting" : person.attending ? "playing" : "no";
+    editor.elements.buggy.value = person.buggy ? "yes" : "no";
+    editor.elements.preferred_time.value = person.preferred_time || "";
+    editor.elements.flexibility.checked = person.flexibility === "walk";
+    editor.querySelector("[data-member-info]").textContent = existing
+      ? "This member already has a response. Saving updates that booking."
+      : chosen.user_id ? "This booking will appear in their account."
+      : "Their place will be saved now and linked automatically if they register later.";
+  };
   dialog.querySelector("[data-close]").onclick = () => { if (!responseBusy) dialog.close(); };
   dialog.oncancel = ev => { if (responseBusy) ev.preventDefault(); };
   dialog.onclose = () => dialog.remove();
   editor.onsubmit = async ev => {
     ev.preventDefault(); if (responseBusy) return;
+    if (!b.state.adminAccess || selected?.id !== id) { dialog.close(); return; }
+    if (!editor.reportValidity() || (choices && !editor.elements.member_id.value)) return;
     const f = new FormData(editor), status = editor.querySelector(".form-status");
     responseBusy = true; editor.inert = true; syncControls(); status.textContent = "Saving response…";
     try {
-      const { data, error } = await c.rpc("submit_rsvp", { payload: { event_id: id, user_id: person.user_id, attending: f.get("status") !== "no", reserve: f.get("status") === "waiting", buggy: f.get("buggy") === "yes", preferred_time: f.get("preferred_time") || null, flexibility: f.get("flexibility") ? "walk" : null } });
+      const { data, error } = await c.rpc("submit_rsvp", { payload: { event_id: id, ...(person.member_id ? { member_id: person.member_id } : { user_id: person.user_id }), attending: f.get("status") !== "no", reserve: f.get("status") === "waiting", buggy: f.get("buggy") === "yes", preferred_time: f.get("preferred_time") || null, flexibility: f.get("flexibility") ? "walk" : null } });
       if (error) throw error;
       const refreshed = await c.from("events").select("*").eq("id", id).single();
       if (!refreshed.error && selected?.id === id) { selected = refreshed.data; events = events.map(ev => ev.id === id ? selected : ev); }
@@ -378,7 +411,7 @@ async function generate() {
     const pairData = await operation("admin", { event_id: id });
     if (selected?.id !== id) return;
     const packed = packPlayers(players, (pairData.pairs || []).filter(p => p.status === "confirmed")), times = timesFor(packed.length);
-    groups = packed.map((people, i) => ({ time: times[i], players: people.map(p => p.user_id) }));
+    groups = packed.map((people, i) => ({ time: times[i], players: people.map(p => participantId(p)) }));
     groupsLoadedFor = id; markTeeDirty(); renderGroups();
     $("teeMessage").textContent = "Draft groups ready. Check names, buggy pairs and times, then publish.";
   });
@@ -394,10 +427,10 @@ async function loadGroups(automatic = false) {
     if (error) throw error;
     groupsLoadedFor = id; teeDirty = false;
     let changed = false;
-    groups = (data || []).map(g => ({ time: String(g.tee_time || "").slice(0,5), players: (g.players || []).map(p => p.user_id).filter(uid => { const valid = rows.some(r => r.user_id === uid && r.attending && !r.reserve); if (!valid) changed = true; return valid; }) })).filter(g => g.players.length);
+    groups = (data || []).map(g => ({ time: String(g.tee_time || "").slice(0,5), players: (g.players || []).map(p => participantId(p)).filter(uid => { const valid = rows.some(r => participantId(r) === uid && r.attending && !r.reserve); if (!valid) changed = true; return valid; }) })).filter(g => g.players.length);
     if (!groups.length) { renderGroups(); setSaveState("teeSaveState", "Not published", "new"); $("teeMessage").textContent = "No saved tee times. Choose Create groups to get started."; return; }
-    const assigned = new Set(groups.flatMap(g => g.players)), extra = rows.filter(r => r.attending && !r.reserve && !assigned.has(r.user_id));
-    for (const person of extra) { let g = groups.find(g => g.players.length < 4); if (!g) { g = { time: "", players: [] }; groups.push(g); } g.players.push(person.user_id); }
+    const assigned = new Set(groups.flatMap(g => g.players)), extra = rows.filter(r => r.attending && !r.reserve && !assigned.has(participantId(r)));
+    for (const person of extra) { let g = groups.find(g => g.players.length < 4); if (!g) { g = { time: "", players: [] }; groups.push(g); } g.players.push(participantId(person)); }
     if (extra.length || changed || selected.tee_times_dirty) markTeeDirty();
     else setSaveState("teeSaveState", "Published", "saved");
     renderGroups();
@@ -405,7 +438,7 @@ async function loadGroups(automatic = false) {
   });
 }
 function renderGroups() {
-  $("teeEditor").innerHTML = groups.map((g, i) => `<section class="tee-group"><div class="section-heading"><h3>Group ${i + 1}<small>${g.players.length} players</small></h3><label>Tee time<input type="time" value="${e(g.time)}" data-time="${i}"></label></div>${g.players.map(id => { const r = rows.find(r => r.user_id === id); if (!r) return ""; return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"}${r.flexibility === "walk" ? " · can walk if needed" : ""}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${i === j ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`; }).join("")}${g.players.filter(id => rows.find(r => r.user_id === id)?.buggy).length % 2 ? '<p class="muted">Check the buggy pairing in this group.</p>' : ""}${g.players.length > 4 ? '<p class="error">Move a player out: maximum four per group.</p>' : ""}</section>`).join("");
+  $("teeEditor").innerHTML = groups.map((g, i) => `<section class="tee-group"><div class="section-heading"><h3>Group ${i + 1}<small>${g.players.length} players</small></h3><label>Tee time<input type="time" value="${e(g.time)}" data-time="${i}"></label></div>${g.players.map(id => { const r = rows.find(r => participantId(r) === id); if (!r) return ""; return `<div class="tee-player"><span>${e(r.name)}<small>${r.buggy ? "Buggy" : "Walking"}${r.flexibility === "walk" ? " · can walk if needed" : ""}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</small></span><label class="visually-hidden" for="group-${id}">Group for ${e(r.name)}</label><select id="group-${id}" data-player="${id}" data-from="${i}">${groups.map((_, j) => `<option value="${j}" ${i === j ? "selected" : ""}>Group ${j + 1}</option>`).join("")}<option value="new">New group</option></select></div>`; }).join("")}${g.players.filter(id => rows.find(r => participantId(r) === id)?.buggy).length % 2 ? '<p class="muted">Check the buggy pairing in this group.</p>' : ""}${g.players.length > 4 ? '<p class="error">Move a player out: maximum four per group.</p>' : ""}</section>`).join("");
   $("teeEditor").querySelectorAll("[data-time]").forEach(input => input.onchange = () => { groups[Number(input.dataset.time)].time = input.value; markTeeDirty(); });
   $("teeEditor").querySelectorAll("[data-player]").forEach(select => select.onchange = () => {
     const id = select.dataset.player, from = Number(select.dataset.from), to = select.value;
@@ -428,8 +461,8 @@ function validateGroups() {
     for (const id of g.players) { if (seen.has(id)) throw new Error("A player appears more than once. Reload or recreate groups."); seen.add(id); }
   }
   const confirmed = rows.filter(r => r.attending && !r.reserve);
-  if (seen.size !== confirmed.length || confirmed.some(r => !seen.has(r.user_id))) throw new Error("Include every confirmed player once. Reload the groups to check for new RSVPs.");
-  const odd = active.filter(g => g.players.filter(id => rows.find(r => r.user_id === id)?.buggy).length % 2);
+  if (seen.size !== confirmed.length || confirmed.some(r => !seen.has(participantId(r)))) throw new Error("Include every confirmed player once. Reload the groups to check for new RSVPs.");
+  const odd = active.filter(g => g.players.filter(id => rows.find(r => participantId(r) === id)?.buggy).length % 2);
   if (odd.length > 1) throw new Error("There are unpaired buggy players in different groups. Put them together before publishing.");
   return active;
 }
@@ -442,8 +475,8 @@ async function saveGroups() {
     if (error) throw error;
     const moves = [];
     for (const g of active) for (const uid of g.players) {
-      const previous = (data || []).find(t => (t.players || []).some(p => p.user_id === uid));
-      if (previous && (previous.tee_time !== g.time || JSON.stringify(previous.players.map(p => p.user_id).sort()) !== JSON.stringify([...g.players].sort()))) moves.push(`${rows.find(r => r.user_id === uid)?.name || "Player"}: ${previous.tee_time} → ${g.time}${previous.tee_time === g.time ? " (group changed)" : ""}`);
+      const previous = (data || []).find(t => (t.players || []).some(p => participantId(p) === uid));
+      if (previous && (previous.tee_time !== g.time || JSON.stringify(previous.players.map(p => participantId(p)).sort()) !== JSON.stringify([...g.players].sort()))) moves.push(`${rows.find(r => participantId(r) === uid)?.name || "Player"}: ${previous.tee_time} → ${g.time}${previous.tee_time === g.time ? " (group changed)" : ""}`);
     }
     if (!(await reviewPublication(moves, active))) { $("teeMessage").textContent = "Nothing published. Continue editing below."; return; }
     $("teeMessage").textContent = "Publishing tee times…";

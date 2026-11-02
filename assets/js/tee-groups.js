@@ -1,3 +1,4 @@
+export const participantId = player => player?.participant_id || player?.user_id || player?.member_id;
 // Keep buggy partners together; tee preferences are best-effort around these pairs.
 export function packPlayers(players, playingPairs = []) {
   const rank = (p) => ({ First: 0, Middle: 1, End: 2 })[p.preferred_time] ?? 1;
@@ -7,23 +8,23 @@ export function packPlayers(players, playingPairs = []) {
   const paired = new Set(),
     units = [];
   for (const pair of playingPairs) {
-    const a = ordered.find((p) => p.user_id === pair.first_user),
-      b = ordered.find((p) => p.user_id === pair.second_user);
-    if (a && b && !paired.has(a.user_id) && !paired.has(b.user_id)) {
+    const a = ordered.find((p) => participantId(p) === pair.first_user),
+      b = ordered.find((p) => participantId(p) === pair.second_user);
+    if (a && b && !paired.has(participantId(a)) && !paired.has(participantId(b))) {
       units.push([a, b]);
-      paired.add(a.user_id);
-      paired.add(b.user_id);
+      paired.add(participantId(a));
+      paired.add(participantId(b));
     }
   }
   // Host links are preferences. Confirmed playing pairs remain indivisible.
   for (const guest of ordered.filter((p) => p.guest_host_id)) {
-    const host = ordered.find((p) => p.user_id === guest.guest_host_id);
+    const host = ordered.find((p) => participantId(p) === guest.guest_host_id);
     if (!host) continue;
     const guestUnit = units.find((u) =>
-      u.some((p) => p.user_id === guest.user_id),
+      u.some((p) => participantId(p) === participantId(guest)),
     ) || [guest];
     const hostUnit = units.find((u) =>
-      u.some((p) => p.user_id === host.user_id),
+      u.some((p) => participantId(p) === participantId(host)),
     ) || [host];
     if (guestUnit === hostUnit || guestUnit.length + hostUnit.length > 4)
       continue;
@@ -33,9 +34,9 @@ export function packPlayers(players, playingPairs = []) {
     }
     const merged = [...hostUnit, ...guestUnit];
     units.push(merged);
-    merged.forEach((p) => paired.add(p.user_id));
+    merged.forEach((p) => paired.add(participantId(p)));
   }
-  const remaining = ordered.filter((p) => !paired.has(p.user_id));
+  const remaining = ordered.filter((p) => !paired.has(participantId(p)));
   const buggy = remaining.filter((p) => p.buggy);
   units.push(...remaining.filter((p) => !p.buggy).map((p) => [p]));
   for (let i = 0; i < buggy.length; i += 2) units.push(buggy.slice(i, i + 2));

@@ -195,3 +195,11 @@ Admin previews also expose camera direction guidance for mapped greens; camera, 
 Course preparation requests declare map_format 3. Older organiser pages receive an update-required message before provider lookups rather than an incompatible map. The service worker fetches same-site navigation and scripts with no-store so revisiting the page does not reuse cached HTML or JavaScript. Existing open forms are never automatically reloaded.
 
 Once golf tee times have been published, member RSVP actions become Tee times and the homepage shows the committee withdrawal notice above the published group. Guest invitation creation is hidden there. The shared RSVP dialog also blocks old links; the RSVP database function enforces the lock while retaining committee/admin changes. Social events and the existing six-day change cutoff retain their prior behaviour.
+
+## Admin-managed event bookings
+
+In Admin → RSVPs, Add member records a booking for any existing roster member, including people without a 2027 login. The normal capacity, waiting list, tee review and duplicate checks apply. Organisers can edit or withdraw the same response.
+
+Offline attendees use a roster identity, never a fabricated authentication account. Registration links their existing RSVP, queue position, tee assignment and scores. Offline starting handicaps can be entered under Members. Account-based online payments and buggy booking ownership become available after registration; their attendance and buggy request are visible immediately.
+
+Run `tests/admin-member-bookings.sql` transactionally to verify booking, capacity, registration inheritance, scoring and authorization. All test records roll back. Browser checks are in the existing GitHub Actions workflow.

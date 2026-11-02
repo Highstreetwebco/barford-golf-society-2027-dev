@@ -1,3 +1,4 @@
+import { participantId } from "./tee-groups.js?v=2027-admin-bookings-1";
 import { adjustment, roundAverage, handicapAt, rulesHTML } from "./league-rules.js?v=2027-simple-1";
 const b = await window.barfordReady, e = b.escape;
 let state, event, responses = [], teeGroups = [], dirty = false, busy = false, token = 0;
@@ -93,12 +94,12 @@ async function saveForm(form, work) {
 }
 function renderHandicaps(area, feedback = "") {
   updateHandicapSetup(state);
-  const missing = state.players.filter(p => p.starting_handicap == null);
+  const missing = state.players.filter(p => p.starting_handicap == null || p.offline);
   if (!missing.length) {
     area.innerHTML = `<p class="success">${e(feedback || "Every member has a starting handicap.")}</p><p class="muted">To correct an existing starting handicap, choose Edit member below.</p>`;
     return;
   }
-  area.innerHTML = `<p>Set the season starting handicap for these members. Press Enter for the next name. Leave unknown values blank.</p><form id="handicapForm"><div class="table-scroll"><table><thead><tr><th>Member</th><th>Starting handicap</th></tr></thead><tbody>${missing.map(p => `<tr><th scope="row"><label for="hcp-${p.id}">${e(p.name)}</label></th><td><input class="score-input" id="hcp-${p.id}" data-hcp="${p.id}" type="number" inputmode="decimal" min="0" max="36" step="0.1" aria-label="Starting handicap for ${e(p.name)}"></td></tr>`).join("")}</tbody></table></div><div class="actions section"><button type="submit">Save starting handicaps</button><span id="handicapSaveState" class="save-state" role="status">${e(feedback || "No changes")}</span></div><p class="form-status" role="status"></p></form>`;
+  area.innerHTML = `<p>Set the season starting handicap for these members. Press Enter for the next name. Leave unknown values blank.</p><form id="handicapForm"><div class="table-scroll"><table><thead><tr><th>Member</th><th>Starting handicap</th></tr></thead><tbody>${missing.map(p => `<tr><th scope="row"><label for="hcp-${p.id}">${e(p.name)}</label></th><td><input class="score-input" id="hcp-${p.id}" data-hcp="${p.id}" type="number" inputmode="decimal" min="0" max="36" step="0.1" aria-label="Starting handicap for ${e(p.name)}" value="${p.starting_handicap ?? ""}"></td></tr>`).join("")}</tbody></table></div><div class="actions section"><button type="submit">Save starting handicaps</button><span id="handicapSaveState" class="save-state" role="status">${e(feedback || "No changes")}</span></div><p class="form-status" role="status"></p></form>`;
   const form = area.querySelector("form"), inputs = [...area.querySelectorAll("[data-hcp]")];
   inputs.forEach(input => input.oninput = () => {
     dirty = true;
@@ -125,7 +126,7 @@ function renderScoring(area, feedback = "") {
   const saved = state.rounds.find(r => r.event_id === event.id);
   const entered = new Map((saved?.draft || saved?.published_entries || []).map(x => [x.user_id, { ...x }]));
   const confirmed = responses.filter(r => r.attending && !r.reserve);
-  for (const p of confirmed) if (!entered.has(p.user_id)) entered.set(p.user_id, { user_id: p.user_id, status: "pending", points: null });
+  for (const p of confirmed) if (!entered.has(participantId(p))) entered.set(participantId(p), { user_id: participantId(p), status: "pending", points: null });
   let chosen = saved?.draft_winner || saved?.winner || "";
   function leaderKey(list) {
     const valid = list.filter(x => x.status === "played" && Number.isInteger(x.points) && x.points >= 1 && x.points <= 108);
@@ -254,9 +255,9 @@ function renderCards(area) {
   const players = responses
     .filter((r) => r.attending && !r.reserve)
     .map((r) => {
-      const p = state.players.find((p) => p.id === r.user_id),
+      const p = state.players.find((p) => p.id === participantId(r)),
         group = teeGroups.find((g) =>
-          g.players.some((x) => x.user_id === r.user_id),
+          g.players.some((x) => participantId(x) === participantId(r)),
         );
       return {
         name: r.guest_host_id ? r.name : p?.name || r.name,
@@ -269,7 +270,7 @@ function renderCards(area) {
     .sort((a, c) => a.group - c.group || a.name.localeCompare(c.name));
   const warning = notice(),
     missing = players.filter((p) => p.handicap === null).length;
-  area.innerHTML = `<div class="scorecard-print"><p class="eyebrow">ROUND ${event.round_number} · SCORECARD LIST</p><h2>Names and handicaps for scorecards</h2><h3>${e(event.name)}</h3><p>${e(b.date(event.date))} · ${players.length} confirmed players · ${e(event.location || "")}</p>${warning}${missing ? `<p class="notice">${missing} player${missing > 1 ? "s need" : " needs"} a starting handicap. Set this in Members before writing the cards.</p>` : ""}${event.tee_times_dirty ? '<p class="notice">The RSVP list has changed since tee times were published. Check and republish tee groups.</p>' : ""}<p class="muted">Copy each name and society handicap onto their card. Waiting-list and declined players are excluded. ${teeGroups.length ? "Ordered by tee group." : "Tee groups have not been published; listed alphabetically."}</p><div class="table-scroll"><table class="scorecard-table"><thead><tr><th>Done</th><th>Member name</th><th>Round ${event.round_number} HCP</th><th>Tee time</th><th>Travel</th></tr></thead><tbody>${players.map((p) => `<tr><td><input type="checkbox" aria-label="Card written for ${e(p.name)}"></td><th scope="row">${e(p.name)}</th><td class="card-hcp">${p.handicap ?? "NOT SET"}</td><td>${e(p.tee || "Not assigned")}</td><td>${p.buggy ? "Buggy" : "Walking"}</td></tr>`).join("")}</tbody></table></div>${players.length ? "" : "<p>No confirmed players yet.</p>"}<small>Prepared ${e(new Date().toLocaleString("en-GB"))}. Refresh after changing RSVPs or scores.</small></div><div class="actions section"><button id="printScorecards" ${players.length ? "" : "disabled"}>Print scorecard list</button><button id="downloadScorecards" class="secondary" ${players.length ? "" : "disabled"}>Download CSV</button><button id="refreshScorecards" class="secondary">Refresh list</button></div>`;
+  area.innerHTML = `<div class="scorecard-print"><p class="eyebrow">ROUND ${event.round_number} · SCORECARD LIST</p><h2>Names and handicaps for scorecards</h2><h3>${e(event.name)}</h3><p>${e(b.date(event.date))} · ${players.length} confirmed players · ${e(event.location || "")}</p>${warning}${missing ? `<p class="notice">${missing} player${missing > 1 ? "s need" : " needs"} a starting handicap. Set this in Members before writing the cards.</p>` : ""}${event.tee_times_dirty ? '<p class="notice">The RSVP list has changed since tee times were published. Check and republish tee groups.</p>' : ""}<p class="muted">Copy each name and society handicap onto their card. Waiting-list and declined players are excluded. ${teeGroups.length ? "Ordered by tee group." : "Tee groups have not been published; listed alphabetically."}</p><div class="table-scroll"><table class="scorecard-table"><thead><tr><th>Done</th><th>Member name</th><th>Round ${event.round_number} HCP</th><th>Tee time</th><th>Travel</th></tr></thead><tbody>${players.map((p) => `<tr><td><input type="checkbox" aria-label="Card written for ${e(p.name)}" value="${p.starting_handicap ?? ""}"></td><th scope="row">${e(p.name)}</th><td class="card-hcp">${p.handicap ?? "NOT SET"}</td><td>${e(p.tee || "Not assigned")}</td><td>${p.buggy ? "Buggy" : "Walking"}</td></tr>`).join("")}</tbody></table></div>${players.length ? "" : "<p>No confirmed players yet.</p>"}<small>Prepared ${e(new Date().toLocaleString("en-GB"))}. Refresh after changing RSVPs or scores.</small></div><div class="actions section"><button id="printScorecards" ${players.length ? "" : "disabled"}>Print scorecard list</button><button id="downloadScorecards" class="secondary" ${players.length ? "" : "disabled"}>Download CSV</button><button id="refreshScorecards" class="secondary">Refresh list</button></div>`;
   area.querySelector("#refreshScorecards").onclick = () =>
     showLeagueTab("scorecards", event);
   area.querySelector("#printScorecards").onclick = () => {
