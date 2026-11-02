@@ -1,6 +1,8 @@
 # Barford Golf Society — simple 2027 site
 
-Development site: https://highstreetwebco.github.io/barford-golf-society-2027-dev/
+Production site: https://barfordgolf.co.uk/
+
+The 2027 site is launched from this repository. The 2026 presentation evening remains at https://highstreetwebco.github.io/barford-golf-society/ with its existing backend and records. A homepage notice links to it. The committee-preview gate is retired; member and administrator authorization still use the existing 2027 Supabase project.
 
 ## Current workflow · October 2026
 
@@ -56,7 +58,7 @@ https://highstreetwebco.github.io/barford-golf-society-2027-dev/
 
 ## Isolation
 
-- Never add `CNAME`, point this repository at `barfordgolf.co.uk`, or write to the live repository.
+- Historical development-only restriction, superseded by Jack’s 2 November 2026 launch request: the production domain now belongs to this 2027 repository. Keep the 2026 website and backend intact at its GitHub Pages address.
 - The only backend is Supabase project `xspzmthygrajzktydvvj`.
 - Fresh `baseline_*` tables and `baseline-*` storage buckets keep this restart separate from the previous 2027 data. No live member, booking, score or gallery records were copied.
 - Existing 2027 accounts and administrator permissions remain intact. Admin actions use Supabase authentication and database policies, not the live site's hard-coded password.

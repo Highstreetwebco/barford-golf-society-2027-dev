@@ -12,8 +12,6 @@ const names = ['Test Member', 'Derek Lewis', 'Richard Jones', 'Gary Example', 'T
 async function setup(browser, {admin = false, signedIn = true, width = 1365} = {}) {
   const context = await browser.newContext({viewport:{width,height:900},serviceWorkers:'block',timezoneId:'Europe/London'});
   const model = await mocks(context, {signedIn,admin});
-  await context.addInitScript(() => sessionStorage.setItem('barford-2027-preview-session','mock-valid-token'));
-  await context.route(backend+'/rest/v1/rpc/baseline_preview_valid',route=>route.fulfill({json:true}));
   model.profile.is_admin = admin;
   model.events = [{...fixture, event_type:'league',round_number:1,member_price:45,course_name:'The Warwickshire',date:'2027-06-25',tee_published_at:null,course_layout_id:null}];
   await context.addInitScript(() => {
@@ -41,15 +39,22 @@ function resultBoard() {
   const browser = await chromium.launch();
   try {
     {
-      const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();
+      const {context,page,errors}=await setup(browser,{signedIn:false});
       await page.goto(base+'index.html');
-      await page.locator('#previewPassword').waitFor();
-      assert.equal(await page.locator('header img.preview-logo').count(),1,'Correct launch emblem must be present');
-      await page.locator('header img.preview-logo').evaluate(img => img.decode());
-      assert.match(await page.title(),/Coming soon/);
+      await page.locator('#homeTitle').waitFor();
+      assert.equal(await page.locator('#previewPassword').count(),0,'Live homepage has no preview password');
+      assert.equal(await page.locator('header img.brand-lockup').count(),1);
+      await page.locator('header img.brand-lockup').evaluate(img => img.decode());
+      assert.match(await page.title(),/2027 Season/);
+      assert.equal(await page.locator('a[href="https://highstreetwebco.github.io/barford-golf-society/"]').count(),1,'2026 evening remains accessible');
       await page.goto(base+'events.html');
-      await page.waitForURL('**/index.html?next=events.html');
-      report.push('PASS public coming-soon page and locked direct event links');
+      await page.locator('a[href="event.html?id=999"]').first().waitFor();
+      assert.equal(new URL(page.url()).pathname,'/events.html','Public event links do not require a preview session');
+      await page.goto(base+'admin.html');
+      await page.getByRole('heading',{name:'Admin sign in',exact:true}).waitFor();
+      assert.equal(await page.locator('[data-admin]:visible').count(),0,'Public launch does not reveal admin controls');
+      assert.deepEqual(errors,[]);
+      report.push('PASS public 2027 launch, direct events, 2026 evening link and signed-out admin guard');
       await context.close();
     }
     for (const width of [390,1365]) {
