@@ -15,7 +15,7 @@
 .page-index #homeTeeGroup .member-tee-players li { padding: 9px 0; gap: 12px; }
 .page-index #homeTeeGroup .member-tee-players li:last-child { padding-bottom: 0; }
 .page-index #homeTeeGroup .portrait-button,
-.page-index #homeTeeGroup .portrait-initials { flex-basis: 44px; width: 44px; height: 44px; }
+.page-index #homeTeeGroup .portrait-initials { flex-basis: 44px; width: 44px; height: 44px; min-height: 44px; }
 .page-index #homeTeeGroup .all-tee-groups { margin-top: 14px; }
 .page-index #homeTeeGroup .all-tee-groups > summary { min-height: 44px; }
 @media (max-width: 700px) {
