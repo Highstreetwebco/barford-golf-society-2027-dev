@@ -6,13 +6,13 @@ The domain serves the **Coming soon** page until Jack launches it. Enter the adm
 
 The existing password is stored as a bcrypt hash in `baseline_private.preview_access`; it is never committed to this repository. Preview sessions expire after 12 hours. Password attempts are limited. The launch flag, password hashes and session hashes have no direct browser access. A PostgREST pre-request hook blocks all other Data API routes while closed unless the request carries a valid preview token. The `baseline-services` Edge Function applies the same gate before its existing action checks. Scheduled public weather refresh pauses until launch.
 
-GitHub Pages and this repository still serve public static source files. The gate hides ordinary page access and protects backend data; it is not private hosting for source/assets. Existing public images are not secret. No Realtime publication is enabled on this project. The 2026 presentation evening remains at https://highstreetwebco.github.io/barford-golf-society/ with its existing backend and records, linked from the preview homepage.
+GitHub Pages and this repository still serve public static source files. The gate hides ordinary page access and protects backend data; it is not private hosting for source/assets. Existing public images are not secret. No Realtime publication is enabled on this project. The 2026 presentation evening remains at https://highstreetwebco.github.io/barford-golf-society/ with its existing backend and records.
 
 `tests/launch-control.sql` exercises the real release flag, token expiry, throttling and direct-API guard inside a rollback transaction using a temporary fixture password. It never publishes the real site. The current browser suite uses isolated mocks to test the complete preview-to-launch journey and fresh visitors.
 
 ## Current workflow · October 2026
 
-The 2027 site keeps the established navy, cream and tan identity and uses a small set of member journeys. Home has **RSVP**, **Leaderboard**, **Course hole view** and **All events**. Admins also see **Enter scores**. Gallery is available from the five-tab mobile navigation and the main menu, with a photo grid, swipe/arrow viewer and the existing member uploads. Shop, trips and the old payment screens are no longer part of the site navigation; their old page URLs return to the core pages. Existing stored records are not deleted by the simplification.
+The 2027 site keeps the established navy, cream and tan identity and uses a small set of member journeys. Home leads with the next upcoming event, its date, tee time and booking action. The welcome message and shortcuts for **RSVP**, **Leaderboard**, **Course hole view** and **All events** follow below. Admins also see **Enter scores**. Gallery is available from the five-tab mobile navigation and the main menu, with a photo grid, swipe/arrow viewer and the existing member uploads. Shop, trips and the old payment screens are no longer part of the site navigation; their old page URLs return to the core pages. Existing stored records are not deleted by the simplification.
 
 ### Members and RSVPs
 

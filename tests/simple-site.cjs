@@ -27,8 +27,8 @@ async function launchMocks(context, launch = {live:false, publishes:0}) {
   return launch;
 }
 
-async function setup(browser, {admin = false, signedIn = true, width = 1365, memberView, launch} = {}) {
-  const context = await browser.newContext({viewport:{width,height:900},serviceWorkers:'block',timezoneId:'Europe/London'});
+async function setup(browser, {admin = false, signedIn = true, width = 1365, height = 900, memberView, launch} = {}) {
+  const context = await browser.newContext({viewport:{width,height},serviceWorkers:'block',timezoneId:'Europe/London'});
   const model = await mocks(context, {signedIn,admin});
   await context.addInitScript(token => sessionStorage.setItem('barford-2027-preview-session',token),previewToken);
   await launchMocks(context,launch);
@@ -118,6 +118,46 @@ function resultBoard() {
       assert.equal(protectedReads,0,'App data must not be requested when launch verification fails');
       await failureContext.close();
       report.push('PASS closed direct links, wrong passwords, preview access, publish confirmation, cancel, double-submit, global launch, admin protection and fail-closed access');
+    }
+    for (const [width,height,signedIn] of [[320,568,true],[390,844,false],[1365,900,true]]) {
+      const {context,page,model,errors}=await setup(browser,{width,height,signedIn});
+      const upcoming={...model.events[0],cover_url:base+'icon-logo.png'};
+      model.events=[{...upcoming,id:996,date:'2027-05-01',name:'Past event'}, {...upcoming,id:997,date:'2027-06-01',cancelled:true,name:'Cancelled event'}, upcoming, {...upcoming,id:998,date:'2027-07-02',name:'July Golf Day'}];
+      await page.goto(base+'home.html');
+      await page.locator('[data-home-rsvp]').waitFor();
+      assert.equal(await page.locator('#nextEvent h2').innerText(),upcoming.name,'Lead with the next available event');
+      const aboveFold=await page.evaluate(()=>{
+        const heading=document.querySelector('#nextEvent h2').getBoundingClientRect();
+        const facts=document.querySelector('#nextEvent .simple-event-facts').getBoundingClientRect();
+        const action=document.querySelector('[data-home-rsvp]').getBoundingClientRect();
+        const welcome=document.querySelector('.simple-home-heading').getBoundingClientRect();
+        const dock=document.querySelector('.mobile-dock');
+        const bottom=getComputedStyle(dock).display==='none'?innerHeight:dock.getBoundingClientRect().top;
+        return scrollY===0 && heading.top>=0 && heading.top<welcome.top && facts.bottom<bottom && action.bottom<=bottom;
+      });
+      assert(aboveFold,'Event, date, tee time and RSVP must be visible without scrolling');
+      assert.equal(await page.getByRole('link',{name:'View the evening and manage your RSVP →',exact:true}).count(),0);
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+      await page.screenshot({path:path.join(out,`event-first-${width}.png`)});
+      if(signedIn) {
+        upcoming.tee_published_at='2027-06-01T10:00:00Z';
+        await page.reload();
+        const teeLink=page.locator('.simple-next-booking').getByRole('link',{name:'View tee times',exact:true});
+        await teeLink.waitFor();
+        const action=await teeLink.boundingBox();
+        const bottom=width<=760?(await page.locator('.mobile-dock').boundingBox()).y:height;
+        assert(action.y+action.height<=bottom,'Published tee times remain immediately actionable');
+      }
+      upcoming.date='2027-05-31';
+      await page.reload();
+      await page.locator('#nextEvent h2').filter({hasText:'July Golf Day'}).waitFor();
+      model.events=[];
+      await page.reload();
+      await page.getByRole('heading',{name:'The 2027 dates are on their way',exact:true}).waitFor();
+      assert.equal(await page.locator('[data-home-rsvp]').count(),0);
+      assert.deepEqual(errors,[]);
+      await context.close();
+      report.push(`PASS event-first homepage at ${width}x${height}: visible action, next-event selection, rollover, tee times and empty state`);
     }
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width});
