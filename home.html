@@ -26,8 +26,9 @@
     <link rel="stylesheet" href="assets/css/next.css?v=2027-gallery-1" />
     <link rel="stylesheet" href="assets/css/simple.css?v=2027-wordmark-1" />
     <script src="assets/js/baseline.js?v=2027-member-view-1" defer></script>
-    <script type="module" src="assets/js/home.js?v=2027-simple-1"></script>
+    <script type="module" src="assets/js/home.js?v=2027-event-first-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
+    <link rel="stylesheet" href="assets/css/home-event-first.css?v=2027-event-first-1" />
 </head>
   <body class="page-index simple-site">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -57,8 +58,12 @@
       </div>
     </header>
     <main id="main" class="container">
+      <section class="simple-next-section" aria-labelledby="nextEventTitle">
+        <div class="section-heading"><h1 id="nextEventTitle">Next event</h1><a href="events.html">All events <span aria-hidden="true">→</span></a></div>
+        <div id="nextEvent" class="panel simple-next-panel" aria-live="polite"><p class="muted">Loading your next event…</p></div>
+      </section>
       <section class="simple-home-heading" aria-labelledby="homeTitle">
-        <div><p class="eyebrow">BARFORD GOLF SOCIETY · 2027</p><h1 id="homeTitle">Your next round starts here.</h1><p id="homeWelcome">RSVP, check the leaderboard and open your course hole view.</p></div>
+        <div><p class="eyebrow">BARFORD GOLF SOCIETY · 2027</p><h2 id="homeTitle">Your next round starts here.</h2><p id="homeWelcome">RSVP, check the leaderboard and open your course hole view.</p></div>
         <a class="button simple-admin-action" href="admin.html?tab=scoring" data-admin hidden>Enter scores <span aria-hidden="true">→</span></a>
       </section>
       <nav class="simple-go-grid" aria-label="Quick actions">
@@ -67,10 +72,6 @@
         <a id="homeHoles" class="simple-go-card" href="events.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 21V3l12 4-12 5M3 21h9"/></svg></span><span><strong>Course hole view</strong><small>Maps &amp; distances</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
         <a class="simple-go-card" href="events.html"><span class="simple-go-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg></span><span><strong>All events</strong><small>Dates &amp; details</small></span><span class="simple-go-arrow" aria-hidden="true">→</span></a>
       </nav>
-      <section class="simple-next-section" aria-labelledby="nextEventTitle">
-        <div class="section-heading"><h2 id="nextEventTitle">Next event</h2><a href="events.html">All events <span aria-hidden="true">→</span></a></div>
-        <div id="nextEvent" class="panel simple-next-panel" aria-live="polite"><p class="muted">Loading your next event…</p></div>
-      </section>
       <p class="simple-season-note">7 rounds. Your best 5 scores count towards the Order of Merit.</p>
     </main>
     <footer class="site-footer">

@@ -67,7 +67,7 @@ function bookingHTML(ev) {
   if (ev.cancelled) return '<p class="notice">This event has been cancelled.</p>';
   if (rsvpClosed(ev)) return '<p class="simple-booking neutral">This event has finished.</p>';
   if (teeTimesPublished(ev)) {
-    return `<p class="notice">${withdrawalNotice}</p><a class="button" href="event.html?id=${ev.id}#tees">View tee times</a>`;
+    return `<a class="button" href="event.html?id=${ev.id}#tees">View tee times</a><p class="notice">${withdrawalNotice}</p>`;
   }
   if (responseError) return '<p class="notice">Your RSVP status could not load.</p><button type="button" class="secondary" data-retry-booking>Check your RSVP</button>';
   const status = rsvpStatus(ev, response);
