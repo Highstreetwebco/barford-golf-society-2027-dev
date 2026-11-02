@@ -1,5 +1,6 @@
-import { mountMemberTees } from "./member-tees.js?v=2027-home-tees-1";
-import { londonToday, slots, directions, openCourseHoles } from "./event-experience.js?v=2027-simple-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-event-day-1";
+import { openDirections } from "./event-directions.js?v=2027-event-day-1";
+import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-simple-1";
 import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-simple-1";
 
 const b = await window.barfordReady;
@@ -86,12 +87,12 @@ async function render() {
     ...(ev.payment_due ? [["Payment due", b.date(ev.payment_due)]] : []),
   ];
   list.innerHTML = `<article class="simple-event-detail" id="event-${ev.id}">
-    <header class="simple-event-header"><div><p class="eyebrow">${e(kind(ev))}</p><h1>${e(ev.name)}</h1>${place(ev) && place(ev) !== ev.name ? `<p>${e(place(ev))}</p>` : ""}</div>${image ? `<img src="${image}" alt="" fetchpriority="high">` : ""}</header>
+    <header class="simple-event-header"><div><p class="eyebrow">${e(kind(ev))}</p><h1>${e(ev.name)}</h1>${place(ev) && place(ev) !== ev.name ? `<p>${e(place(ev))}</p>` : ""}<button type="button" class="secondary" data-event-directions>Directions to event</button></div>${image ? `<img src="${image}" alt="" fetchpriority="high">` : ""}</header>
     ${image && ev.cover_credit ? `<p class="simple-cover-credit">${e(ev.cover_credit)}</p>` : ""}
     <section class="panel simple-event-summary" aria-label="Event details">
       <dl class="simple-event-facts">${facts.map(([label, value]) => `<div><dt>${label}</dt><dd>${e(value)}</dd></div>`).join("")}</dl>
       <div class="simple-event-booking">${bookingHTML(ev)}</div>
-      <div class="simple-event-buttons">${isGolf && !ev.cancelled ? '<button type="button" class="secondary" id="hole-view" data-hole-view>Course hole view <span aria-hidden="true">↗</span></button>' : ""}<a class="button secondary" href="${directions(ev)}" target="_blank" rel="noopener noreferrer">Directions <span aria-hidden="true">↗</span></a></div>
+      <div class="simple-event-buttons">${isGolf && !ev.cancelled ? '<button type="button" class="secondary" id="hole-view" data-hole-view>Course hole view <span aria-hidden="true">↗</span></button>' : ""}</div>
       <p class="simple-booking-note">${e(slots(ev, countFor(ev)))}</p>
     </section>
     ${ev.event_notice ? `<p class="notice preserve-lines">${e(ev.event_notice)}</p>` : ""}
@@ -107,6 +108,7 @@ async function render() {
     if (state.user?.id !== before) await load({ force: true });
   });
   list.querySelector("[data-retry-booking]")?.addEventListener("click", () => load({ force: true }).catch(showError));
+  list.querySelector("[data-event-directions]").onclick = (click) => openDirections(ev, b, click.currentTarget);
   list.querySelector("[data-hole-view]")?.addEventListener("click", async (event) => {
     const before = state.user?.id;
     await openCourseHoles(ev, b, event.currentTarget);

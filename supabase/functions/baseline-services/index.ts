@@ -2,6 +2,7 @@
 // organiser operations additionally validate a current GoTrue user and database role.
 import { prepareCourseGps } from "./course-preparation.ts";
 import { findCourseScorecards } from "./course-scorecard.ts";
+import { eventWeather } from "./event-weather.ts";
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -395,99 +396,7 @@ Deno.serve(async (req) => {
       }
       return reply(result);
     }
-    if (body.action === "weather") {
-      const now = new Date();
-      const day = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/London",
-      }).format(now);
-      const days = Math.round(
-        (Date.parse(ev.date) - Date.parse(day)) / 86400000,
-      );
-      if (days < 0 || ev.cancelled) return reply({ status: "closed" });
-      if (days > 15)
-        return reply({
-          status: "too_early",
-          message: "Forecasts become available within 16 days of the event.",
-        });
-      const saved = (await db("baseline_weather?event_id=eq." + eventId))[0];
-      const cached = saved?.forecast?.event_date === ev.date ? saved : null;
-      if (
-        cached &&
-        Date.now() - Date.parse(cached.updated_at) < 20 * 3600000 &&
-        cached.forecast.event_date === ev.date
-      )
-        return reply({ ...cached.forecast, updated_at: cached.updated_at });
-      if (!(await budget("weather:" + eventId, 3600, 2)))
-        return cached
-          ? reply({
-              ...cached.forecast,
-              updated_at: cached.updated_at,
-              stale: true,
-            })
-          : reply({ status: "unavailable" });
-      let lat = ev.latitude,
-        lon = ev.longitude;
-      if ((lat == null || lon == null) && GOOGLE && ev.place_id) {
-        const p = await place(ev.place_id);
-        lat = p?.location?.latitude;
-        lon = p?.location?.longitude;
-      }
-      if (lat == null || lon == null)
-        return reply({
-          status: "no_location",
-          message:
-            "The organiser needs to set the course map location before a forecast can be shown.",
-        });
-      try {
-        const p = new URLSearchParams({
-          latitude: String(lat),
-          longitude: String(lon),
-          hourly:
-            "temperature_2m,precipitation_probability,weather_code,wind_speed_10m",
-          timezone: "Europe/London",
-          forecast_days: "16",
-        });
-        const data = await get("https://api.open-meteo.com/v1/forecast?" + p);
-        const hours = data.hourly.time.flatMap((t: string, i: number) =>
-          t.startsWith(ev.date)
-            ? [
-                {
-                  time: t,
-                  temperature: data.hourly.temperature_2m[i],
-                  rain: data.hourly.precipitation_probability[i],
-                  code: data.hourly.weather_code[i],
-                  wind: data.hourly.wind_speed_10m[i],
-                },
-              ]
-            : [],
-        );
-        const forecast = {
-          status: hours.length ? "ready" : "unavailable",
-          event_date: ev.date,
-          hours,
-          source: "Open-Meteo",
-          timezone: "Europe/London",
-        };
-        const updated_at = new Date().toISOString();
-        await db("baseline_weather", "POST", {
-          event_id: eventId,
-          forecast,
-          updated_at,
-        });
-        return reply({ ...forecast, updated_at });
-      } catch {
-        if (cached)
-          return reply({
-            ...cached.forecast,
-            updated_at: cached.updated_at,
-            stale: true,
-          });
-        return reply({
-          status: "unavailable",
-          message: "The forecast service is temporarily unavailable.",
-        });
-      }
-    }
+    if (body.action === "weather") return reply(await eventWeather(ev, { get, db, budget, place }));
     return reply({ error: "Unknown action" }, 400);
   } catch (error) {
     return reply(

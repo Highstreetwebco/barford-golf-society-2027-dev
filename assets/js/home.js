@@ -1,4 +1,6 @@
-import { mountMemberTees } from "./member-tees.js?v=2027-home-tees-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-event-day-1";
+import { openDirections } from "./event-directions.js?v=2027-event-day-1";
+import { mountTeeWeather } from "./event-weather.js?v=2027-event-day-1";
 import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-simple-1";
 import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-simple-1";
 
@@ -90,7 +92,7 @@ async function render(ev, count) {
   const image = b.safeUrl(ev.cover_url);
   const kind = ev.event_type === "social" ? "Society event" : ev.round_number ? `Round ${ev.round_number} of 7` : "Society golf";
   area.innerHTML = `<div class="simple-next-event">
-    <div class="simple-next-copy"><p class="eyebrow">${e(kind)}</p><h2>${e(ev.name)}</h2>${course && course !== ev.name ? `<p class="muted">${e(course)}</p>` : ""}
+    <div class="simple-next-copy"><p class="eyebrow">${e(kind)}</p><div class="home-round-title"><h2>${e(ev.name)}</h2><button type="button" class="secondary" data-event-directions>Directions to event</button></div>${course && course !== ev.name ? `<p class="muted">${e(course)}</p>` : ""}
       <dl class="simple-event-facts"><div><dt>Date</dt><dd>${e(b.date(ev.date))}</dd></div><div><dt>${ev.event_type === "social" ? "Start time" : "First tee"}</dt><dd>${e(ev.first_time || "To be confirmed")}</dd></div><div><dt>${ev.member_price != null ? "Member price" : "Price"}</dt><dd>${e(fee)}</dd></div></dl>
     </div>${image ? `<div class="simple-next-image"><img src="${image}" alt="" loading="lazy">${ev.cover_credit ? `<small>${e(ev.cover_credit)}</small>` : ""}</div>` : ""}
     <div class="simple-next-booking">${bookingHTML(ev)}</div>
@@ -100,6 +102,7 @@ async function render(ev, count) {
   if (img) img.onerror = () => img.parentElement.remove();
   area.querySelector("[data-home-rsvp]")?.addEventListener("click", () => saveRsvp().catch(() => b.toast("Your RSVP could not open. Please try again.")));
   area.querySelector("[data-retry-booking]")?.addEventListener("click", () => load({ force: true }).catch(showError));
+  area.querySelector("[data-event-directions]").onclick = (click) => openDirections(ev, b, click.currentTarget);
 }
 
 async function renderTees() {
@@ -114,11 +117,15 @@ async function renderTees() {
     teeArea.dataset.event = String(teeEvent.id);
   }
   teeArea.hidden = false;
-  await mountMemberTees(teeArea, teeEvent.id, {
+  const event = teeEvent;
+  const teeTime = await mountMemberTees(teeArea, event.id, {
     home: true,
-    eventName: teeEvent.name,
-    eventDate: b.date(teeEvent.date),
+    eventName: event.name,
+    eventDate: b.date(event.date),
   });
+  const directions = teeArea.querySelector("[data-event-directions]");
+  if (directions) directions.onclick = (click) => openDirections(event, b, click.currentTarget);
+  await mountTeeWeather(teeArea.querySelector("[data-tee-weather]"), event, teeTime, b);
 }
 
 async function load({ force = false } = {}) {

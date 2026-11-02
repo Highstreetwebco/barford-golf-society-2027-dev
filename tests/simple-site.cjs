@@ -27,8 +27,8 @@ async function launchMocks(context, launch = {live:false, publishes:0}) {
   return launch;
 }
 
-async function setup(browser, {admin = false, signedIn = true, width = 1365, height = 900, memberView, launch} = {}) {
-  const context = await browser.newContext({viewport:{width,height},serviceWorkers:'block',timezoneId:'Europe/London'});
+async function setup(browser, {admin = false, signedIn = true, width = 1365, height = 900, memberView, launch, timezoneId = 'Europe/London'} = {}) {
+  const context = await browser.newContext({viewport:{width,height},serviceWorkers:'block',timezoneId});
   const model = await mocks(context, {signedIn,admin});
   await context.addInitScript(token => sessionStorage.setItem('barford-2027-preview-session',token),previewToken);
   await launchMocks(context,launch);
@@ -59,6 +59,85 @@ function resultBoard() {
   await new Promise(resolve=>server.listen(8765,'127.0.0.1',resolve));
   const browser = await chromium.launch();
   try {
+    for (const width of [390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width,timezoneId:'America/Los_Angeles'});
+      const address='Golf & Spa, Crewe Lane, Kenilworth CV8 2EA';
+      const next={...model.events[0],date:'2027-06-05',address:'Another course, CV8 3DR'};
+      const published={...next,id:998,name:'Round 2 – Kenilworth Golf Club',date:'2027-06-10',address,tee_published_at:'2027-06-01T10:00:00Z',latitude:0,longitude:0};
+      model.events=[next,published];
+      const own={group_number:2,tee_time:'10:40',players:people.slice(0,4).map((id,i)=>({user_id:id,name:names[i],handicap:18+i,type:'walker'}))};
+      const other={group_number:1,tee_time:'09:00',players:[{user_id:people[4],name:names[4],handicap:15,type:'walker'}]};
+      model.teeView={status:'published',round_number:2,groups:[other,own]};
+      const ready={status:'ready',event_date:published.date,timezone:'Europe/London',updated_at:'2027-06-01T11:30:00Z',hours:Array.from({length:10},(_,i)=>({time:published.date+'T'+String(i+7).padStart(2,'0')+':00',temperature:i+17,rain:(i+7)*2,code:2,wind:16.09344}))};
+      model.weather=ready;
+      const weatherReads=[];
+      page.on('request',request=>{if(request.url().endsWith('/functions/v1/baseline-services')&&request.postDataJSON()?.action==='weather')weatherReads.push({event:request.postDataJSON().event_id,preview:request.headers()['x-barford-preview']});});
+      const group=page.locator('#homeTeeGroup'),weather=group.locator('[data-tee-weather]'),directions=group.locator('[data-event-directions]');
+      await page.goto(base+'home.html');await weather.locator('.weather-at-tee').waitFor();
+      assert.deepEqual(weatherReads,[{event:998,preview:previewToken}]);
+      assert.match(await weather.innerText(),/Your tee time: 10:40/);
+      assert.match(await weather.innerText(),/11:00 hourly forecast/,'Use the nearest hour in UK time, not the device timezone or event first tee');
+      assert.deepEqual(await weather.locator('dd').allTextContents(),['21°C','22%','10 mph']);
+      assert(await weather.evaluate(el=>el.getBoundingClientRect().top>=document.querySelector('#homeTeeGroup .all-tee-groups').getBoundingClientRect().bottom));
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+      await page.screenshot({path:path.join(out,`home-tee-weather-${width}.png`),fullPage:true});
+      await directions.evaluate(button=>{button.click();button.click();});
+      const dialog=page.getByRole('dialog',{name:'Directions to event',exact:true});await dialog.waitFor();
+      assert.equal(await page.locator('.event-directions-dialog').count(),1);
+      assert.equal(await dialog.locator('.directions-address').innerText(),address);
+      assert.equal(await dialog.locator('.directions-options a').count(),3);
+      await context.route(/^https:\/\/(www\.google\.com\/maps|waze\.com\/ul|maps\.apple\.com\/directions)/,route=>route.fulfill({contentType:'text/html',body:'Route preview'}));
+      for(const name of ['Google Maps','Waze','Apple Maps']) {
+        const link=dialog.getByRole('link',{name,exact:false});const href=new URL(await link.getAttribute('href'));
+        assert.equal(href.searchParams.get(name==='Waze'?'q':'destination'),address,'Saved address takes priority over stale coordinates');
+        const popupPromise=page.waitForEvent('popup');await link.click();const popup=await popupPromise;
+        await popup.waitForLoadState();assert.equal(popup.url(),href.href);await popup.close();
+      }
+      await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedDestination=text;}}}));
+      await dialog.getByRole('button',{name:'Copy address',exact:true}).click();
+      await dialog.getByText('Address copied.',{exact:true}).waitFor();
+      assert.equal(await page.evaluate(()=>window.copiedDestination),address);
+      await page.screenshot({path:path.join(out,`event-directions-${width}.png`)});
+      await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'});
+      assert(await directions.evaluate(el=>el===document.activeElement),'Closing restores focus to the directions button');
+      await group.locator('.all-tee-groups > summary').click();
+      assert(await weather.evaluate(el=>el.getBoundingClientRect().top>=document.querySelector('#homeTeeGroup .all-tee-groups').getBoundingClientRect().bottom));
+      own.tee_time='09:16';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await weather.getByText(/09:00 hourly forecast/).waitFor();
+      assert.match(await weather.innerText(),/Your tee time: 09:16/);assert.equal(weatherReads.length,1,'A changed tee time reuses hourly data, not a stale personal summary');
+      await page.locator('#nextEvent [data-event-directions]').click();await dialog.waitFor();
+      assert.equal(await dialog.locator('.directions-address').innerText(),next.address,'Next-event directions remain separate from the published round');
+      await dialog.getByRole('button',{name:'Close',exact:true}).click();
+      await page.goto(base+'event.html?id=998');await page.locator('[data-event-directions]').click();await dialog.waitFor();
+      assert.equal(await dialog.locator('.directions-address').innerText(),address);
+      await dialog.getByRole('button',{name:'Close',exact:true}).click();
+      let fail=true;
+      await context.route(backend+'/functions/v1/baseline-services',route=>{
+        if(route.request().postDataJSON().action==='weather'&&fail){fail=false;return route.fulfill({status:503,json:{error:'Temporary forecast failure'}});}return route.fallback();
+      });
+      await page.goto(base+'home.html');await weather.getByRole('button',{name:'Try forecast again',exact:true}).waitFor();
+      assert(await directions.isVisible());assert.equal(await group.locator('.member-tee-card:visible').count(),1);
+      await weather.getByRole('button',{name:'Try forecast again',exact:true}).click();await weather.locator('.weather-at-tee').waitFor();
+      model.weather={...ready,stale:true,hours:ready.hours.map(h=>({...h,temperature:null,rain:0,wind:0,code:null}))};
+      await page.reload();await weather.locator('.weather-at-tee').waitFor();
+      assert.deepEqual(await weather.locator('dd').allTextContents(),['—','0%','0 mph']);
+      assert.match(await weather.innerText(),/Conditions unavailable/);assert.match(await weather.innerText(),/last available forecast/);
+      model.weather={...ready,event_date:'2027-06-09'};await page.reload();await weather.getByRole('button',{name:'Try forecast again',exact:true}).waitFor();
+      assert.equal(await weather.locator('dd').count(),0,'Never display forecast values for the wrong date');
+      model.weather={status:'too_early'};await page.reload();await weather.getByText('The forecast will appear here within 16 days of the event.',{exact:true}).waitFor();
+      assert.equal(await weather.locator('dd').count(),0);
+      model.weather={status:'no_location'};await page.reload();await weather.getByText(/committee needs to add the event/).waitFor();
+      model.teeView.groups=[other];const before=weatherReads.length;await page.reload();
+      await weather.getByText('Your forecast will appear here once your tee time is confirmed.',{exact:true}).waitFor();
+      assert.equal(weatherReads.length,before,'An unassigned member does not receive someone else’s tee-time forecast');
+      published.address=null;published.latitude=null;published.longitude=null;
+      await page.reload();await directions.click();await dialog.waitFor();
+      await dialog.getByText('The event address hasn’t been added yet. Please contact the committee for directions.',{exact:true}).waitFor();
+      assert.equal(await dialog.locator('a').count(),0,'Do not silently navigate to a similarly named venue');
+      await dialog.getByRole('button',{name:'Close',exact:true}).click();
+      assert.deepEqual(errors,[]);await context.close();
+      report.push(`PASS directions and tee-time weather ${width}: correct event/address, all map links and popup handoff, copy/keyboard/focus, UK hourly selection, mph, published-time changes, retry, missing/stale data, distant dates and unassigned member`);
+    }
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width});
       const members=[{id:uid,member_id:uid,username:'Test Admin',mobile:'07000000000',is_admin:true,registered:true},
