@@ -1662,7 +1662,7 @@ if (require.main === module) (async () => {
       await page
         .getByRole("button", { name: "Close photo", exact: true })
         .click();
-      await page.getByText("View all tee groups", { exact: true }).click();
+      await page.getByText("View other tee times", { exact: true }).click();
       await page.getByText("Simon Example", { exact: true }).waitFor();
       await page.screenshot({
         path: path.join(out, "home-tee-groups-390.png"),

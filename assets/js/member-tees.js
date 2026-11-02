@@ -2,8 +2,9 @@ import { photoUrls } from "./member-photos.js?v=2027-results-1";
 const b = await window.barfordReady,
   e = b.escape;
 const rendered = new WeakMap();
-export async function mountMemberTees(area, eventId, { home = false } = {}) {
+export async function mountMemberTees(area, eventId, { home = false, eventName = "", eventDate = "" } = {}) {
   if (!b.state.user) {
+    rendered.delete(area);
     area.innerHTML = "";
     return null;
   }
@@ -11,6 +12,7 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
     event: eventId,
   });
   if (error) {
+    rendered.delete(area);
     area.innerHTML =
       '<p class="notice">Tee groups could not load. Refresh to try again.</p>';
     return null;
@@ -28,8 +30,8 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
   );
   // The server can return admin-only handicaps for this account. Keep the member view consistent.
   const secret = data.round_number >= 7 && !b.state.admin;
-  const key = JSON.stringify([data, urls, home, secret]);
-  if (rendered.get(area) === key) return own?.tee_time || null;
+  const key = JSON.stringify([eventId, data, urls, home, eventName, eventDate, secret]);
+  if (rendered.get(area) === key && area.querySelector(home ? ".all-tee-groups" : ".tee-grid")) return own?.tee_time || null;
   rendered.set(area, key);
   const expanded = area.querySelector(".all-tee-groups")?.open;
   const publication = data.published_at
@@ -53,8 +55,9 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
       })
       .join("")}</ul></section>`;
   }
+  const others = data.groups.filter((g) => g !== own);
   area.innerHTML = home
-    ? `<h2>Your tee group</h2>${publication}${warning}${own ? card(own) : "<p>You are not assigned to a published tee group for this event.</p>"}<details class="all-tee-groups"><summary class="button secondary">View all tee groups</summary><div class="tee-grid section">${data.groups.map(card).join("")}</div></details>`
+    ? `<h2>Your tee group</h2>${eventName ? `<p class="home-tee-event"><a href="event.html?id=${encodeURIComponent(eventId)}#tees">${e(eventName)}</a>${eventDate ? `<span>${e(eventDate)}</span>` : ""}</p>` : ""}${own ? card(own) : "<p>You are not assigned to a published tee group for this event.</p>"}<details class="all-tee-groups"><summary class="button secondary">View other tee times</summary><div class="tee-grid section">${others.length ? others.map(card).join("") : '<p class="muted">There are no other published tee groups for this event.</p>'}</div>${publication}</details>${warning}`
     : `<h3>Tee times &amp; playing groups</h3>${publication}${warning}<div class="tee-grid">${data.groups.map(card).join("")}</div>`;
   if (expanded && area.querySelector(".all-tee-groups"))
     area.querySelector(".all-tee-groups").open = true;
