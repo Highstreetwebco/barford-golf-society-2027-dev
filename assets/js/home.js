@@ -1,4 +1,4 @@
-import { mountMemberTees } from "./member-tees.js?v=2027-results-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-admin-menu-1";
 import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-simple-1";
 import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-simple-1";
 
