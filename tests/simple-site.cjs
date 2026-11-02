@@ -67,6 +67,8 @@ function resultBoard() {
       assert.equal(await page.locator('header img.preview-logo').count(),1);
       await page.locator('header img.preview-logo').evaluate(img=>img.decode());
       assert.match(await page.title(),/Coming soon/);
+      await page.goto(base+'gallery.html');
+      await page.waitForURL('**/index.html?next=gallery.html');
       await page.goto(base+'events.html');
       await page.waitForURL('**/index.html?next=events.html');
       await page.locator('#previewPassword').fill('wrong-password');
@@ -107,6 +109,54 @@ function resultBoard() {
       assert.equal(protectedReads,0,'App data must not be requested when launch verification fails');
       await failureContext.close();
       report.push('PASS closed direct links, wrong passwords, preview access, publish confirmation, cancel, double-submit, global launch, admin protection and fail-closed access');
+    }
+    for (const width of [320,390,1365]) {
+      const {context,page,errors}=await setup(browser,{width,signedIn:false});
+      let photos = [1,2,3].map(n=>({id:String(n),name:`photo-${n}.png`}));
+      await context.route(backend+'/storage/v1/object/list/baseline-gallery-images', route=>route.fulfill({json:photos}));
+      await context.route(backend+'/storage/v1/object/public/baseline-gallery-images/uploads/*', route=>route.fulfill({path:path.join(__dirname,'..','icon-logo.png'),contentType:'image/png'}));
+      await page.goto(base+'home.html');
+      await page.locator('#homeTitle').waitFor();
+      const navigation = page.locator(width<761?'.mobile-dock':'.site-nav');
+      await navigation.locator('a[href="gallery.html"]').click();
+      await page.locator('#galleryGrid [data-photo]').first().waitFor();
+      assert.equal(await page.locator('#galleryGrid [data-photo]').count(),3);
+      assert.equal(await navigation.locator('a[aria-current="page"]').getAttribute('href'),'gallery.html');
+      assert.equal(await page.locator('#uploadForm').isVisible(),false,'Browsing photos does not require member sign-in');
+      assert.equal(await page.locator('#uploadGate a').getAttribute('href'),'account.html?next=gallery.html');
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
+      if(width<761) {
+        assert.equal(await page.locator('.mobile-dock a').count(),5);
+        const fits=await page.locator('.mobile-dock a').evaluateAll(links=>links.every(a=>{
+          const r=a.getBoundingClientRect(),label=a.querySelector('span').getBoundingClientRect();
+          return r.width>=44 && r.height>=44 && label.left>=r.left && label.right<=r.right && r.right<=innerWidth;
+        }));
+        assert(fits,'All five bottom tabs have usable touch targets and unclipped labels');
+      }
+      await page.screenshot({path:path.join(out,`gallery-${width}.png`),fullPage:true});
+      await page.locator('[data-photo="0"]').click();
+      await page.locator('#lightboxImage').evaluate(img=>img.decode());
+      assert.equal(await page.locator('#photoNumber').innerText(),'1 / 3');
+      await page.getByRole('button',{name:'Next photo',exact:true}).click();
+      assert.equal(await page.locator('#photoNumber').innerText(),'2 / 3');
+      await page.locator('#lightbox').press('ArrowRight');
+      assert.equal(await page.locator('#photoNumber').innerText(),'3 / 3');
+      await page.locator('#lightboxImage').evaluate(image=>{
+        const touch=(x,y)=>new Touch({identifier:1,target:image,clientX:x,clientY:y});
+        image.dispatchEvent(new TouchEvent('touchstart',{touches:[touch(220,100)],bubbles:true}));
+        image.dispatchEvent(new TouchEvent('touchend',{touches:[],changedTouches:[touch(80,104)],bubbles:true}));
+      });
+      assert.equal(await page.locator('#photoNumber').innerText(),'1 / 3','Swipe wraps through the gallery');
+      await page.getByRole('button',{name:'Previous photo',exact:true}).click();
+      assert.equal(await page.locator('#photoNumber').innerText(),'3 / 3');
+      await page.locator('#lightbox').press('Escape');
+      assert.equal(await page.locator('#lightbox').isVisible(),false);
+      photos=[];
+      await page.reload();
+      await page.getByText('Our next memories go here.',{exact:true}).waitFor();
+      assert.deepEqual(errors,[]);
+      await context.close();
+      report.push(`PASS gallery navigation, photo viewer, swipe, keyboard, empty state and layout at ${width}px`);
     }
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{width});

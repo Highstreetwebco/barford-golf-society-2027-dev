@@ -62,7 +62,9 @@ async function load() {
   );
 }
 function show() {
-  document.getElementById("lightboxImage").src = photos[active].url;
+  const image = document.getElementById("lightboxImage");
+  image.src = photos[active].url;
+  image.alt = `Society golf day photo ${active + 1} of ${photos.length}`;
   document.getElementById("photoNumber").textContent =
     `${active + 1} / ${photos.length}`;
 }
@@ -75,9 +77,28 @@ document.getElementById("closePhoto").onclick = () => dialog.close();
 document.getElementById("previousPhoto").onclick = () => move(-1);
 document.getElementById("nextPhoto").onclick = () => move(1);
 dialog.addEventListener("keydown", (ev) => {
-  if (ev.key === "ArrowLeft") move(-1);
-  if (ev.key === "ArrowRight") move(1);
+  if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") {
+    ev.preventDefault();
+    move(ev.key === "ArrowLeft" ? -1 : 1);
+  }
 });
+const lightboxImage = document.getElementById("lightboxImage");
+let swipeStart = null;
+lightboxImage.addEventListener("touchstart", (event) => {
+  swipeStart = event.touches.length === 1
+    ? { x: event.touches[0].clientX, y: event.touches[0].clientY }
+    : null;
+}, { passive: true });
+lightboxImage.addEventListener("touchend", (event) => {
+  const start = swipeStart;
+  swipeStart = null;
+  if (!start || event.touches.length || event.changedTouches.length !== 1) return;
+  const dx = event.changedTouches[0].clientX - start.x;
+  const dy = event.changedTouches[0].clientY - start.y;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1);
+}, { passive: true });
+lightboxImage.addEventListener("touchcancel", () => { swipeStart = null; });
+dialog.addEventListener("close", () => { swipeStart = null; });
 function previews() {
   previewUrls.forEach(URL.revokeObjectURL);
   previewUrls = [];

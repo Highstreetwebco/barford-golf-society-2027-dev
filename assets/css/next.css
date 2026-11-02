@@ -1068,7 +1068,7 @@ body.dark-mode {
   }
   .mobile-dock {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     position: fixed;
     bottom: 0;
     left: 0;
@@ -1081,14 +1081,16 @@ body.dark-mode {
     gap: 4px;
   }
   .mobile-dock a {
+    min-width: 0;
+    min-height: 48px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    padding: 5px;
+    padding: 5px 2px;
     color: var(--muted);
     text-decoration: none;
-    font-size: 10px;
+    font-size: clamp(9px, 2.4vw, 10px);
     font-weight: 700;
     border-radius: 12px;
   }
