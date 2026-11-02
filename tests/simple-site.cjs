@@ -61,6 +61,69 @@ function resultBoard() {
   try {
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width});
+      model.accounts=[{id:uid,member_id:uid,username:'Test Admin',mobile:'07000000000',handicap:20,is_admin:true,disabled:false,registered:true},
+        ...people.slice(1,4).map((id,i)=>({id,member_id:id,username:['Simon Example','Gary Example','Tim Example'][i],mobile:null,handicap:null,is_admin:false,disabled:false,registered:false}))];
+      let attempts=0,fail=true,authChanges=0;
+      page.on('request',req=>{if(/\/auth\/v1\/(signup|admin|token|logout)/.test(req.url())) authChanges++;});
+      await context.route(backend+'/rest/v1/rpc/baseline_admin_save_roster_member',async route=>{
+        attempts++; const input=route.request().postDataJSON();
+        assert.equal('admin_access' in input,false,'A roster edit cannot grant an account role');
+        if(fail){fail=false;return route.fulfill({status:503,json:{message:'Temporary member save failure'}});}
+        const person=model.accounts.find(p=>p.id===input.target);
+        Object.assign(person,{username:input.username,mobile:input.mobile||null,handicap:input.society_handicap});
+        await new Promise(resolve=>setTimeout(resolve,80));
+        return route.fulfill({json:null});
+      });
+      await page.goto(base+'admin.html?tab=accounts');
+      await page.locator('[data-edit-account="'+people[1]+'"]').waitFor();
+      assert.equal(await page.locator('#accountList .account-row').count(),4,'All three unregistered members are listed');
+      assert.equal(await page.getByText('No login yet',{exact:true}).count(),3);
+      assert.equal(await page.locator('[data-reset-account]').count(),1,'Only existing logins offer password reset');
+      await page.screenshot({path:path.join(out,`member-roster-${width}.png`),fullPage:true});
+      for(const [i,id] of people.slice(1,4).entries()) {
+        await page.locator('[data-edit-account="'+id+'"]').click();
+        assert.equal(await page.locator('dialog [name=admin_access]').count(),0);
+        assert.equal(await page.locator('dialog [name=mobile]').getAttribute('required'),null);
+        await page.locator('dialog [name=username]').fill(['Simon Edited','Gary Edited','Tim Edited'][i]);
+        await page.locator('dialog [name=handicap]').fill('37');
+        const before=attempts;
+        await page.locator('dialog [type=submit]').click();
+        assert.equal(attempts,before,'Invalid handicap never reaches the API');
+        await page.locator('dialog [name=handicap]').fill(String(20+i));
+        if(i) await page.locator('dialog [name=mobile]').fill('0700000000'+i);
+        if(i===0) {
+          await page.screenshot({path:path.join(out,`member-editor-${width}.png`),fullPage:true});
+          await page.locator('dialog [type=submit]').click();
+          await page.getByText('Temporary member save failure',{exact:true}).waitFor();
+          assert.equal(await page.locator('dialog [name=username]').inputValue(),'Simon Edited');
+        }
+        await page.locator('dialog form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+        await page.locator('dialog.account-editor').waitFor({state:'detached'});
+        await page.locator('[data-edit-account="'+id+'"]').waitFor();
+        assert.equal(attempts,i+2,'Double submit cannot duplicate an edit');
+      }
+      await page.locator('#accountSearch').fill('Simon Edited');
+      assert.equal(await page.locator('#accountList .account-row').count(),1);
+      assert.match(await page.locator('#accountList').innerText(),/Starting handicap: 20/);
+      await page.reload();
+      await page.locator('[data-edit-account="'+people[1]+'"]').waitFor();
+      assert.match(await page.locator('#accountList').innerText(),/Simon Edited/,'Reload keeps saved edits');
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
+      await page.locator('[data-edit-account="'+uid+'"]').click();
+      assert.equal(await page.locator('dialog [name=admin_access]').count(),1,'Registered account controls stay available');
+      assert(await page.locator('dialog [name=admin_access]').isDisabled(),'Admin cannot remove their own access');
+      await page.locator('dialog [name=mobile]').fill('07000000009');
+      await page.locator('dialog [type=submit]').click();
+      await page.locator('dialog.account-editor').waitFor({state:'detached'});
+      assert.equal(model.accountEdits.target,uid);
+      assert.equal(model.accountEdits.admin_access,true);
+      assert.equal(authChanges,0,'Editing member records creates no logins and changes no sign-in');
+      assert.deepEqual(errors,[]);
+      report.push(`PASS member editor ${width}: three unregistered members, optional phone, persisted edits, validation, failure retry, duplicate submit guard and registered-account controls`);
+      await context.close();
+    }
+    for (const width of [390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width});
       const offline=people[1], registeredRoster=people[2];
       const members=[{id:offline,name:'Offline Member',user_id:null},{id:registeredRoster,name:'Test Member',user_id:uid}];
       let attempts=0,fail=false;

@@ -446,7 +446,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
       ];
       return reply(model.league);
     }
-    if (p.endsWith("/rpc/baseline_admin_accounts"))
+    if (p.endsWith("/rpc/baseline_admin_accounts") || p.endsWith("/rpc/baseline_admin_members"))
       return admin
         ? reply(
             model.accounts || [
@@ -457,6 +457,7 @@ async function mocks(context, { signedIn = false, admin = false } = {}) {
                 handicap: null,
                 is_admin: true,
                 disabled: false,
+                registered: true,
                 member_id: uid,
                 created_at: "2026-09-26T09:00:00Z",
               },
