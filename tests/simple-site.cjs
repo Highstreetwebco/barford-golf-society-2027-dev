@@ -293,9 +293,9 @@ function resultBoard() {
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.screenshot({path:path.join(out,`admin-site-controls-${width}.png`),fullPage:true});
       await page.locator('#openMemberView').click();
-      await page.locator('#nextEvent h2').waitFor();
+      await page.locator('#nextEvent .simple-next-copy h2').waitFor();
       await page.reload();
-      await page.locator('#nextEvent h2').waitFor();
+      await page.locator('#nextEvent .simple-next-copy h2').waitFor();
       assert.equal(await page.locator('a[data-admin]:visible').count(),0);
       assert.equal(await dashboard.count(),0);
       assert.equal(await page.locator('#makeSiteLive').count(),0);
