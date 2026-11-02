@@ -61,6 +61,102 @@ function resultBoard() {
   try {
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width});
+      const members=[{id:uid,member_id:uid,username:'Test Admin',mobile:'07000000000',is_admin:true,registered:true},
+        ...people.slice(1,3).map((id,i)=>({id,member_id:id,username:['Simon Example','Gary Example'][i],is_admin:false,registered:false}))];
+      model.accounts=members;
+      const photos=new Map(),objects=new Set(),deleted=[];
+      let uploads=0,saves=0,uploadFail=false,saveFail=false,lostResponse=false;
+      await context.route(backend+'/rest/v1/rpc/baseline_admin_member_photo',route=>{
+        const {target}=route.request().postDataJSON();
+        return route.fulfill({json:{avatar_path:photos.get(target)||null,upload_folder:target}});
+      });
+      await context.route(backend+'/rest/v1/rpc/baseline_admin_save_member_photo',async route=>{
+        saves++;const input=route.request().postDataJSON();
+        if(input.expected_path!==(photos.get(input.target)||null)) return route.fulfill({status:409,json:{message:'This photo changed. Reopen the photo editor before saving'}});
+        if(saveFail){saveFail=false;return route.fulfill({status:503,json:{message:'Temporary photo save failure'}});}
+        photos.set(input.target,input.photo_path);
+        if(input.target===uid) model.profile.baseline_avatar_path=input.photo_path;
+        await new Promise(resolve=>setTimeout(resolve,80));
+        if(lostResponse){lostResponse=false;return route.abort();}
+        return route.fulfill({json:null});
+      });
+      await context.route(backend+'/storage/v1/object/baseline-profile-images**',route=>{
+        if(route.request().method()==='POST') {
+          uploads++;
+          if(uploadFail){uploadFail=false;return route.fulfill({status:503,json:{message:'Temporary upload failure'}});}
+          const key=new URL(route.request().url()).pathname.split('/baseline-profile-images/')[1];
+          assert.match(key,/^[a-f0-9-]+\/[a-f0-9-]+\.jpg$/);objects.add(key);
+          return route.fulfill({json:{Id:'fixture',Key:'baseline-profile-images/'+key}});
+        }
+        if(route.request().method()==='DELETE') {
+          for(const key of route.request().postDataJSON().prefixes){deleted.push(key);objects.delete(key);}
+          return route.fulfill({json:[]});
+        }
+        return route.fallback();
+      });
+      const open=async id=>{await page.locator('[data-edit-photo="'+id+'"]').click();await page.locator('#managedPhoto').waitFor();};
+      const choose=async()=>{
+        await page.locator('#managedPhoto').setInputFiles(path.join(__dirname,'..','icon-logo.png'));
+        await page.getByText('New photo preview',{exact:true}).waitFor();
+        await page.locator('#managedPhotoPreview').evaluate(img=>img.decode());
+        assert.deepEqual(await page.locator('#managedPhotoPreview').evaluate(img=>[img.naturalWidth,img.naturalHeight]),[640,640]);
+      };
+      const save=async()=>{await page.locator('#memberPhotoDialog form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});};
+      const closed=()=>page.locator('#memberPhotoDialog').waitFor({state:'detached'});
+      await page.goto(base+'admin.html?tab=accounts');
+      await page.locator('[data-edit-photo="'+uid+'"]').waitFor();
+      assert.equal(await page.locator('[data-edit-photo]').count(),3,'Registered and unregistered members offer photo editing');
+      await open(uid);
+      await page.locator('#managedPhoto').setInputFiles({name:'wrong.txt',mimeType:'text/plain',buffer:Buffer.from('not an image')});
+      await page.getByText('Choose a JPEG, PNG or WebP photo. Export HEIC photos as JPEG first.',{exact:true}).waitFor();
+      assert(await page.locator('#memberPhotoDialog [type=submit]').isDisabled());
+      assert.equal(uploads,0);
+      await choose();
+      await page.screenshot({path:path.join(out,`admin-photo-editor-${width}.png`),fullPage:true});
+      await page.locator('#memberPhotoDialog [data-close]').click();await closed();
+      assert.equal(uploads,0,'Cancel never uploads a selected photo');
+      await open(uid);await choose();uploadFail=true;await save();
+      await page.getByText('Temporary upload failure',{exact:true}).waitFor();
+      assert.equal(saves,0,'Failed upload never changes the profile');
+      await save();await closed();
+      assert.equal(saves,1,'Double submit sends one photo save');
+      const ownPhoto=photos.get(uid);assert(objects.has(ownPhoto));
+      await open(uid);await page.locator('#memberPhotoDialog [data-remove]').click();await closed();
+      assert.equal(photos.get(uid),null);assert(deleted.includes(ownPhoto));
+      await open(people[1]);await choose();saveFail=true;await save();
+      await page.getByText('Temporary photo save failure',{exact:true}).waitFor();
+      assert.equal(photos.get(people[1]),undefined);
+      assert.equal(objects.size,0,'Rejected save cleans up its unused upload');
+      await save();await closed();
+      const first=photos.get(people[1]);assert(objects.has(first));
+      await open(people[1]);await choose();await save();await closed();
+      const replacement=photos.get(people[1]);assert.notEqual(first,replacement);assert(deleted.includes(first));
+      await open(people[1]);await choose();
+      const concurrent=people[1]+'/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg';
+      photos.set(people[1],concurrent);objects.add(concurrent);objects.delete(replacement);
+      await save();await page.getByText('This photo changed. Reopen the photo editor before saving',{exact:true}).waitFor();
+      assert.equal(photos.get(people[1]),concurrent);assert(objects.has(concurrent));assert(!deleted.includes(concurrent));
+      await page.locator('#memberPhotoDialog [data-close]').click();await closed();
+      await open(people[1]);await choose();lostResponse=true;await save();await closed();
+      const recovered=photos.get(people[1]);assert(objects.has(recovered),'A committed photo survives a lost save response');
+      assert(deleted.includes(concurrent));
+      await open(people[2]);await choose();await save();await closed();
+      await page.reload();await open(people[2]);
+      assert(await page.locator('#managedPhotoPreview').isVisible(),'Saved photo loads again after refresh');
+      await page.locator('#memberPhotoDialog [data-close]').click();await closed();
+      model.events[0].tee_published_at='2027-06-01T10:00:00Z';
+      model.teeView={status:'published',round_number:1,groups:[{group_number:1,tee_time:'09:00',players:members.slice(1).map(p=>({participant_id:p.id,user_id:null,name:p.username,avatar_path:photos.get(p.id),handicap:20,type:'walker'}))}]};
+      await page.goto(base+'event.html?id=999');
+      await page.locator('[data-portrait="'+people[2]+'"]').click();
+      await page.getByRole('dialog',{name:'Gary Example profile photo',exact:true}).waitFor();
+      assert((await page.locator('.portrait-dialog img').getAttribute('src')).includes(photos.get(people[2])),'Each offline portrait opens the correct member');
+      await page.locator('.portrait-dialog button').click();
+      assert.deepEqual(errors,[]);
+      report.push(`PASS admin photos ${width}: all member types, preview/cancel, invalid files, upload/save retry, replacement/removal, stale editor, lost response and correct offline tee portraits`);
+      await context.close();
+    }
+    for (const width of [390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width});
       model.accounts=[{id:uid,member_id:uid,username:'Test Admin',mobile:'07000000000',handicap:20,is_admin:true,disabled:false,registered:true},
         ...people.slice(1,4).map((id,i)=>({id,member_id:id,username:['Simon Example','Gary Example','Tim Example'][i],mobile:null,handicap:null,is_admin:false,disabled:false,registered:false}))];
       let attempts=0,fail=true,authChanges=0;
