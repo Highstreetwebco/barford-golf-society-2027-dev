@@ -1,5 +1,6 @@
 /* One isolated 2027 backend. Browser permissions are enforced by Supabase RLS and RPCs. */
 window.barfordReady = (async () => {
+  const launch = await window.barfordGate;
   const sdk = document.createElement("script");
   sdk.src = "assets/vendor/supabase-2.116.0.js";
   await new Promise((resolve, reject) => {
@@ -12,6 +13,15 @@ window.barfordReady = (async () => {
     "https://xspzmthygrajzktydvvj.supabase.co",
     "sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c",
     {
+      global: { fetch: (input, init = {}) => {
+        const url = String(typeof input === "object" && "url" in input ? input.url : input);
+        const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+        const previewToken = window.barfordLaunch?.token() || launch?.token;
+        // Auth and Storage have their own CORS/authentication rules.
+        if (previewToken && /^https:\/\/xspzmthygrajzktydvvj\.supabase\.co\/(rest|functions)\/v1\//.test(url))
+          headers.set("x-barford-preview", previewToken);
+        return fetch(input, { ...init, headers });
+      } },
       auth: {
         persistSession: true,
         autoRefreshToken: true,
