@@ -9,11 +9,29 @@ const report = [];
 const people = [uid, '22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333', '44444444-4444-4444-8444-444444444444', '55555555-5555-4555-8555-555555555555'];
 const names = ['Test Member', 'Derek Lewis', 'Richard Jones', 'Gary Example', 'Tim Example'];
 
+const previewToken = 'a'.repeat(64), previewPassword = 'fixture-launch-password';
+async function launchMocks(context, launch = {live:false, publishes:0}) {
+  await context.route(backend+'/rest/v1/rpc/baseline_site_gate', async route => {
+    if (launch.unavailable) return route.abort();
+    const input=route.request().postDataJSON(), preview=input.p_token===previewToken;
+    let result={live:launch.live,preview};
+    if(input.p_action==='unlock') result=input.p_password===previewPassword
+      ? {...result,preview:true,token:previewToken} : {...result,error:'Incorrect password. Please try again.'};
+    if(input.p_action==='publish') {
+      launch.publishes++;
+      if(!preview || input.p_password!==previewPassword) result={...result,error:'Incorrect password. Please try again.'};
+      else { launch.live=true; result={live:true,preview:true}; }
+    }
+    return route.fulfill({json:result});
+  });
+  return launch;
+}
+
 async function setup(browser, {admin = false, signedIn = true, width = 1365} = {}) {
   const context = await browser.newContext({viewport:{width,height:900},serviceWorkers:'block',timezoneId:'Europe/London'});
   const model = await mocks(context, {signedIn,admin});
-  await context.addInitScript(() => sessionStorage.setItem('barford-2027-preview-session','mock-valid-token'));
-  await context.route(backend+'/rest/v1/rpc/baseline_preview_valid',route=>route.fulfill({json:true}));
+  await context.addInitScript(token => sessionStorage.setItem('barford-2027-preview-session',token),previewToken);
+  await launchMocks(context);
   model.profile.is_admin = admin;
   model.events = [{...fixture, event_type:'league',round_number:1,member_price:45,course_name:'The Warwickshire',date:'2027-06-25',tee_published_at:null,course_layout_id:null}];
   await context.addInitScript(() => {
@@ -41,16 +59,54 @@ function resultBoard() {
   const browser = await chromium.launch();
   try {
     {
-      const context=await browser.newContext({serviceWorkers:'block'}),page=await context.newPage();
+      const launch={live:false,publishes:0};
+      const context=await browser.newContext({serviceWorkers:'block',viewport:{width:390,height:844}}),page=await context.newPage();
+      await mocks(context,{signedIn:false}); await launchMocks(context,launch);
       await page.goto(base+'index.html');
-      await page.locator('#previewPassword').waitFor();
-      assert.equal(await page.locator('header img.preview-logo').count(),1,'Correct launch emblem must be present');
-      await page.locator('header img.preview-logo').evaluate(img => img.decode());
+      await page.locator('#previewPassword').waitFor({state:'visible'});
+      assert.equal(await page.locator('header img.preview-logo').count(),1);
+      await page.locator('header img.preview-logo').evaluate(img=>img.decode());
       assert.match(await page.title(),/Coming soon/);
       await page.goto(base+'events.html');
       await page.waitForURL('**/index.html?next=events.html');
-      report.push('PASS public coming-soon page and locked direct event links');
-      await context.close();
+      await page.locator('#previewPassword').fill('wrong-password');
+      await page.locator('#previewSubmit').click();
+      await page.getByText('Incorrect password. Please try again.',{exact:true}).waitFor();
+      assert.equal(await page.evaluate(()=>sessionStorage.getItem('barford-2027-preview-session')),null);
+      await page.locator('#previewPassword').fill(previewPassword);
+      await page.locator('#previewSubmit').click();
+      await page.waitForURL('**/events.html'); await page.locator('#makeSiteLive').waitFor({state:'visible'});
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
+      assert.equal(await page.locator('a[data-admin]:visible').count(),0,'Preview password does not grant a member admin role');
+      await page.locator('#makeSiteLive').click(); await page.getByRole('button',{name:'Cancel',exact:true}).click();
+      assert.equal(launch.live,false,'Cancel must leave the site closed');
+      await page.locator('#makeSiteLive').click(); await page.locator('#launchPassword').fill('wrong-password');
+      await page.locator('#launchDialog button[type=submit]').click();
+      await page.locator('#launchDialog').getByText('Incorrect password. Please try again.',{exact:true}).waitFor();
+      assert.equal(launch.live,false,'Preview access alone cannot publish');
+      await page.locator('#launchPassword').fill(previewPassword);
+      await page.locator('#launchDialog form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+      await page.getByText('The site is live for everyone.',{exact:true}).waitFor();
+      assert.equal(launch.publishes,2,'Double submit sends only one additional publish request');
+      assert.equal(launch.live,true);
+      const publicContext=await browser.newContext({serviceWorkers:'block'}),publicPage=await publicContext.newPage();
+      await mocks(publicContext,{signedIn:false}); await launchMocks(publicContext,launch);
+      await publicPage.goto(base+'index.html'); await publicPage.waitForURL('**/home.html');
+      await publicPage.locator('#homeTitle').waitFor({state:'visible'});
+      assert.equal(await publicPage.locator('#makeSiteLive').count(),0,'Public visitors do not get the launch control');
+      await publicPage.goto(base+'admin.html');
+      await publicPage.getByRole('heading',{name:'Admin sign in',exact:true}).waitFor();
+      assert.equal(await publicPage.locator('#adminContent').isVisible(),false,'Publishing does not grant admin access');
+      await publicContext.close(); await context.close();
+      const failureContext=await browser.newContext({serviceWorkers:'block'}),failurePage=await failureContext.newPage();
+      await mocks(failureContext,{signedIn:false}); await launchMocks(failureContext,{live:false,unavailable:true});
+      let protectedReads=0;
+      failurePage.on('request',req=>{if(req.url().includes('/rest/v1/baseline_events'))protectedReads++;});
+      await failurePage.goto(base+'events.html');
+      await failurePage.getByRole('heading',{name:'The website is being prepared.',exact:true}).waitFor();
+      assert.equal(protectedReads,0,'App data must not be requested when launch verification fails');
+      await failureContext.close();
+      report.push('PASS closed direct links, wrong passwords, preview access, publish confirmation, cancel, double-submit, global launch, admin protection and fail-closed access');
     }
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{width});

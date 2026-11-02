@@ -2,7 +2,13 @@
 
 Production site: https://barfordgolf.co.uk/
 
-The 2027 site is launched from this repository. The 2026 presentation evening remains at https://highstreetwebco.github.io/barford-golf-society/ with its existing backend and records. A homepage notice links to it. The committee-preview gate is retired; member and administrator authorization still use the existing 2027 Supabase project.
+The domain serves the **Coming soon** page until Jack launches it. Enter the admin preview password to open the preparation view. The preview toolbar has **Make live for everyone**; it asks for the password again and updates one shared Supabase release flag. Cancel or an incorrect password keeps the site closed. After publication, every visitor passes directly to the homepage, including fresh devices. Member and administrator account permissions remain separate from preview access.
+
+The existing password is stored as a bcrypt hash in `baseline_private.preview_access`; it is never committed to this repository. Preview sessions expire after 12 hours. Password attempts are limited. The launch flag, password hashes and session hashes have no direct browser access. A PostgREST pre-request hook blocks all other Data API routes while closed unless the request carries a valid preview token. The `baseline-services` Edge Function applies the same gate before its existing action checks. Scheduled public weather refresh pauses until launch.
+
+GitHub Pages and this repository still serve public static source files. The gate hides ordinary page access and protects backend data; it is not private hosting for source/assets. Existing public images are not secret. No Realtime publication is enabled on this project. The 2026 presentation evening remains at https://highstreetwebco.github.io/barford-golf-society/ with its existing backend and records, linked from the preview homepage.
+
+`tests/launch-control.sql` exercises the real release flag, token expiry, throttling and direct-API guard inside a rollback transaction using a temporary fixture password. It never publishes the real site. The current browser suite uses isolated mocks to test the complete preview-to-launch journey and fresh visitors.
 
 ## Current workflow · October 2026
 

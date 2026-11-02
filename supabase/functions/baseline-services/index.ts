@@ -15,7 +15,7 @@ const courseCardCache = new Map<string, { at: number; result: Awaited<ReturnType
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization,x-client-info,apikey,content-type",
+    "authorization,x-client-info,apikey,content-type,x-barford-preview",
   "Access-Control-Allow-Methods": "POST,OPTIONS",
   "Content-Type": "application/json",
   "Cache-Control": "no-store",
@@ -100,6 +100,11 @@ Deno.serve(async (req) => {
   try {
     if (Number(req.headers.get("content-length") || 0) > 10000)
       return reply({ error: "Request too large" }, 413);
+    const launch = await db("rpc/baseline_site_gate", "POST", {
+      p_action: "status", p_token: req.headers.get("x-barford-preview") || "",
+    });
+    if (!launch.live && !launch.preview)
+      return reply({ error: "The website is coming soon. Admin preview access is required." }, 403);
     const body = await req.json();
     if (body.action === "admin_reset_password") {
       await admin(req);
