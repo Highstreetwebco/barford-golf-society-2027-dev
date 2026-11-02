@@ -81,6 +81,9 @@ function resultBoard() {
       assert(await weather.evaluate(el=>el.getBoundingClientRect().top>=document.querySelector('#homeTeeGroup .all-tee-groups').getBoundingClientRect().bottom));
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
       await page.screenshot({path:path.join(out,`home-tee-weather-${width}.png`),fullPage:true});
+      await weather.scrollIntoViewIfNeeded();
+      await page.screenshot({path:path.join(out,`tee-weather-detail-${width}.png`)});
+      await page.evaluate(()=>window.scrollTo(0,0));
       await directions.evaluate(button=>{button.click();button.click();});
       const dialog=page.getByRole('dialog',{name:'Directions to event',exact:true});await dialog.waitFor();
       assert.equal(await page.locator('.event-directions-dialog').count(),1);
@@ -437,10 +440,10 @@ function resultBoard() {
         const bottom=getComputedStyle(dock).display==='none'?innerHeight:dock.getBoundingClientRect().top;
         return scrollY===0 && heading.top>=0 && heading.top<welcome.top && facts.bottom<bottom && action.bottom<=bottom;
       });
+      await page.screenshot({path:path.join(out,`event-first-${width}.png`)});
       assert(aboveFold,'Event, date, tee time and RSVP must be visible without scrolling');
       assert.equal(await page.getByRole('link',{name:'View the evening and manage your RSVP →',exact:true}).count(),0);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
-      await page.screenshot({path:path.join(out,`event-first-${width}.png`)});
       if(signedIn) {
         upcoming.tee_published_at='2027-06-01T10:00:00Z';
         model.groups=[{group_number:1,tee_time:'09:30',players:[{user_id:uid,name:'Test Member',type:'walker'}]}];
