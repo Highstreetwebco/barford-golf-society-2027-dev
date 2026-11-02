@@ -13,7 +13,15 @@ window.barfordReady = (async () => {
     "https://xspzmthygrajzktydvvj.supabase.co",
     "sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c",
     {
-      global: { headers: { "x-barford-preview": launch?.token || "" } },
+      global: { fetch: (input, init = {}) => {
+        const url = String(typeof input === "object" && "url" in input ? input.url : input);
+        const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+        const previewToken = window.barfordLaunch?.token() || launch?.token;
+        // Auth and Storage have their own CORS/authentication rules.
+        if (previewToken && /^https:\/\/xspzmthygrajzktydvvj\.supabase\.co\/(rest|functions)\/v1\//.test(url))
+          headers.set("x-barford-preview", previewToken);
+        return fetch(input, { ...init, headers });
+      } },
       auth: {
         persistSession: true,
         autoRefreshToken: true,
