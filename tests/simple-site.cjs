@@ -98,6 +98,7 @@ function resultBoard() {
       await page.locator('dialog button[type=submit]').click();
       await page.locator('dialog').waitFor({state:'detached'});
       assert.equal(model.responses.length,1);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),true,'Booking screen fits mobile');
       await page.locator('#addEventMember').click();
       await page.locator('dialog [name=member_id]').selectOption(registeredRoster);
       await page.locator('dialog button[type=submit]').click();
@@ -117,7 +118,7 @@ function resultBoard() {
       await page.locator('#tabScoring').click();
       await page.locator('[data-score="'+offline+'"]').waitFor();
       assert.equal(await page.locator('[data-score]').count(),2);
-      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),true);
+      await page.screenshot({path:path.join(out,`admin-booking-scores-${width}.png`),fullPage:true});
       assert.deepEqual(errors,[]);
       report.push(`PASS admin member bookings ${width}: registered/unregistered, failed save retry, double submit, existing booking edit, waiting status, tees and scores`);
       await context.close();
