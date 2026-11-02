@@ -11,37 +11,6 @@ window.barfordGate = (async () => {
     const access = await gate.request();
     if (!access.live && !access.preview) { gate.clear(); back(); return hold(); }
     await ready();
-    if (!access.live) {
-      const bar = document.createElement("aside");
-      bar.className = "launch-preview-bar"; bar.setAttribute("aria-label", "Site preview");
-      bar.innerHTML = '<span><strong>Admin preview</strong> · Everyone else sees Coming soon</span><div><button type="button" id="makeSiteLive">Make live for everyone</button><button type="button" id="exitPreview" class="launch-secondary">Exit preview</button></div>';
-      document.body.prepend(bar);
-      document.getElementById("exitPreview").onclick = () => { gate.clear(); location.assign("index.html"); };
-      document.getElementById("makeSiteLive").onclick = () => {
-        if (document.getElementById("launchDialog")) return;
-        const dialog = document.createElement("dialog"); dialog.id = "launchDialog"; dialog.className = "launch-dialog";
-        dialog.setAttribute("aria-labelledby", "launchTitle");
-        dialog.innerHTML = '<form><h2 id="launchTitle">Make live for everyone</h2><p>This removes the coming-soon screen for all visitors. Your member and admin sign-in protection stays in place.</p><label for="launchPassword">Launch password</label><input id="launchPassword" type="password" autocomplete="current-password" required maxlength="128"><p class="launch-message" role="status"></p><div class="launch-actions"><button type="button" class="launch-secondary" data-cancel>Cancel</button><button type="submit">Make live for everyone</button></div></form>';
-        document.body.append(dialog);
-        let busy = false;
-        const close = () => { if (!busy) { dialog.close(); dialog.remove(); } };
-        dialog.querySelector("[data-cancel]").onclick = close;
-        dialog.addEventListener("cancel", event => { event.preventDefault(); close(); });
-        dialog.querySelector("form").onsubmit = async event => {
-          event.preventDefault(); if (busy) return; busy = true;
-          const input = dialog.querySelector("input"), submit = dialog.querySelector('[type="submit"]'), message = dialog.querySelector('[role="status"]');
-          submit.disabled = true; submit.textContent = "Publishing…"; message.textContent = "";
-          try {
-            const result = await gate.request("publish", input.value); input.value = "";
-            if (!result.live) throw new Error("The site is still closed. Please try again.");
-            dialog.close(); dialog.remove();
-            bar.innerHTML = '<span role="status"><strong>The site is live for everyone.</strong> The coming-soon screen has been removed.</span><a href="index.html">View homepage →</a>';
-          } catch (error) { message.textContent = error.message; input.value = ""; input.focus(); }
-          finally { busy = false; submit.disabled = false; submit.textContent = "Make live for everyone"; }
-        };
-        dialog.showModal(); dialog.querySelector("input").focus();
-      };
-    }
     document.getElementById("preview-lock")?.remove(); document.documentElement.style.visibility = "";
     return { ...access, token: gate.token() };
   } catch {

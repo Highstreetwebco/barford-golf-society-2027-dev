@@ -5,6 +5,7 @@ import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.
 import { loadAccounts } from "./account-admin.js?v=2027-simple-1";
 import { packPlayers } from "./tee-groups.js?v=2027-results-1";
 import { operation } from "./operations.js?v=2027-results-1";
+import { mountSiteControls } from "./admin-site-controls.js?v=2027-member-view-1";
 
 const b = await window.barfordReady, { client: c, escape: e } = b;
 const $ = id => document.getElementById(id);
@@ -54,9 +55,10 @@ function canChangeEvent() {
 window.addEventListener("beforeunload", ev => {
   if (eventDirty || teeDirty || isBusy()) { ev.preventDefault(); ev.returnValue = ""; }
 });
-if (!b.state.admin) {
+if (!b.state.adminAccess) {
   gate.innerHTML = `<h2>Admin sign in</h2><p>${b.state.user ? "Your account does not have admin access." : "Sign in with your admin account to manage the society."}</p><a class="button" href="${e(adminSignIn)}">${b.state.user ? "My account" : "Sign in"}</a>`;
 } else {
+  await mountSiteControls($("adminSiteControls"), b);
   coverUpload = mountCoverUpload(form, b);
   holeSetup = mountHoleSetup(form, b);
   form.elements.event_type.addEventListener("change", () => { updateEventType(form); updateCourseReadOnly(); });

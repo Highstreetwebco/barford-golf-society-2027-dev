@@ -4,7 +4,7 @@
 <style id="preview-lock">html{visibility:hidden}</style>
 <link rel="stylesheet" href="assets/css/launch-gate.css?v=2027-launch-control-1">
 <script src="assets/js/launch-api.js?v=2027-launch-control-1"></script>
-<script src="assets/js/preview-guard.js?v=2027-launch-control-1"></script>
+<script src="assets/js/preview-guard.js?v=2027-member-view-1"></script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
@@ -19,10 +19,10 @@
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-gallery-1" />
     <link rel="stylesheet" href="assets/css/simple.css?v=2027-wordmark-1" />
-    <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-simple-1" />
+    <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-member-view-1" />
     <link rel="stylesheet" href="assets/css/holes.css?v=2027-hole-ux-1" media="print" onload="this.media='all'" />
-    <script src="assets/js/baseline.js?v=2027-gallery-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-simple-1"></script>
+    <script src="assets/js/baseline.js?v=2027-member-view-1" defer></script>
+    <script type="module" src="assets/js/admin.js?v=2027-member-view-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 </head>
   <body class="page-admin simple-site">
@@ -43,6 +43,7 @@
       </div>
       <div id="adminGate" class="panel" role="status">Checking admin access…</div>
       <div id="adminContent" hidden>
+        <section id="adminSiteControls" class="panel admin-site-controls" aria-label="Website controls"></section>
         <div class="panel admin-event-bar" id="eventToolbar">
           <label for="adminEvent">Working on<select id="adminEvent"><option value="">New event</option></select></label>
           <div class="actions"><button id="newEvent" type="button" class="secondary">New event</button><a class="button secondary" id="viewAdminEvent" href="events.html">View event</a></div>

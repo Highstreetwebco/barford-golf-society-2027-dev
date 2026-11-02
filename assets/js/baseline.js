@@ -105,17 +105,40 @@ window.barfordReady = (async () => {
   const state = {
     user: null,
     profile: null,
+    adminAccess: false,
+    memberView: false,
     admin: false,
     recovery:
       location.hash.includes("type=recovery") ||
       sessionStorage.getItem("barford-password-recovery") === "true",
   };
+  const viewKey = () => "barford-2027-view:" + state.user?.id;
+  function applyAdminView() {
+    let saved;
+    try { saved = localStorage.getItem(viewKey()); } catch {}
+    // Admin permissions stay on the account; member pages use the normal member UI by default.
+    state.memberView = state.adminAccess && saved !== "admin";
+    state.admin = state.adminAccess && (page === "admin.html" || !state.memberView);
+    document.querySelectorAll("[data-admin]").forEach(el => { el.hidden = !state.admin; });
+  }
+  function setMemberView(enabled) {
+    if (!state.adminAccess || !state.user) throw new Error("Admin sign-in required.");
+    localStorage.setItem(viewKey(), enabled ? "member" : "admin");
+    applyAdminView();
+  }
+  window.addEventListener("storage", event => {
+    if (state.adminAccess && event.key === viewKey()) {
+      if (page !== "admin.html") location.reload();
+      else { applyAdminView(); window.dispatchEvent(new Event("barford-view-change")); }
+    }
+  });
   async function refresh() {
     const {
       data: { session },
     } = await raw.auth.getSession();
     state.user = session?.user || null;
     state.profile = null;
+    state.adminAccess = false;
     state.admin = false;
     if (state.user) {
       const p = await raw
@@ -128,11 +151,9 @@ window.barfordReady = (async () => {
         state.user = null;
       }
       state.profile = p.data;
-      state.admin = !!state.user && !p.error && p.data?.is_admin === true;
+      state.adminAccess = !!state.user && !p.error && p.data?.is_admin === true;
     }
-    document
-      .querySelectorAll("[data-admin]")
-      .forEach((el) => (el.hidden = !state.admin));
+    applyAdminView();
     const nav = document.getElementById("accountNav");
     if (nav) nav.textContent = state.user ? "My account" : "Sign in";
     document.body.classList.toggle("signed-in", !!state.user);
@@ -208,7 +229,7 @@ window.barfordReady = (async () => {
   }
   async function isAdmin() {
     await refresh();
-    return state.admin;
+    return state.adminAccess;
   }
   async function requireAdmin() {
     if (await isAdmin()) return true;
@@ -347,6 +368,7 @@ window.barfordReady = (async () => {
     requireMember,
     requireAdmin,
     isAdmin,
+    setMemberView,
     submit,
     toast,
   };
