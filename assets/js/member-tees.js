@@ -26,14 +26,16 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
   const urls = await photoUrls(
     data.groups.flatMap((g) => g.players.map((p) => p.avatar_path)),
   );
-  const key = JSON.stringify([data, urls, home]);
+  // The server can return admin-only handicaps for this account. Keep the member view consistent.
+  const secret = data.round_number >= 7 && !b.state.admin;
+  const key = JSON.stringify([data, urls, home, secret]);
   if (rendered.get(area) === key) return own?.tee_time || null;
   rendered.set(area, key);
   const expanded = area.querySelector(".all-tee-groups")?.open;
   const publication = data.published_at
     ? `<p class="muted">Published ${b.escape(new Date(data.published_at).toLocaleString("en-GB", { timeZone: "Europe/London" }))} UK time · Version ${data.revision}</p>`
     : "";
-  const warning = data.provisional
+  const warning = data.provisional && !secret
     ? '<p class="notice">Handicaps are provisional until earlier rounds are published.</p>'
     : "";
   function card(g) {
@@ -47,7 +49,7 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
             .map((x) => x[0])
             .join("")
             .toUpperCase();
-        return `<li>${url ? `<button class="portrait-button" data-portrait="${e(p.user_id)}" aria-label="Enlarge photo of ${e(p.name)}"><img src="${e(url)}" alt="${e(p.name)}" loading="lazy"></button>` : `<span class="portrait-initials" aria-label="No profile photo for ${e(p.name)}">${e(initials)}</span>`}<span><strong>${e(p.name)}${p.user_id === b.state.user.id ? " <small>(you)</small>" : ""}</strong><small>${p.handicap_secret ? "Handicap held by organisers to protect the secret rounds" : `${data.round_number ? "Round " + data.round_number : "Starting"} HCP: ${p.handicap ?? "Not set"}`}${p.type === "buggy" ? " · Buggy" : ""}</small></span></li>`;
+        return `<li>${url ? `<button class="portrait-button" data-portrait="${e(p.user_id)}" aria-label="Enlarge photo of ${e(p.name)}"><img src="${e(url)}" alt="${e(p.name)}" loading="lazy"></button>` : `<span class="portrait-initials" aria-label="No profile photo for ${e(p.name)}">${e(initials)}</span>`}<span><strong>${e(p.name)}${p.user_id === b.state.user.id ? " <small>(you)</small>" : ""}</strong><small>${secret || p.handicap_secret ? "Handicap held by organisers to protect the secret rounds" : `${data.round_number ? "Round " + data.round_number : "Starting"} HCP: ${p.handicap ?? "Not set"}`}${p.type === "buggy" ? " · Buggy" : ""}</small></span></li>`;
       })
       .join("")}</ul></section>`;
   }

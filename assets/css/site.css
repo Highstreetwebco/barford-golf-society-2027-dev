@@ -246,6 +246,21 @@ button:disabled {
 .menu-toggle {
   display: none;
 }
+.site-nav .admin-mobile-link {
+  display: none;
+}
+.site-nav .admin-menu > div {
+  right: 0;
+  min-width: 200px;
+}
+@media (max-width: 900px) {
+  .site-nav .admin-menu {
+    display: none;
+  }
+  .site-nav .admin-mobile-link {
+    display: block;
+  }
+}
 .container {
   width: min(1136px, calc(100% - 64px));
   margin: 0 auto;

@@ -1,34 +1,18 @@
-/* Display preferences never change the account's real permissions. */
+/* Admin controls stay in the dashboard; member pages are ready for filming. */
 export async function mountSiteControls(host, b) {
   if (!b.state.adminAccess) return;
   const access = await window.barfordGate;
   const gate = window.barfordLaunch;
   host.innerHTML = `<div>
     <h2>Member view</h2>
-    <label class="member-view-toggle"><input id="memberViewToggle" type="checkbox" role="switch"> Show the normal member view</label>
-    <p class="muted">Use this for filming. Admin links and editing buttons are hidden on member pages, and rounds 6 and 7 stay hidden. You keep your admin access here.</p>
-    <p id="memberViewStatus" role="status"></p>
-    <a id="openMemberView" class="button secondary" href="home.html">Open website</a>
-    <p class="muted admin-return-note">Return to Admin at <a href="admin.html">barfordgolf.co.uk/admin.html</a>. No need to sign out.</p>
+    <p id="memberViewStatus">Your website pages always show the normal member view. Editing controls and secret round results stay in Admin.</p>
+    <a id="openMemberView" class="button secondary" href="home.html">Open member view</a>
+    <p class="muted admin-return-note">Return here through Menu → Admin dashboard. Your account keeps full admin access, so there is no need to sign out.</p>
   </div><div>
     <h2>Website launch</h2>
     <p id="siteLaunchStatus" role="status"></p>
     <div class="actions"><button type="button" id="makeSiteLive" hidden>Make live for everyone</button><button type="button" id="exitPreview" class="secondary" hidden>Exit preview</button></div>
   </div>`;
-  const toggle = host.querySelector("#memberViewToggle");
-  const updateView = () => {
-    toggle.checked = b.state.memberView;
-    host.querySelector("#memberViewStatus").textContent = b.state.memberView
-      ? "Member view is on for this account on this device."
-      : "Admin controls are visible on member pages.";
-    host.querySelector("#openMemberView").textContent = b.state.memberView ? "Open member view" : "Open website";
-  };
-  updateView();
-  window.addEventListener("barford-view-change", updateView);
-  toggle.onchange = () => {
-    try { b.setMemberView(toggle.checked); updateView(); }
-    catch { toggle.checked = b.state.memberView; host.querySelector("#memberViewStatus").textContent = "Could not save the view setting. Please allow site storage and try again."; }
-  };
   const status = host.querySelector("#siteLaunchStatus"), publish = host.querySelector("#makeSiteLive"), exit = host.querySelector("#exitPreview");
   status.textContent = access.live ? "The site is live for everyone." : "Coming soon is on. The website is open only to people with preview access.";
   publish.hidden = access.live;

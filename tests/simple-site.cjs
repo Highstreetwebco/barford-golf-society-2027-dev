@@ -223,9 +223,12 @@ function resultBoard() {
       await context.close();
       report.push(`PASS event-first homepage at ${width}x${height}: visible action, next-event selection, rollover, tee times and empty state`);
     }
-    for (const width of [390,1365]) {
-      const {context,page,model,errors}=await setup(browser,{admin:true,width});
+    for (const width of [390,900,901,1365]) {
+      // A saved preference from the old toggle must never re-enable editing while filming.
+      const {context,page,model,errors}=await setup(browser,{admin:true,width,memberView:false});
       model.board=resultBoard();
+      const menu=page.locator(width<=900?'#menuToggle':'.admin-menu summary');
+      const dashboard=page.getByRole('link',{name:'Admin dashboard',exact:true});
       let authChanges=0;
       page.on('request',req=>{ if(/\/auth\/v1\/(token|logout)/.test(req.url())) authChanges++; });
       await context.route(backend+'/storage/v1/object/list/baseline-gallery-images', route=>route.fulfill({json:[{id:'1',name:'photo.png'}]}));
@@ -235,10 +238,21 @@ function resultBoard() {
       assert.equal(await page.locator('a[data-admin]:visible').count(),0,'Admin account defaults to the member experience');
       assert.equal(await page.locator('.launch-preview-bar,#makeSiteLive').count(),0);
       assert.deepEqual(await page.evaluate(()=>({id:barford.state.user.id,role:barford.state.adminAccess,view:barford.state.admin})),{id:uid,role:true,view:false});
+      assert.equal(await dashboard.count(),0,'Admin dashboard is hidden until Menu opens');
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),'Closed navigation fits the screen');
       await page.screenshot({path:path.join(out,`filming-home-${width}.png`),fullPage:true});
+      await menu.click();
+      await dashboard.waitFor();
+      assert.equal(await dashboard.count(),1,'Exactly one accessible Admin link');
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),'Open menu fits the screen');
+      await page.screenshot({path:path.join(out,`filming-menu-${width}.png`),fullPage:true});
+      await page.keyboard.press('Escape');
+      assert.equal(await dashboard.count(),0,'Escape closes the menu');
+      assert(await menu.evaluate(el=>el===document.activeElement),'Escape returns focus to Menu');
       for(const name of ['events.html','event.html?id=999','account.html','gallery.html','scores.html']) {
         await page.goto(base+name);
         await page.evaluate(()=>window.barfordReady);
+        assert.equal(await dashboard.count(),0,`Dashboard link stays inside Menu on ${name}`);
         assert.equal(await page.locator('a[data-admin]:visible').count(),0,`No admin links on ${name}`);
         assert.equal(await page.locator('.launch-preview-bar,#makeSiteLive').count(),0,`No launch controls on ${name}`);
         if(name==='account.html') {
@@ -258,39 +272,46 @@ function resultBoard() {
           assert.equal(await page.locator('.round-detail-table').count(),0);
         }
       }
-      await page.goto(base+'admin.html');
+      model.events[0].tee_published_at='2027-06-01T10:00:00Z';
+      model.teeView={status:'published',round_number:7,provisional:true,groups:[{group_number:1,tee_time:'09:30',players:[{user_id:uid,name:'Test Member',handicap:17.4,handicap_secret:false,type:'walker'}]}]};
+      await page.goto(base+'event.html?id=999');
+      await page.locator('.member-tee-card').waitFor();
+      assert.match(await page.locator('[data-member-tees]').innerText(),/Handicap held by organisers/);
+      assert.doesNotMatch(await page.locator('[data-member-tees]').innerText(),/17\.4|Handicaps are provisional/,'Admin-only tee handicaps are masked in member view');
+      model.teeView.round_number=6;
+      await page.reload();
+      await page.locator('.member-tee-card').waitFor();
+      assert.match(await page.locator('[data-member-tees]').innerText(),/Round 6 HCP: 17\.4/,'Earlier starting handicaps remain visible to members');
+      await menu.click();
+      await dashboard.click();
+      await page.waitForURL('**/admin.html');
       await page.locator('#adminContent').waitFor({state:'visible'});
-      assert(await page.locator('#memberViewToggle').isChecked());
+      assert.equal(await page.evaluate(()=>barford.state.admin),true,'Menu opens the full admin dashboard');
+      assert.equal(await page.locator('#memberViewToggle').count(),0,'No toggle can accidentally expose admin controls');
+      assert.match(await page.locator('#memberViewStatus').innerText(),/always show the normal member view/);
       assert(await page.locator('#makeSiteLive').isVisible());
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.screenshot({path:path.join(out,`admin-site-controls-${width}.png`),fullPage:true});
-      await page.locator('#memberViewToggle').uncheck();
-      await page.getByText('Admin controls are visible on member pages.',{exact:true}).waitFor();
       await page.locator('#openMemberView').click();
-      await page.locator('a.simple-admin-action').waitFor({state:'visible'});
-      assert.equal(await page.locator('#makeSiteLive').count(),0,'Launch remains in Admin even when member view is off');
-      await page.goto(base+'gallery.html');
-      await page.locator('[data-delete]').waitFor();
-      await page.goto(base+'scores.html');
-      await page.locator('.season-table tbody tr').first().waitFor();
-      assert.equal(await page.locator('.season-table .is-locked').count(),0);
-      await page.goto(base+'admin.html');
-      await page.locator('#memberViewToggle').waitFor({state:'visible'});
-      assert.equal(await page.locator('#memberViewToggle').isChecked(),false,'View preference survives navigation');
-      await page.locator('#memberViewToggle').check();
-      await page.locator('#openMemberView').click();
-      await page.locator('[data-home-rsvp]').waitFor();
+      await page.locator('#nextEvent .simple-next-copy h2').waitFor();
       await page.reload();
-      await page.locator('[data-home-rsvp]').waitFor();
+      await page.locator('#nextEvent .simple-next-copy h2').waitFor();
       assert.equal(await page.locator('a[data-admin]:visible').count(),0);
+      assert.equal(await dashboard.count(),0);
+      assert.equal(await page.locator('#makeSiteLive').count(),0);
+      assert.equal(await page.evaluate(()=>barford.state.admin),false,'Leaving Admin restores the member view automatically');
       assert.equal(await page.evaluate(()=>barford.state.user.id),uid,'Switching view keeps the same account');
       assert.equal(authChanges,0,'Switching view never signs out or logs in to another account');
       assert.deepEqual(errors,[]);
       await context.close();
-      report.push(`PASS admin member-view default, hidden controls/rounds, persistent switch and unchanged sign-in at ${width}px`);
+      report.push(`PASS filming at ${width}px: member pages, hidden scores/tee handicaps, Menu to Admin, keyboard close, stale preference ignored and unchanged sign-in`);
     }
-    {
-      const {context,page}=await setup(browser,{admin:false,memberView:false});
+    for (const signedIn of [true,false]) {
+      const {context,page}=await setup(browser,{admin:false,memberView:false,signedIn,width:390});
+      await page.goto(base+'home.html');
+      await page.evaluate(()=>window.barfordReady);
+      await page.locator('#menuToggle').click();
+      assert.equal(await page.locator('[data-admin-menu]').count(),0,'Members and visitors never receive admin navigation');
       await page.goto(base+'admin.html');
       await page.getByRole('heading',{name:'Admin sign in',exact:true}).waitFor();
       assert.equal(await page.locator('#adminContent').isVisible(),false);
@@ -467,21 +488,20 @@ function resultBoard() {
       assert.equal(await page.locator('.season-table tbody tr').count(),2);
       const totalBox = await page.locator('.season-table tbody .total-col').first().boundingBox();
       assert(totalBox.x + totalBox.width <= page.viewportSize().width, 'Season total must be visible on a phone without scrolling');
-      assert.equal(await page.locator('.season-table .is-locked').count(),admin?0:6);
-      if(admin) assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['176','164']);
+      assert.equal(await page.locator('.season-table .is-locked').count(),6,'The ordinary leaderboard always uses member visibility');
+      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['176','164']);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.locator('#roundDetails > summary').click();
       await page.locator('#leagueRound').selectOption('6');
-      if(!admin) {
-        await page.locator('.round-locked').waitFor();
-        assert.equal(await page.locator('.round-detail-table').count(),0);
-      }
+      await page.locator('.round-locked').waitFor();
+      assert.equal(await page.locator('.round-detail-table').count(),0);
       await page.screenshot({path:path.join(out,`leaderboard-${admin?'admin':'member'}.png`),fullPage:true});
       if(admin) {
         await page.evaluate(()=>window.barford.raw.auth.signOut());
         await page.locator('#leagueVisibility').filter({hasText:'Member totals'}).waitFor();
         assert.equal(await page.locator('.season-table .is-locked').count(),6);
         assert.equal(await page.locator('.round-detail-table').count(),0);
+        assert.equal(await page.locator('[data-admin-menu]').count(),0,'Signing out removes dashboard navigation');
       }
       assert.deepEqual(errors,[]);
       report.push(`PASS ${admin?'admin':'member'} leaderboard, best-five totals, hidden rounds, sign-out redaction`);

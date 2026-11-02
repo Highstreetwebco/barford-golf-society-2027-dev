@@ -106,32 +106,24 @@ window.barfordReady = (async () => {
     user: null,
     profile: null,
     adminAccess: false,
-    memberView: false,
     admin: false,
     recovery:
       location.hash.includes("type=recovery") ||
       sessionStorage.getItem("barford-password-recovery") === "true",
   };
-  const viewKey = () => "barford-2027-view:" + state.user?.id;
   function applyAdminView() {
-    let saved;
-    try { saved = localStorage.getItem(viewKey()); } catch {}
-    // Admin permissions stay on the account; member pages use the normal member UI by default.
-    state.memberView = state.adminAccess && saved !== "admin";
-    state.admin = state.adminAccess && (page === "admin.html" || !state.memberView);
+    // The role grants dashboard access; ordinary pages always show the member UI.
+    state.admin = state.adminAccess && page === "admin.html";
     document.querySelectorAll("[data-admin]").forEach(el => { el.hidden = !state.admin; });
-  }
-  function setMemberView(enabled) {
-    if (!state.adminAccess || !state.user) throw new Error("Admin sign-in required.");
-    localStorage.setItem(viewKey(), enabled ? "member" : "admin");
-    applyAdminView();
-  }
-  window.addEventListener("storage", event => {
-    if (state.adminAccess && event.key === viewKey()) {
-      if (page !== "admin.html") location.reload();
-      else { applyAdminView(); window.dispatchEvent(new Event("barford-view-change")); }
+    const nav = document.getElementById("siteNav");
+    nav?.querySelector('a[data-admin][href="admin.html"]')?.remove();
+    if (!state.adminAccess) {
+      nav?.querySelectorAll("[data-admin-menu]").forEach(el => el.remove());
+    } else if (nav && !nav.querySelector("[data-admin-menu]")) {
+      const current = page === "admin.html" ? ' aria-current="page"' : "";
+      nav.insertAdjacentHTML("beforeend", `<a class="admin-mobile-link" data-admin-menu href="admin.html"${current}>Admin dashboard</a><details class="more-nav admin-menu" data-admin-menu><summary>Menu</summary><div><a href="admin.html"${current}>Admin dashboard</a></div></details>`);
     }
-  });
+  }
   async function refresh() {
     const {
       data: { session },
@@ -310,8 +302,17 @@ window.barfordReady = (async () => {
     });
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape")
-      document.querySelectorAll(".more-nav").forEach((d) => (d.open = false));
+    if (e.key !== "Escape") return;
+    document.querySelectorAll(".more-nav[open]").forEach((d) => {
+      d.open = false;
+      d.querySelector("summary")?.focus();
+    });
+    if (document.getElementById("siteNav")?.classList.contains("open")) {
+      document.getElementById("siteNav").classList.remove("open");
+      const toggle = document.getElementById("menuToggle");
+      toggle?.setAttribute("aria-expanded", "false");
+      toggle?.focus();
+    }
   });
   const themeButton = document.getElementById("themeToggle");
   let dark = localStorage.getItem("darkMode") === "on";
@@ -368,7 +369,6 @@ window.barfordReady = (async () => {
     requireMember,
     requireAdmin,
     isAdmin,
-    setMemberView,
     submit,
     toast,
   };
