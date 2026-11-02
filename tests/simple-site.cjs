@@ -488,21 +488,20 @@ function resultBoard() {
       assert.equal(await page.locator('.season-table tbody tr').count(),2);
       const totalBox = await page.locator('.season-table tbody .total-col').first().boundingBox();
       assert(totalBox.x + totalBox.width <= page.viewportSize().width, 'Season total must be visible on a phone without scrolling');
-      assert.equal(await page.locator('.season-table .is-locked').count(),admin?0:6);
-      if(admin) assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['176','164']);
+      assert.equal(await page.locator('.season-table .is-locked').count(),6,'The ordinary leaderboard always uses member visibility');
+      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['176','164']);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.locator('#roundDetails > summary').click();
       await page.locator('#leagueRound').selectOption('6');
-      if(!admin) {
-        await page.locator('.round-locked').waitFor();
-        assert.equal(await page.locator('.round-detail-table').count(),0);
-      }
+      await page.locator('.round-locked').waitFor();
+      assert.equal(await page.locator('.round-detail-table').count(),0);
       await page.screenshot({path:path.join(out,`leaderboard-${admin?'admin':'member'}.png`),fullPage:true});
       if(admin) {
         await page.evaluate(()=>window.barford.raw.auth.signOut());
         await page.locator('#leagueVisibility').filter({hasText:'Member totals'}).waitFor();
         assert.equal(await page.locator('.season-table .is-locked').count(),6);
         assert.equal(await page.locator('.round-detail-table').count(),0);
+        assert.equal(await page.locator('[data-admin-menu]').count(),0,'Signing out removes dashboard navigation');
       }
       assert.deepEqual(errors,[]);
       report.push(`PASS ${admin?'admin':'member'} leaderboard, best-five totals, hidden rounds, sign-out redaction`);
