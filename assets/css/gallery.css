@@ -1,0 +1,11 @@
+.page-gallery .gallery-grid { margin-bottom: 32px; }
+.page-gallery .gallery-tile img { display: block; height: auto; aspect-ratio: 4 / 3; }
+.page-gallery .upload-panel h2 { margin-top: 0; font-size: 1.3rem; }
+.page-gallery .upload-panel p { margin-bottom: 0; }
+.page-gallery .lightbox { max-height: calc(100dvh - 24px); }
+.page-gallery .lightbox img { display: block; width: 100%; max-height: calc(100dvh - 150px); touch-action: pan-y pinch-zoom; user-select: none; }
+@media (max-width: 760px) {
+  .page-gallery .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .page-gallery .lightbox { width: calc(100% - 16px); padding: 12px; }
+  .page-gallery .lightbox-bar button { min-width: 44px; padding-inline: 10px; }
+}

@@ -17,11 +17,11 @@
     <link rel="manifest" href="manifest.json?v=2027-simple-1" />
     <link rel="apple-touch-icon" href="icon-logo.png" />
     <link rel="stylesheet" href="assets/css/site.css?v=2027-results-1" />
-    <link rel="stylesheet" href="assets/css/next.css?v=2027-results-1" />
+    <link rel="stylesheet" href="assets/css/next.css?v=2027-gallery-1" />
     <link rel="stylesheet" href="assets/css/simple.css?v=2027-wordmark-1" />
     <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-simple-1" />
     <link rel="stylesheet" href="assets/css/holes.css?v=2027-hole-ux-1" media="print" onload="this.media='all'" />
-    <script src="assets/js/baseline.js?v=2027-simple-1" defer></script>
+    <script src="assets/js/baseline.js?v=2027-gallery-1" defer></script>
     <script type="module" src="assets/js/admin.js?v=2027-simple-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 </head>
@@ -32,7 +32,7 @@
         <a href="index.html" class="brand" aria-label="Barford Golf Society home"><img class="brand-lockup" src="assets/brand/barford-wordmark-2027.webp" alt="Barford Golf Society" width="250" height="79" /><span class="brand-year">2027</span></a>
         <button class="menu-toggle secondary" id="menuToggle" aria-expanded="false" aria-controls="siteNav">Menu</button>
         <nav class="site-nav" id="siteNav" aria-label="Main navigation">
-          <a href="index.html">Home</a><a href="events.html">Events</a><a href="scores.html">Leaderboard</a><a class="account-link" href="account.html" id="accountNav">Sign in</a><a href="admin.html" aria-current="page" data-admin hidden>Admin</a>
+          <a href="index.html">Home</a><a href="events.html">Events</a><a href="scores.html">Leaderboard</a><a href="gallery.html">Gallery</a><a class="account-link" href="account.html" id="accountNav">Sign in</a><a href="admin.html" aria-current="page" data-admin hidden>Admin</a>
         </nav>
       </div>
     </header>
@@ -109,7 +109,28 @@
       </div>
     </main>
     <footer class="site-footer"><div><a class="footer-brand" href="index.html">Barford Golf Society</a><span>2027 season</span></div><div class="footer-actions"><a href="index.html">Back to home</a><button id="themeToggle" class="text-button" aria-pressed="false">Dark mode</button><button id="installButton" class="text-button" hidden>Install app</button></div></footer>
-    <nav class="mobile-dock" aria-label="Quick navigation"><a href="index.html"><span>Home</span></a><a href="events.html"><span>Events</span></a><a href="scores.html"><span>Leaderboard</span></a><a href="account.html"><span>Account</span></a></nav>
+    <nav class="mobile-dock" aria-label="Quick navigation">
+      <a href="index.html" aria-label="Home tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m3 10 9-7 9 7v10H3Z" />
+          <path d="M9 20v-7h6v7" /></svg
+        ><span>Home</span></a
+      ><a href="events.html" aria-label="Events tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="16" rx="3" />
+          <path d="M7 3v4m10-4v4M3 11h18m-13 5h3" /></svg
+        ><span>Events</span></a
+      ><a href="scores.html" aria-label="Leaderboard tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 20v-6h5v6m1 0V5h5v15m1 0v-10h5v10M2 21h21" /></svg
+        ><span>Leaderboard</span></a
+      ><a href="gallery.html" aria-label="Gallery tab"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg><span>Gallery</span></a><a href="account.html" aria-label="Account tab"
+        ><svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg
+        ><span>Account</span></a
+      >
+    </nav>
     <div id="toast" role="status" aria-live="polite"></div><noscript><p class="notice">Please enable JavaScript to sign in and use admin.</p></noscript>
   </body>
 </html>

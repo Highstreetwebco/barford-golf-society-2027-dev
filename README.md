@@ -12,7 +12,7 @@ GitHub Pages and this repository still serve public static source files. The gat
 
 ## Current workflow · October 2026
 
-The 2027 site keeps the established navy, cream and tan identity and uses a small set of member journeys. Home has **RSVP**, **Leaderboard**, **Course hole view** and **All events**. Admins also see **Enter scores**. Gallery, shop, trips and the old payment screens are no longer part of the site navigation; their old page URLs return to the core pages. Existing stored records are not deleted by the simplification.
+The 2027 site keeps the established navy, cream and tan identity and uses a small set of member journeys. Home has **RSVP**, **Leaderboard**, **Course hole view** and **All events**. Admins also see **Enter scores**. Gallery is available from the five-tab mobile navigation and the main menu, with a photo grid, swipe/arrow viewer and the existing member uploads. Shop, trips and the old payment screens are no longer part of the site navigation; their old page URLs return to the core pages. Existing stored records are not deleted by the simplification.
 
 ### Members and RSVPs
 
