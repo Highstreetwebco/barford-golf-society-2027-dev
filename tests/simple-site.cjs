@@ -81,7 +81,7 @@ function resultBoard() {
       assert(await weather.evaluate(el=>el.getBoundingClientRect().top>=document.querySelector('#homeTeeGroup .all-tee-groups').getBoundingClientRect().bottom));
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
       await page.screenshot({path:path.join(out,`home-tee-weather-${width}.png`),fullPage:true});
-      await weather.scrollIntoViewIfNeeded();
+      await weather.evaluate(el=>el.scrollIntoView({block:'center'}));
       await page.screenshot({path:path.join(out,`tee-weather-detail-${width}.png`)});
       await page.evaluate(()=>window.scrollTo(0,0));
       await directions.evaluate(button=>{button.click();button.click();});
