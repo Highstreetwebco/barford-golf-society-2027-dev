@@ -1,0 +1,36 @@
+.page-index.simple-site #nextEvent.simple-next-panel { padding: 0; }
+.home-tee-header, .home-round-title { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.home-tee-header > .home-tee-event, .home-round-title > h2 { min-width: 0; flex: 1; }
+.simple-site [data-event-directions] { flex: 0 0 auto; padding: 10px 14px; font-size: .85rem; line-height: 1.35; min-height: 44px; white-space: normal; }
+.simple-event-header [data-event-directions] { margin-top: 8px; }
+.event-directions-dialog { width: min(94vw, 440px); max-height: 90dvh; overflow: auto; border: 1px solid var(--line); border-radius: 18px; padding: 24px; background: var(--surface); color: var(--ink); }
+.event-directions-dialog::backdrop { background: #122a39a6; }
+.event-directions-dialog h2 { margin: 0 0 12px; font-size: 1.4rem; }
+.directions-event { font-weight: 700; margin-bottom: 8px; }
+.directions-address { padding: 14px; border-radius: 10px; background: var(--soft); overflow-wrap: anywhere; white-space: pre-line; }
+.directions-options { display: grid; gap: 10px; margin: 20px 0; }
+.directions-options a { display: flex; align-items: center; justify-content: space-between; }
+.event-directions-dialog .form-status:empty { display: none; }
+.event-directions-dialog .form-status { color: var(--ink); }
+.tee-weather { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+.tee-weather h3 { margin: 0 0 8px; font-size: 1.15rem; }
+.tee-weather > p { font-size: .85rem; line-height: 1.5; }
+.weather-when { margin: 0 0 14px; color: var(--muted); }
+.weather-condition { margin: 0 0 12px; font-weight: 700; color: var(--ink); }
+.weather-at-tee { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.weather-at-tee > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.weather-at-tee dt { font-size: .72rem; color: var(--muted); }
+.weather-at-tee dd { margin: 6px 0 0; font-weight: 700; font-size: 1.3rem; white-space: nowrap; }
+.tee-weather .weather-note, .tee-weather .weather-source { font-size: .75rem; color: var(--muted); margin: 12px 0 0; }
+@media (max-width: 700px) {
+  .home-tee-header, .home-round-title { gap: 10px; }
+  .simple-site .home-tee-header [data-event-directions], .simple-site .home-round-title [data-event-directions] { max-width: 112px; padding: 9px 10px; font-size: .78rem; }
+  .weather-at-tee { gap: 7px; }
+  .weather-at-tee > div { padding: 10px 8px; }
+  .weather-at-tee dt { font-size: .65rem; }
+  .weather-at-tee dd { font-size: 1.15rem; }
+}
+@media (max-width: 400px) {
+  .page-index .home-round-title h2 { font-size: 1.25rem; line-height: 1.2; }
+  .simple-site .home-round-title [data-event-directions] { max-width: 92px; padding: 9px 8px; font-size: .75rem; }
+}
