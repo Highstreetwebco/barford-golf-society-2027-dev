@@ -49,7 +49,7 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
             .map((x) => x[0])
             .join("")
             .toUpperCase();
-        return `<li>${url ? `<button class="portrait-button" data-portrait="${e(p.user_id)}" aria-label="Enlarge photo of ${e(p.name)}"><img src="${e(url)}" alt="${e(p.name)}" loading="lazy"></button>` : `<span class="portrait-initials" aria-label="No profile photo for ${e(p.name)}">${e(initials)}</span>`}<span><strong>${e(p.name)}${p.user_id === b.state.user.id ? " <small>(you)</small>" : ""}</strong><small>${secret || p.handicap_secret ? "Handicap held by organisers to protect the secret rounds" : `${data.round_number ? "Round " + data.round_number : "Starting"} HCP: ${p.handicap ?? "Not set"}`}${p.type === "buggy" ? " · Buggy" : ""}</small></span></li>`;
+        return `<li>${url ? `<button class="portrait-button" data-portrait="${e(p.participant_id || p.user_id)}" aria-label="Enlarge photo of ${e(p.name)}"><img src="${e(url)}" alt="${e(p.name)}" loading="lazy"></button>` : `<span class="portrait-initials" aria-label="No profile photo for ${e(p.name)}">${e(initials)}</span>`}<span><strong>${e(p.name)}${p.user_id === b.state.user.id ? " <small>(you)</small>" : ""}</strong><small>${secret || p.handicap_secret ? "Handicap held by organisers to protect the secret rounds" : `${data.round_number ? "Round " + data.round_number : "Starting"} HCP: ${p.handicap ?? "Not set"}`}${p.type === "buggy" ? " · Buggy" : ""}</small></span></li>`;
       })
       .join("")}</ul></section>`;
   }
@@ -62,7 +62,7 @@ export async function mountMemberTees(area, eventId, { home = false } = {}) {
     button.onclick = () => {
       const p = data.groups
           .flatMap((g) => g.players)
-          .find((p) => p.user_id === button.dataset.portrait),
+          .find((p) => (p.participant_id || p.user_id) === button.dataset.portrait),
         url = urls[p?.avatar_path];
       if (!url) return;
       const dialog = document.createElement("dialog");

@@ -24,9 +24,15 @@ function render() {
   const visible = accounts.filter(p => (query || !p.disabled) && ((p.username || "").toLowerCase().includes(query) || (p.mobile || "").includes(query)));
   document.getElementById("accountSummary").textContent = `${active.length} members · ${active.filter(p => p.registered !== false).length} with a login · ${active.filter(p => p.is_admin).length} admins`;
   const list = document.getElementById("accountList");
-  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : b.empty("No matching members.", "Try a different name or mobile number.");
+  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.member_id && !p.disabled ? `<button type="button" class="secondary" data-edit-photo="${e(p.id)}">Edit photo</button>` : ""}${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : b.empty("No matching members.", "Try a different name or mobile number.");
   list.querySelectorAll("[data-edit-account]").forEach(button => button.onclick = () => edit(accounts.find(p => p.id === button.dataset.editAccount)));
   list.querySelectorAll("[data-reset-account]").forEach(button => button.onclick = () => resetPassword(accounts.find(p => p.id === button.dataset.resetAccount)));
+  list.querySelectorAll("[data-edit-photo]").forEach(button => button.onclick = async () => {
+    button.disabled = true;
+    try { const { editMemberPhoto } = await import("./admin-member-photos.js?v=2027-admin-photos-1"); await editMemberPhoto(accounts.find(p => p.id === button.dataset.editPhoto)); }
+    catch { b.toast("Could not open the photo editor. Please refresh and try again."); }
+    finally { button.disabled = false; }
+  });
 }
 function openDialog(title, contents) {
   const dialog = document.createElement("dialog");
