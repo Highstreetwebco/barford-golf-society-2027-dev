@@ -27,11 +27,12 @@ async function launchMocks(context, launch = {live:false, publishes:0}) {
   return launch;
 }
 
-async function setup(browser, {admin = false, signedIn = true, width = 1365} = {}) {
+async function setup(browser, {admin = false, signedIn = true, width = 1365, memberView, launch} = {}) {
   const context = await browser.newContext({viewport:{width,height:900},serviceWorkers:'block',timezoneId:'Europe/London'});
   const model = await mocks(context, {signedIn,admin});
   await context.addInitScript(token => sessionStorage.setItem('barford-2027-preview-session',token),previewToken);
-  await launchMocks(context);
+  await launchMocks(context,launch);
+  if (typeof memberView === 'boolean') await context.addInitScript(({id,enabled})=>localStorage.setItem('barford-2027-view:'+id,enabled?'member':'admin'),{id:uid,enabled:memberView});
   model.profile.is_admin = admin;
   model.events = [{...fixture, event_type:'league',round_number:1,member_price:45,course_name:'The Warwickshire',date:'2027-06-25',tee_published_at:null,course_layout_id:null}];
   await context.addInitScript(() => {
@@ -77,18 +78,26 @@ function resultBoard() {
       assert.equal(await page.evaluate(()=>sessionStorage.getItem('barford-2027-preview-session')),null);
       await page.locator('#previewPassword').fill(previewPassword);
       await page.locator('#previewSubmit').click();
-      await page.waitForURL('**/events.html'); await page.locator('#makeSiteLive').waitFor({state:'visible'});
+      await page.waitForURL('**/events.html'); await page.locator('#eventList').waitFor({state:'visible'});
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       assert.equal(await page.locator('a[data-admin]:visible').count(),0,'Preview password does not grant a member admin role');
-      await page.locator('#makeSiteLive').click(); await page.getByRole('button',{name:'Cancel',exact:true}).click();
+      assert.equal(await page.locator('#makeSiteLive').count(),0,'Launch control is absent from member pages');
+      assert.equal(await page.locator('.launch-preview-bar').count(),0,'Filming pages have no preview banner');
+      await page.goto(base+'admin.html');
+      await page.getByRole('heading',{name:'Admin sign in',exact:true}).waitFor();
+      assert.equal(await page.locator('#makeSiteLive').count(),0,'Preview access does not expose Admin launch controls');
+      const adminSession=await setup(browser,{admin:true,width:390,launch}),adminPage=adminSession.page;
+      await adminPage.goto(base+'admin.html');
+      await adminPage.locator('#makeSiteLive').waitFor({state:'visible'});
+      await adminPage.locator('#makeSiteLive').click(); await adminPage.getByRole('button',{name:'Cancel',exact:true}).click();
       assert.equal(launch.live,false,'Cancel must leave the site closed');
-      await page.locator('#makeSiteLive').click(); await page.locator('#launchPassword').fill('wrong-password');
-      await page.locator('#launchDialog button[type=submit]').click();
-      await page.locator('#launchDialog').getByText('Incorrect password. Please try again.',{exact:true}).waitFor();
+      await adminPage.locator('#makeSiteLive').click(); await adminPage.locator('#launchPassword').fill('wrong-password');
+      await adminPage.locator('#launchDialog button[type=submit]').click();
+      await adminPage.locator('#launchDialog').getByText('Incorrect password. Please try again.',{exact:true}).waitFor();
       assert.equal(launch.live,false,'Preview access alone cannot publish');
-      await page.locator('#launchPassword').fill(previewPassword);
-      await page.locator('#launchDialog form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});
-      await page.getByText('The site is live for everyone.',{exact:true}).waitFor();
+      await adminPage.locator('#launchPassword').fill(previewPassword);
+      await adminPage.locator('#launchDialog form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+      await adminPage.getByText('The site is live for everyone.',{exact:true}).waitFor();
       assert.equal(launch.publishes,2,'Double submit sends only one additional publish request');
       assert.equal(launch.live,true);
       const publicContext=await browser.newContext({serviceWorkers:'block'}),publicPage=await publicContext.newPage();
@@ -99,7 +108,7 @@ function resultBoard() {
       await publicPage.goto(base+'admin.html');
       await publicPage.getByRole('heading',{name:'Admin sign in',exact:true}).waitFor();
       assert.equal(await publicPage.locator('#adminContent').isVisible(),false,'Publishing does not grant admin access');
-      await publicContext.close(); await context.close();
+      await publicContext.close(); await adminSession.context.close(); await context.close();
       const failureContext=await browser.newContext({serviceWorkers:'block'}),failurePage=await failureContext.newPage();
       await mocks(failureContext,{signedIn:false}); await launchMocks(failureContext,{live:false,unavailable:true});
       let protectedReads=0;
@@ -109,6 +118,80 @@ function resultBoard() {
       assert.equal(protectedReads,0,'App data must not be requested when launch verification fails');
       await failureContext.close();
       report.push('PASS closed direct links, wrong passwords, preview access, publish confirmation, cancel, double-submit, global launch, admin protection and fail-closed access');
+    }
+    for (const width of [390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width});
+      model.board=resultBoard();
+      let authChanges=0;
+      page.on('request',req=>{ if(/\/auth\/v1\/(token|logout)/.test(req.url())) authChanges++; });
+      await context.route(backend+'/storage/v1/object/list/baseline-gallery-images', route=>route.fulfill({json:[{id:'1',name:'photo.png'}]}));
+      await context.route(backend+'/storage/v1/object/public/baseline-gallery-images/uploads/*', route=>route.fulfill({path:path.join(__dirname,'..','icon-logo.png'),contentType:'image/png'}));
+      await page.goto(base+'home.html');
+      await page.locator('[data-home-rsvp]').waitFor();
+      assert.equal(await page.locator('a[data-admin]:visible').count(),0,'Admin account defaults to the member experience');
+      assert.equal(await page.locator('.launch-preview-bar,#makeSiteLive').count(),0);
+      assert.deepEqual(await page.evaluate(()=>({id:barford.state.user.id,role:barford.state.adminAccess,view:barford.state.admin})),{id:uid,role:true,view:false});
+      await page.screenshot({path:path.join(out,`filming-home-${width}.png`),fullPage:true});
+      for(const name of ['events.html','event.html?id=999','account.html','gallery.html','scores.html']) {
+        await page.goto(base+name);
+        await page.evaluate(()=>window.barfordReady);
+        assert.equal(await page.locator('a[data-admin]:visible').count(),0,`No admin links on ${name}`);
+        assert.equal(await page.locator('.launch-preview-bar,#makeSiteLive').count(),0,`No launch controls on ${name}`);
+        if(name==='account.html') {
+          await page.locator('#profileForm').waitFor();
+          assert.equal(await page.getByRole('link',{name:'Organiser tools',exact:true}).count(),0);
+        }
+        if(name==='gallery.html') {
+          await page.locator('[data-photo]').waitFor();
+          assert.equal(await page.locator('[data-delete]').count(),0,'Member view hides photo deletion');
+        }
+        if(name==='scores.html') {
+          await page.locator('.season-table tbody tr').first().waitFor();
+          assert.equal(await page.locator('.season-table .is-locked').count(),6,'Admin filming view redacts rounds 6 and 7');
+          await page.locator('#roundDetails > summary').click();
+          await page.locator('#leagueRound').selectOption('6');
+          await page.locator('.round-locked').waitFor();
+          assert.equal(await page.locator('.round-detail-table').count(),0);
+        }
+      }
+      await page.goto(base+'admin.html');
+      await page.locator('#adminContent').waitFor({state:'visible'});
+      assert(await page.locator('#memberViewToggle').isChecked());
+      assert(await page.locator('#makeSiteLive').isVisible());
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
+      await page.screenshot({path:path.join(out,`admin-site-controls-${width}.png`),fullPage:true});
+      await page.locator('#memberViewToggle').uncheck();
+      await page.getByText('Admin controls are visible on member pages.',{exact:true}).waitFor();
+      await page.locator('#openMemberView').click();
+      await page.locator('a.simple-admin-action').waitFor({state:'visible'});
+      assert.equal(await page.locator('#makeSiteLive').count(),0,'Launch remains in Admin even when member view is off');
+      await page.goto(base+'gallery.html');
+      await page.locator('[data-delete]').waitFor();
+      await page.goto(base+'scores.html');
+      await page.locator('.season-table tbody tr').first().waitFor();
+      assert.equal(await page.locator('.season-table .is-locked').count(),0);
+      await page.goto(base+'admin.html');
+      await page.locator('#memberViewToggle').waitFor({state:'visible'});
+      assert.equal(await page.locator('#memberViewToggle').isChecked(),false,'View preference survives navigation');
+      await page.locator('#memberViewToggle').check();
+      await page.locator('#openMemberView').click();
+      await page.locator('[data-home-rsvp]').waitFor();
+      await page.reload();
+      await page.locator('[data-home-rsvp]').waitFor();
+      assert.equal(await page.locator('a[data-admin]:visible').count(),0);
+      assert.equal(await page.evaluate(()=>barford.state.user.id),uid,'Switching view keeps the same account');
+      assert.equal(authChanges,0,'Switching view never signs out or logs in to another account');
+      assert.deepEqual(errors,[]);
+      await context.close();
+      report.push(`PASS admin member-view default, hidden controls/rounds, persistent switch and unchanged sign-in at ${width}px`);
+    }
+    {
+      const {context,page}=await setup(browser,{admin:false,memberView:false});
+      await page.goto(base+'admin.html');
+      await page.getByRole('heading',{name:'Admin sign in',exact:true}).waitFor();
+      assert.equal(await page.locator('#adminContent').isVisible(),false);
+      assert.equal(await page.locator('#makeSiteLive,#memberViewToggle').count(),0,'A local display preference cannot grant admin access');
+      await context.close();
     }
     for (const width of [320,390,1365]) {
       const {context,page,errors}=await setup(browser,{width,signedIn:false});
@@ -273,7 +356,7 @@ function resultBoard() {
     }
 
     for (const admin of [false,true]) {
-      const {context,page,model,errors}=await setup(browser,{admin,width:390});
+      const {context,page,model,errors}=await setup(browser,{admin,width:390,memberView:false});
       model.board=resultBoard(); // Deliberately contains all seven: member UI must still fail closed.
       await page.goto(base+'scores.html');
       await page.locator('.season-table tbody tr').first().waitFor();

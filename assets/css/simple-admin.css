@@ -1,4 +1,12 @@
 /* Simple administration, using the existing Barford colours and typography. */
+.admin-site-controls { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 28px; margin-bottom: 24px; }
+.admin-site-controls > div { min-width: 0; }
+.admin-site-controls h2 { margin-top: 0; font-size: 1.35rem; }
+.admin-site-controls p { font-size: .9rem; line-height: 1.55; }
+.admin-site-controls .member-view-toggle { display: flex; align-items: center; gap: 10px; min-height: 48px; font-weight: 700; cursor: pointer; }
+.admin-site-controls .member-view-toggle input { width: 22px; height: 22px; min-height: 22px; flex: 0 0 22px; accent-color: #274b62; }
+.admin-site-controls .admin-return-note { margin-bottom: 0; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .admin-site-controls { grid-template-columns: minmax(0, 1fr); gap: 24px; } .admin-site-controls > div + div { border-top: 1px solid var(--line); padding-top: 24px; } }
 .page-admin .page-heading { margin-bottom: 25px; padding-block: 10px 0; }
 .page-admin .page-heading h1 { font-size: clamp(2.6rem, 6vw, 4.3rem); line-height: 1; }
 .page-admin .page-heading .lede { max-width: 660px; margin-bottom: 0; }
