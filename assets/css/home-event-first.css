@@ -3,7 +3,27 @@
 .page-index .simple-next-section > .section-heading h1 { margin: 0; font-size: 1.3rem; }
 .page-index .simple-home-heading h2 { margin: 6px 0 10px; font-size: clamp(1.4rem, 3vw, 1.8rem); line-height: 1.2; }
 .page-index .simple-next-booking > .notice { margin: 12px 0 0; }
+/* Published tee groups lead the dashboard, ahead of event details and shortcuts. */
+.page-index #homeTeeGroup { margin: 0 0 28px; padding: 24px 28px; border: 1px solid var(--line); background: var(--soft); }
+.page-index #homeTeeGroup h2 { margin: 0 0 8px; font-size: 1.3rem; }
+.page-index .home-tee-event { margin: 0 0 16px; font-size: .9rem; line-height: 1.4; }
+.page-index .home-tee-event a { color: var(--ink); font-weight: 700; text-decoration: none; }
+.page-index .home-tee-event a:hover { text-decoration: underline; }
+.page-index .home-tee-event span { display: block; margin-top: 3px; color: var(--muted); }
+.page-index #homeTeeGroup .member-tee-card { margin-bottom: 0; padding: 16px; }
+.page-index #homeTeeGroup .member-tee-card > .section-heading { margin-bottom: 10px; }
+.page-index #homeTeeGroup .member-tee-players li { padding: 9px 0; gap: 12px; }
+.page-index #homeTeeGroup .member-tee-players li:last-child { padding-bottom: 0; }
+.page-index #homeTeeGroup .portrait-button,
+.page-index #homeTeeGroup .portrait-initials { flex-basis: 44px; width: 44px; height: 44px; }
+.page-index #homeTeeGroup .all-tee-groups { margin-top: 14px; }
+.page-index #homeTeeGroup .all-tee-groups > summary { min-height: 44px; }
 @media (max-width: 700px) {
+  .page-index #homeTeeGroup { margin-bottom: 22px; padding: 18px; }
+  .page-index #homeTeeGroup .member-tee-card { padding: 12px; }
+  .page-index #homeTeeGroup .member-tee-players strong { font-size: .9rem; }
+  .page-index #homeTeeGroup .member-tee-players small { font-size: .75rem; }
+  .page-index #homeTeeGroup .all-tee-groups > summary { display: block; text-align: center; }
   .page-index.simple-site .container { padding-top: 14px; }
   .page-index .simple-next-section > .section-heading { margin-bottom: 10px; }
   .page-index .simple-next-section > .section-heading h1 { font-size: 1.15rem; }

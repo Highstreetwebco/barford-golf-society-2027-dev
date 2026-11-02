@@ -364,12 +364,15 @@ function resultBoard() {
       await page.screenshot({path:path.join(out,`event-first-${width}.png`)});
       if(signedIn) {
         upcoming.tee_published_at='2027-06-01T10:00:00Z';
+        model.groups=[{group_number:1,tee_time:'09:30',players:[{user_id:uid,name:'Test Member',type:'walker'}]}];
         await page.reload();
-        const teeLink=page.locator('.simple-next-booking').getByRole('link',{name:'View tee times',exact:true});
+        const teeLink=page.getByText('View other tee times',{exact:true});
         await teeLink.waitFor();
         const action=await teeLink.boundingBox();
         const bottom=width<=760?(await page.locator('.mobile-dock').boundingBox()).y:height;
-        assert(action.y+action.height<=bottom,'Published tee times remain immediately actionable');
+        assert(action.y+action.height<=bottom,'Your published group and other tee times remain immediately actionable');
+        await teeLink.click();
+        await page.getByText('There are no other published tee groups for this event.',{exact:true}).waitFor();
       }
       upcoming.date='2027-05-31';
       await page.reload();
@@ -381,6 +384,83 @@ function resultBoard() {
       assert.deepEqual(errors,[]);
       await context.close();
       report.push(`PASS event-first homepage at ${width}x${height}: visible action, next-event selection, rollover, tee times and empty state`);
+    }
+    for (const [width,height] of [[390,844],[1365,900]]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width,height});
+      const upcoming=model.events[0], published={...upcoming,id:998,name:'Round 2 – Kenilworth Golf Club',date:'2027-07-02',tee_published_at:'2027-06-01T10:00:00Z'};
+      model.events=[{...published,id:996,date:'2027-05-01'}, {...published,id:997,date:'2027-06-01',cancelled:true}, {...published,id:995,name:'June society social',date:'2027-06-10',event_type:'social'}, upcoming, published, {...published,id:994,date:'2027-08-02'}];
+      const own={group_number:2,tee_time:'10:16',players:people.slice(0,4).map((id,i)=>({user_id:i===3?null:id,participant_id:id,name:names[i],handicap:18+i,type:i===0?'buggy':'walker',avatar_path:i===3?id+'/photo.jpg':null}))};
+      const other={group_number:1,tee_time:'10:08',players:[{user_id:people[4],name:names[4],handicap:15,type:'walker'}]};
+      const publishedView={status:'published',round_number:2,revision:1,published_at:'2027-06-01T10:00:00Z',groups:[other,own]};
+      model.teeView=publishedView;
+      const reads=[];
+      page.on('request',request=>{if(request.url().endsWith('/rpc/baseline_event_tee_groups'))reads.push(request.postDataJSON().event);});
+      const group=page.locator('#homeTeeGroup'), toggle=group.locator('.all-tee-groups > summary');
+      await page.goto(base+'home.html');
+      await toggle.waitFor();
+      assert.deepEqual(reads,[998],'Choose the nearest future published golf day, skipping cancelled, past, social and unpublished events');
+      assert.match(await group.innerText(),/Kenilworth Golf Club/);
+      assert.match(await group.innerText(),/2 July 2027/);
+      assert.equal(await page.locator('#nextEvent h2').innerText(),'June society social','Keep the next event independently visible below the published schedule');
+      assert.equal(await group.locator('.member-tee-card:visible').count(),1,'Only your group is expanded by default');
+      assert.equal(await group.locator('.member-tee-card:visible .tee-clock').innerText(),'10:16','Own group is selected by signed-in member ID, not group order or admin role');
+      assert.equal(await group.locator('.member-tee-card:visible li').count(),4);
+      assert.match(await group.locator('.member-tee-card:visible').innerText(),/Test Member\s+\(you\)/);
+      const layout=await page.evaluate(()=>{
+        const panel=document.querySelector('#homeTeeGroup'), card=panel.querySelector('.member-tee-card'), button=panel.querySelector('summary');
+        const dock=document.querySelector('.mobile-dock'), bottom=getComputedStyle(dock).display==='none'?innerHeight:dock.getBoundingClientRect().top;
+        return {first:panel===document.querySelector('main').firstElementChild,below:button.getBoundingClientRect().top>=card.getBoundingClientRect().bottom,visible:scrollY===0&&button.getBoundingClientRect().bottom<=bottom,overflow:document.documentElement.scrollWidth>innerWidth+2};
+      });
+      assert.deepEqual(layout,{first:true,below:true,visible:true,overflow:false},'Four-player group and button fit above the fold');
+      assert.equal(await page.locator('a[data-admin]:visible').count(),0);
+      await page.screenshot({path:path.join(out,`home-published-group-${width}.png`)});
+      await group.getByRole('button',{name:'Enlarge photo of Gary Example',exact:true}).click();
+      await page.getByRole('dialog',{name:'Gary Example profile photo',exact:true}).waitFor();
+      await page.getByRole('button',{name:'Close photo',exact:true}).click();
+      await toggle.focus();await page.keyboard.press('Enter');
+      await group.getByText('Tim Example',{exact:true}).waitFor();
+      assert.equal(await group.locator('.all-tee-groups .member-tee-card').count(),1,'Other tee times excludes your already-visible group');
+      assert.equal(await group.getByText('Test Member (you)',{exact:true}).count(),1);
+      await page.screenshot({path:path.join(out,`home-other-tee-times-${width}.png`),fullPage:true});
+      model.teeView={status:'reviewing',groups:[]};
+      await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await group.getByText('The player list has changed. Organisers are reviewing the tee times.',{exact:true}).waitFor();
+      assert.equal(await group.locator('.member-tee-card').count(),0,'Unconfirmed changes never leave stale groups on screen');
+      model.teeView={...publishedView,revision:2,groups:[other,{...own,tee_time:'10:32'}]};
+      await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await group.locator('.tee-clock').filter({hasText:'10:32'}).waitFor();
+      await context.route(backend+'/rest/v1/rpc/baseline_event_tee_groups',route=>route.fulfill({status:503,json:{message:'Temporary tee group failure'}}));
+      await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await group.getByText('Tee groups could not load. Refresh to try again.',{exact:true}).waitFor();
+      await context.unroute(backend+'/rest/v1/rpc/baseline_event_tee_groups');
+      await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await group.locator('.tee-clock').filter({hasText:'10:32'}).waitFor();
+      model.teeView={...publishedView,groups:[other]};
+      await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await group.getByText('You are not assigned to a published tee group for this event.',{exact:true}).waitFor();
+      assert.equal(await group.locator('.member-tee-card:visible').count(),0,'Never label another member’s group as yours');
+      await toggle.click();await group.getByText('Tim Example',{exact:true}).waitFor();
+      await page.goto(base+'home.html?event=999');
+      await page.locator('[data-home-rsvp]').waitFor();
+      assert.equal(await group.isVisible(),false,'Explicit unpublished event links do not borrow a different event’s tee group');
+      await page.goto(base+'home.html?event=998');await toggle.waitFor();
+      assert.match(await group.innerText(),/Kenilworth Golf Club/);
+      published.tee_published_at=null;model.events=model.events.filter(ev=>ev.id!==994);
+      await page.goto(base+'home.html');await page.locator('[data-home-rsvp]').waitFor();
+      assert.equal(await group.isVisible(),false,'Unpublishing removes the personal schedule');
+      assert.deepEqual(errors,[]);
+      await context.close();
+      report.push(`PASS published homepage group ${width}: own four-player group above fold, later published event, inline other groups, portraits, member admin view, review/republish refresh, error recovery, unassigned member and unpublished state`);
+    }
+    {
+      const {context,page,model,errors}=await setup(browser,{signedIn:false,width:390});
+      model.events[0].tee_published_at='2027-06-01T10:00:00Z';
+      let reads=0;page.on('request',request=>{if(request.url().includes('/rpc/baseline_event_tee_groups'))reads++;});
+      await page.goto(base+'home.html');await page.locator('.simple-next-booking').getByRole('link',{name:'View tee times',exact:true}).waitFor();
+      assert.equal(await page.locator('#homeTeeGroup').isVisible(),false);
+      assert.equal(reads,0,'Signed-out visitors never request personal tee groups');
+      assert.deepEqual(errors,[]);await context.close();
+      report.push('PASS signed-out homepage keeps tee groups private');
     }
     for (const width of [390,900,901,1365]) {
       // A saved preference from the old toggle must never re-enable editing while filming.

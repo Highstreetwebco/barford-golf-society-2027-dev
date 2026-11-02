@@ -1,16 +1,17 @@
-import { mountMemberTees } from "./member-tees.js?v=2027-admin-photos-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-home-tees-1";
 import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-simple-1";
 import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-simple-1";
 
 const b = await window.barfordReady;
 const { escape: e, state } = b;
 const area = document.getElementById("nextEvent");
+const teeArea = document.getElementById("homeTeeGroup");
 const gotoRsvp = document.getElementById("homeRsvp");
 const gotoHoles = document.getElementById("homeHoles");
 const requested = new URLSearchParams(location.search).get("event");
 document.getElementById("nextEventTitle").textContent = requested !== null ? "Your event" : "Next event";
 const requestedId = /^[1-9]\d*$/.test(requested || "") && Number.isSafeInteger(Number(requested)) ? Number(requested) : null;
-let currentEvent = null, holeEvent = null, response = null, responseError = false;
+let currentEvent = null, holeEvent = null, teeEvent = null, response = null, responseError = false;
 let contentKey = "", loading = null;
 
 function welcome() {
@@ -94,13 +95,30 @@ async function render(ev, count) {
     </div>${image ? `<div class="simple-next-image"><img src="${image}" alt="" loading="lazy">${ev.cover_credit ? `<small>${e(ev.cover_credit)}</small>` : ""}</div>` : ""}
     <div class="simple-next-booking">${bookingHTML(ev)}</div>
     <div class="simple-next-footer"><span class="muted">${e(slots(ev, count))}</span><a href="event.html?id=${ev.id}">Event details &amp; players <span aria-hidden="true">→</span></a></div>
-  </div>${teeTimesPublished(ev) && state.user && !ev.cancelled ? '<section id="homeTeeGroup" class="simple-home-tees" aria-label="Your tee group">Loading tee times…</section>' : ""}`;
+  </div>`;
   const img = area.querySelector(".simple-next-image img");
   if (img) img.onerror = () => img.parentElement.remove();
   area.querySelector("[data-home-rsvp]")?.addEventListener("click", () => saveRsvp().catch(() => b.toast("Your RSVP could not open. Please try again.")));
   area.querySelector("[data-retry-booking]")?.addEventListener("click", () => load({ force: true }).catch(showError));
-  const tees = document.getElementById("homeTeeGroup");
-  if (tees) await mountMemberTees(tees, ev.id, { home: true });
+}
+
+async function renderTees() {
+  if (!state.user || !teeEvent) {
+    teeArea.hidden = true;
+    teeArea.innerHTML = "";
+    delete teeArea.dataset.event;
+    return;
+  }
+  if (teeArea.dataset.event !== String(teeEvent.id)) {
+    teeArea.innerHTML = '<p class="muted">Loading your tee group…</p>';
+    teeArea.dataset.event = String(teeEvent.id);
+  }
+  teeArea.hidden = false;
+  await mountMemberTees(teeArea, teeEvent.id, {
+    home: true,
+    eventName: teeEvent.name,
+    eventDate: b.date(teeEvent.date),
+  });
 }
 
 async function load({ force = false } = {}) {
@@ -115,6 +133,10 @@ async function load({ force = false } = {}) {
     currentEvent = requested !== null
       ? events.find((ev) => Number(ev.id) === requestedId) || null
       : events.find((ev) => !ev.cancelled && ev.date >= londonToday()) || null;
+    // A published golf day can be later than an unpublished round or a social event.
+    teeEvent = requested !== null
+      ? currentEvent && !currentEvent.cancelled && teeTimesPublished(currentEvent) ? currentEvent : null
+      : events.find((ev) => !ev.cancelled && ev.date >= londonToday() && teeTimesPublished(ev)) || null;
     const golf = events.filter((ev) => !ev.cancelled && ev.event_type !== "social");
     holeEvent = requested !== null && !currentEvent ? null
       : currentEvent && currentEvent.event_type !== "social" && !currentEvent.cancelled
@@ -137,12 +159,16 @@ async function load({ force = false } = {}) {
       contentKey = key;
       if (focused && !document.querySelector("dialog[open]")) area.querySelector("[data-home-rsvp]")?.focus({ preventScroll: true });
     }
+    await renderTees();
   })();
   try { await loading; }
   finally { loading = null; }
 }
 
 function showError() {
+  teeArea.hidden = true;
+  teeArea.innerHTML = "";
+  delete teeArea.dataset.event;
   area.innerHTML = '<div class="simple-empty"><h3>Your next event could not load</h3><p>Check your connection and try again.</p><button type="button" data-retry>Try again</button></div>';
   area.querySelector("[data-retry]").onclick = () => load({ force: true }).catch(showError);
 }
@@ -150,7 +176,7 @@ welcome();
 try {
   await load();
   if (currentEvent && location.hash === "#rsvp" && !teeTimesPublished(currentEvent)) await saveRsvp();
-  if (currentEvent && location.hash === "#tees") area.scrollIntoView({ block: "start" });
+  if (currentEvent && location.hash === "#tees") (teeArea.hidden ? area : teeArea).scrollIntoView({ block: "start" });
 } catch { showError(); }
 const refresh = () => { if (!document.hidden && !document.querySelector("dialog[open]")) load().catch(() => {}); };
 window.addEventListener("focus", refresh);
