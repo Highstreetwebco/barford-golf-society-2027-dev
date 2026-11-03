@@ -1,55 +1,109 @@
+/* The same member and round data reflows; nothing is clipped or scaled down. */
 .score-page-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; }
 .score-page-heading .actions { flex-wrap:wrap; margin:0; }
 .score-page-heading h1 { margin-bottom:12px; }
 .league-demo { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:0 0 20px; padding:18px 20px; border:1px solid #c5a75c; border-radius:14px; background:var(--soft); }
 .league-demo[hidden] { display:none; }
 .league-demo strong { display:block; color:var(--ink); }
-.league-demo p { margin:5px 0 0; color:var(--muted); font-size:.85rem; line-height:1.5; }
-.league-demo button { flex-shrink:0; min-height:44px; }
-@media(max-width:600px) { .league-demo { flex-direction:column; align-items:flex-start; gap:12px; } }
-.leaderboard-panel { padding:0; overflow:hidden; }
-.leaderboard-heading { padding:24px 28px 18px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.league-demo p { margin:5px 0 0; color:var(--muted); font-size:.875rem; line-height:1.5; }
+.league-demo button { flex-shrink:0; }
+.leaderboard-panel { padding:0; container-type:inline-size; }
+.leaderboard-heading { padding:22px 20px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
 .leaderboard-heading h2 { font-size:1.4rem; margin:0; }
-.leaderboard-heading p { margin:0; font-size:.85rem; color:var(--muted); }
-.score-scroll { overscroll-behavior-x:contain; scrollbar-color:#9aaab4 transparent; }
-.simple-score-table { width:100%; border-collapse:separate; border-spacing:0; font-variant-numeric:tabular-nums; font-size:.93rem; }
-.season-table { table-layout:fixed; min-width:820px; }
-.simple-score-table th,.simple-score-table td { padding:17px 10px; border-bottom:1px solid var(--line); text-align:center; background:var(--surface); vertical-align:middle; white-space:nowrap; }
-.simple-score-table thead th { font-size:.73rem; letter-spacing:.055em; text-transform:uppercase; color:var(--muted); background:var(--soft); font-weight:700; }
-.simple-score-table tbody tr:last-child > * { border-bottom:0; }
-.simple-score-table .position-col { width:52px; padding-left:20px; color:var(--muted); }
-.simple-score-table .player-col,.round-detail-table th:first-child { text-align:left; min-width:175px; position:sticky; left:0; z-index:1; white-space:normal; line-height:1.4; }
-.simple-score-table .player-col { width:175px; border-right:1px solid var(--line); }
-.simple-score-table .total-col { min-width:70px; width:70px; background:var(--soft); color:var(--ink); }
-.simple-score-table .total-col strong { font-size:1.12rem; }
-.simple-score-table tr.is-you > * { background:#f5efe5; }
-.simple-score-table tr.is-you .total-col { background:#eee2d0; }
-.simple-score-table .counted-score { font-weight:750; }
-.simple-score-table .dropped-score { color:var(--muted); }
-.simple-score-table .dropped-score > span { text-decoration:line-through; }
-.simple-score-table .not-played { color:var(--muted); font-size:.73rem; }
-.simple-score-table abbr { text-decoration:none; }
-.you-label { display:inline-block; margin-left:7px; color:var(--green); font-size:.67rem; font-weight:700; }
-.round-win { color:#826437; font-size:.55rem; margin-left:2px; vertical-align:super; }
-.is-locked { background:var(--soft) !important; }
-.locked-score { display:inline-flex; align-items:center; justify-content:center; gap:2px; min-width:30px; position:relative; }
+.leaderboard-heading p { margin:0; font-size:.875rem; color:var(--muted); }
+#standingsTitle,.round-details { scroll-margin-top:24px; }
+.season-columns { display:none; }
+.season-list,.round-result-list { list-style:none; padding:0; margin:0; }
+.season-list { display:grid; gap:12px; padding:0 12px 12px; }
+.season-player { min-width:0; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); font-variant-numeric:tabular-nums; }
+.player-summary { display:grid; grid-template-columns:34px minmax(0,1fr) max-content; align-items:center; gap:10px; }
+.player-position { display:grid; place-items:center; width:32px; height:32px; background:var(--soft); border-radius:50%; font-size:.875rem; font-weight:700; color:var(--muted); }
+.player-name,.round-result-heading h3 { min-width:0; margin:0; font-size:1rem; line-height:1.4; overflow-wrap:anywhere; }
+.player-total { text-align:right; }
+.player-total .metric-label { display:block; margin-bottom:2px; color:var(--muted); font-size:.75rem; }
+.player-total strong { display:block; font-size:1.65rem; line-height:1.1; color:var(--ink); }
+.player-rounds { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin:16px 0 0; }
+.round-score { min-width:0; border-radius:6px; padding:7px 2px; text-align:center; background:var(--soft); }
+.round-score dt { margin:0 0 4px; font-size:.75rem; color:var(--muted); font-weight:600; }
+.round-score dd { display:flex; justify-content:center; align-items:center; min-height:24px; margin:0; font-size:1.0625rem; line-height:1.4; }
+.round-score abbr { text-decoration:none; font-size:.875rem; }
+.counted-score dd { font-weight:750; color:var(--ink); }
+.dropped-score dd { color:var(--muted); }
+.dropped-score dd > span { text-decoration:line-through; }
+.not-played dd { color:var(--muted); }
+.player-played { margin:10px 0 0; text-align:right; color:var(--muted); font-size:.8125rem; }
+.player-played strong { font-weight:600; }
+.you-label { display:block; margin-top:2px; color:var(--green); font-size:.75rem; font-weight:700; }
+.round-win { color:#826437; font-size:.65rem; margin-left:2px; vertical-align:super; }
+.locked-score { display:inline-grid; place-items:center; width:30px; height:24px; position:relative; }
 .locked-dots { filter:blur(3px); user-select:none; color:var(--muted); letter-spacing:2px; }
-.lock-mark { position:absolute; inset:0; display:grid; place-items:center; font-size:15px; color:var(--muted); }
-.score-key { display:flex; flex-wrap:wrap; gap:10px 20px; padding:20px 28px; border-top:1px solid var(--line); font-size:.76rem; color:var(--muted); }
+.lock-mark { position:absolute; width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; color:var(--muted); }
+.season-player.is-you,.round-result.is-you { background:#f5efe5; border-color:#c4a878; }
+.is-you .round-score { background:#eee2d0; }
+.score-key { display:flex; flex-wrap:wrap; gap:9px 18px; padding:18px 20px; border-top:1px solid var(--line); font-size:.8125rem; color:var(--muted); }
 .score-key strong { color:var(--ink); }
-.table-mobile-hint { display:none; margin:0; padding:0 24px 18px; font-size:.76rem; color:var(--muted); }
-.round-details > summary { font-weight:750; font-size:1.05rem; cursor:pointer; }
-.round-details .round-selector { margin-top:22px; max-width:300px; }
+.round-details > summary { font-weight:750; font-size:1.05rem; cursor:pointer; overflow-wrap:anywhere; }
+.round-detail-controls { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-top:22px; }
+.round-selector { flex:1 1 200px; max-width:300px; min-width:0; }
+.round-selector select { width:100%; max-width:100%; }
+.round-detail-controls > a { display:inline-flex; align-items:center; min-height:48px; font-size:.875rem; }
 .round-summary { margin:20px 0; color:var(--muted); }
-.round-detail-table { min-width:580px; }
-.round-detail-table th:first-child { min-width:210px; }
-.winner-label { display:block; font-size:.68rem; color:#826437; font-weight:600; }
+.round-result-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,21rem),1fr)); gap:12px; }
+.round-result { min-width:0; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); font-variant-numeric:tabular-nums; }
+.round-result-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.round-points { flex-shrink:0; text-align:right; }
+.round-points strong { display:block; font-size:1.5rem; line-height:1.2; }
+.round-points > span { display:block; margin-top:2px; font-size:.75rem; color:var(--muted); }
+.round-handicaps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:16px 0 0; }
+.round-handicaps > div { min-width:0; padding:8px 2px; text-align:center; border-radius:6px; background:var(--soft); }
+.round-handicaps dt { margin:0 0 5px; font-size:.8125rem; color:var(--muted); line-height:1.4; }
+.round-handicaps dd { margin:0; font-size:1.0625rem; font-weight:700; }
+.winner-label { display:block; margin-top:4px; font-size:.8125rem; color:#826437; font-weight:600; }
 .round-locked { padding:22px 0 4px; }
-.round-locked p { color:var(--muted); font-size:.9rem; }
-.season-locks { display:flex; gap:28px; justify-content:center; padding:0 20px 28px; color:var(--muted); font-size:.9rem; }
+.round-locked p { color:var(--muted); font-size:.9375rem; }
+.season-locks { display:flex; flex-wrap:wrap; gap:16px 28px; justify-content:center; padding:0 20px 28px; color:var(--muted); font-size:.9375rem; }
 .season-locks > span { display:inline-flex; align-items:center; gap:8px; }
+.league-rules .table-scroll { overflow:visible; }
+.league-rules table { table-layout:fixed; width:100%; min-width:0; }
+.league-rules th,.league-rules td { white-space:normal; overflow-wrap:anywhere; padding:12px 8px; }
 .sr-only { position:absolute !important; width:1px !important; height:1px !important; margin:-1px !important; padding:0 !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
-.dark-mode .simple-score-table tr.is-you > * { background:#2e3639; }
-.dark-mode .simple-score-table tr.is-you .total-col { background:#3a4143; }
-@media(max-width:900px) { .score-page-heading { align-items:flex-start; flex-direction:column; gap:18px; } .season-table { min-width:820px; } .table-mobile-hint { display:block; } }
-@media(max-width:600px) { .leaderboard-heading { padding:20px; align-items:flex-start; flex-direction:column; gap:5px; } .leaderboard-heading h2 { font-size:1.2rem; } .simple-score-table th,.simple-score-table td { padding:15px 9px; } .simple-score-table .player-col { width:145px; min-width:145px; max-width:155px; } .score-key { padding:18px 20px; gap:9px 16px; } .round-details { padding:20px; } }
+.dark-mode .season-player.is-you,.dark-mode .round-result.is-you { background:#2e3639; }
+.dark-mode .is-you .round-score { background:#3a4143; }
+.dark-mode .round-win,.dark-mode .winner-label { color:#dfc188; }
+@container (min-width:32rem) { .player-rounds { grid-template-columns:repeat(7,minmax(0,1fr)); } }
+/* A font-relative threshold also reflows the board when text is enlarged. */
+@container (min-width:58rem) {
+  .season-columns,.season-player { display:grid; grid-template-columns:48px minmax(180px,2.5fr) 76px repeat(7,minmax(48px,1fr)) 68px; align-items:center; gap:0; }
+  .season-columns { padding:14px 10px; background:var(--soft); font-size:.75rem; font-weight:700; color:var(--muted); text-align:center; }
+  .season-columns > :nth-child(2) { text-align:left; padding-left:12px; }
+  .season-list { display:block; padding:0; }
+  .season-player { border:0; border-top:1px solid var(--line); border-radius:0; padding:16px 10px; }
+  .player-summary,.player-rounds { display:contents; }
+  .player-position { margin:auto; width:auto; height:auto; background:none; border-radius:0; }
+  .player-name { padding:0 12px; }
+  .player-total { text-align:center; }
+  .player-total strong { font-size:1.25rem; }
+  .round-score { border-radius:0; padding:8px 2px; background:none; }
+  .round-score.is-locked { background:var(--soft); }
+  .round-score dd { font-size:1rem; }
+  .player-played { margin:0; text-align:center; font-size:.9375rem; }
+  .player-played span,.player-total .metric-label,.round-score dt { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+  .is-you .round-score { background:none; }
+}
+@media(max-width:900px) {
+  .score-page-heading { align-items:flex-start; flex-direction:column; gap:16px; }
+  .score-page-heading .actions { gap:8px; }
+}
+@media(max-width:600px) {
+  .league-demo { flex-direction:column; align-items:flex-start; gap:12px; }
+  .leaderboard-heading { align-items:flex-start; flex-direction:column; gap:6px; }
+  .leaderboard-heading h2 { font-size:1.25rem; }
+  .round-details,.league-rules { padding:16px; }
+  .round-result { padding:12px; }
+}
+@media(max-width:360px) {
+  .season-list { padding:0 8px 8px; gap:8px; }
+  .season-player { padding:12px; }
+  .player-summary { grid-template-columns:28px minmax(0,1fr) max-content; gap:8px; }
+  .player-position { width:28px; height:28px; }
+}

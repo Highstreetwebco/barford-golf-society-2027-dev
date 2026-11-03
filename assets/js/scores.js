@@ -10,6 +10,7 @@ const target = document.getElementById("roundResults");
 const refresh = document.getElementById("refreshLeague");
 const visibility = document.getElementById("leagueVisibility");
 const roundDetails = document.getElementById("roundDetails");
+const roundShortcut = document.getElementById("openRoundDetails");
 const demoPanel = document.getElementById("leagueDemo");
 const demoToggle = document.getElementById("toggleLeagueDemo");
 let showDemo = true;
@@ -17,16 +18,26 @@ let request = 0;
 document.getElementById("leagueRules").innerHTML = rulesHTML;
 
 function lockedRound(n) {
-  return `<span class="locked-score" aria-label="Round ${n}: hidden, admins only"><span class="locked-dots" aria-hidden="true">•••</span><span class="lock-mark" aria-hidden="true">⌑</span></span>`;
+  return `<span class="locked-score" role="img" aria-label="Round ${n}: hidden, admins only"><span class="locked-dots" aria-hidden="true">•••</span><svg class="lock-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>`;
 }
 
-function scoreCell(player, round, visible, published) {
-  if (round > visible) return `<td class="is-locked">${lockedRound(round)}</td>`;
-  if (!published.has(round)) return '<td class="not-played"><span aria-label="Not published">—</span></td>';
-  const result = player.scores.find((s) => s.round === round);
-  if (result?.points == null) return '<td class="not-played"><abbr title="Did not play">DNP</abbr></td>';
-  const label = `Round ${round}: ${result.points} points${result.counted ? ", counted" : ", dropped"}${result.winner ? ", round winner" : ""}`;
-  return `<td class="${result.counted ? "counted-score" : "dropped-score"}"><span aria-label="${e(label)}">${e(result.points)}${result.winner ? '<span class="round-win" aria-hidden="true">★</span>' : ""}</span></td>`;
+function roundTile(player, round, visible, published) {
+  let style = "not-played", content = '<span aria-label="Not completed">—</span>';
+  if (round > visible) { style = "is-locked"; content = lockedRound(round); }
+  else if (published.has(round)) {
+    const result = player.scores.find((s) => s.round === round);
+    if (result?.points == null) content = '<abbr title="Did not play">DNP</abbr>';
+    else {
+      style = result.counted ? "counted-score" : "dropped-score";
+      const label = `${result.points} points${result.counted ? ", counted" : ", dropped"}${result.winner ? ", round winner" : ""}`;
+      content = `<span aria-label="${e(label)}">${e(result.points)}${result.winner ? '<span class="round-win" aria-hidden="true">★</span>' : ""}</span>`;
+    }
+  }
+  return `<div class="round-score ${style}" data-round="${round}"><dt><span aria-hidden="true">R${round}</span><span class="sr-only">Round ${round}</span></dt><dd>${content}</dd></div>`;
+}
+
+function seasonHTML(ranked, cutoff, published, demo) {
+  return `<div class="season-board"><div class="season-columns" aria-hidden="true"><span>Pos</span><span>Player</span><span>Total</span>${Array.from({length:7},(_,i)=>`<span>R${i+1}</span>`).join("")}<span>Played</span></div><ol class="season-list" role="list" aria-label="${demo ? "Demonstration · " : ""}2027 Order of Merit. Best five scores count.">${ranked.map((p) => `<li class="season-player ${p.id === b.state.user?.id ? "is-you" : ""}"><div class="player-summary"><span class="player-position"><span class="sr-only">Position </span>${p.rank}</span><h3 class="player-name">${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}</h3><div class="player-total"><span class="metric-label">Total</span><strong aria-label="${p.total} points">${p.total}</strong></div></div><dl class="player-rounds">${Array.from({length:7},(_,i)=>roundTile(p,i+1,cutoff,published)).join("")}</dl><p class="player-played"><strong>${p.played}</strong><span> ${p.played === 1 ? "round" : "rounds"} played</span></p></li>`).join("")}</ol></div><div class="score-key"><span><strong>Bold</strong> · counted</span><span><s>Crossed out</s> · dropped</span><span>★ Round winner</span><span>DNP · Did not play</span><span>— Not completed</span></div>`;
 }
 
 function showRound(data, ranked) {
@@ -42,7 +53,7 @@ function showRound(data, ranked) {
   }
   const rows = ranked.map((p) => ({ ...p, result: p.scores.find((s) => s.round === n) }))
     .sort((a, c) => (c.result?.points ?? -1) - (a.result?.points ?? -1) || a.name.localeCompare(c.name));
-  target.innerHTML = `<p class="round-summary">${data.demo ? "Sample round average" : "Round average"}: <strong>${e(round.average ?? "—")} points</strong></p><div class="table-scroll score-scroll" tabindex="0" role="region" aria-label="Round ${n} results"><table class="simple-score-table round-detail-table"><caption class="sr-only">${data.demo ? "Demonstration · " : ""}Round ${n} scores and handicaps</caption><thead><tr><th scope="col">Player</th><th scope="col">Points</th><th scope="col">Round HCP</th><th scope="col">Change</th><th scope="col">Next HCP</th></tr></thead><tbody>${rows.map((p) => `<tr class="${p.id === b.state.user?.id ? "is-you" : ""}"><th scope="row">${e(p.name)}${p.result?.winner ? '<span class="winner-label">Winner</span>' : ""}</th><td><strong>${p.result?.points == null ? "DNP" : e(p.result.points)}</strong></td><td>${e(p.result?.handicap ?? "—")}</td><td>${e(signed(changeValue(p.result)))}</td><td>${e(p.result?.next_handicap ?? "—")}</td></tr>`).join("")}</tbody></table></div>`;
+  target.innerHTML = `<p class="round-summary">${data.demo ? "Sample round average" : "Round average"}: <strong>${e(round.average ?? "—")} points</strong></p><ol class="round-result-list" role="list" aria-label="${data.demo ? "Demonstration · " : ""}Round ${n} scores and handicaps">${rows.map((p) => `<li class="round-result ${p.id === b.state.user?.id ? "is-you" : ""}"><div class="round-result-heading"><h3>${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}${p.result?.winner ? '<span class="winner-label">★ Round winner</span>' : ""}</h3><div class="round-points"><strong>${p.result?.points == null ? "DNP" : e(p.result.points)}</strong><span>${p.result?.points == null ? "Did not play" : "points"}</span></div></div><dl class="round-handicaps"><div><dt>Round HCP</dt><dd>${e(p.result?.handicap ?? "—")}</dd></div><div><dt>Change</dt><dd>${e(signed(changeValue(p.result)))}</dd></div><div><dt>Next HCP</dt><dd>${e(p.result?.next_handicap ?? "—")}</dd></div></dl></li>`).join("")}</ol>`;
 }
 
 async function load() {
@@ -56,6 +67,7 @@ async function load() {
   area.setAttribute("aria-busy", "true");
   target.innerHTML = "";
   roundDetails.hidden = true;
+  roundShortcut.hidden = true;
   try {
     await b.refresh();
     const user = b.state.user?.id;
@@ -97,13 +109,14 @@ async function load() {
     }
     const through = Math.max(...published);
     document.getElementById("standingsStatus").textContent = `${data.demo ? "Demo · " : ""}Standings after round ${through}`;
-    area.innerHTML = `<div class="table-scroll score-scroll" tabindex="0" role="region" aria-label="Season leaderboard. Scroll sideways for every round."><table class="simple-score-table season-table"><caption class="sr-only">2027 Order of Merit. The best five published scores count.</caption><thead><tr><th scope="col" class="position-col">Pos</th><th scope="col" class="player-col">Player</th><th scope="col" class="total-col">Total</th>${Array.from({length:7}, (_, i) => `<th scope="col" class="${i + 1 > cutoff ? "is-locked" : ""}"><abbr title="Round ${i + 1}">R${i + 1}</abbr></th>`).join("")}<th scope="col">Played</th></tr></thead><tbody>${ranked.map((p) => `<tr class="${p.id === b.state.user?.id ? "is-you" : ""}"><td class="position-col">${p.rank}</td><th scope="row" class="player-col">${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}</th><td class="total-col"><strong>${p.total}</strong></td>${Array.from({length:7}, (_, i) => scoreCell(p, i + 1, cutoff, published)).join("")}<td>${p.played}</td></tr>`).join("")}</tbody></table></div><div class="score-key"><span><strong>Bold scores</strong> count</span><span><s>Crossed-out scores</s> are dropped</span><span>★ Round winner</span><span>DNP · Did not play</span></div><p class="table-mobile-hint">Swipe across the table to see all seven rounds.</p>`;
+    area.innerHTML = seasonHTML(ranked, cutoff, published, data.demo);
     const old = select.value;
     select.innerHTML = Array.from({length:7}, (_, i) => `<option value="${i + 1}">Round ${i + 1}${i + 1 > cutoff ? " · hidden" : !published.has(i + 1) ? " · not completed" : ""}</option>`).join("");
     select.value = published.has(Number(old)) || Number(old) > cutoff ? old : String(through);
     select.onchange = () => showRound(data, ranked);
     showRound(data, ranked);
     roundDetails.hidden = false;
+    roundShortcut.hidden = false;
   } catch (error) {
     if (id !== request) return;
     visibility.textContent = "The leaderboard is unavailable. Your saved results have not changed.";
@@ -119,6 +132,13 @@ async function load() {
   }
 }
 
+roundShortcut.onclick = (event) => {
+  event.preventDefault();
+  if (roundDetails.hidden) return;
+  roundDetails.open = true;
+  roundDetails.querySelector("summary").focus({preventScroll:true});
+  roundDetails.scrollIntoView({block:"start"});
+};
 refresh.onclick = load;
 demoToggle.onclick = () => { showDemo = !showDemo; select.value = ""; load(); };
 window.addEventListener("barford-signout", () => {
