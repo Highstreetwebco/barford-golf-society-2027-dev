@@ -2,8 +2,8 @@ import { invitePlaceholder, mountGuestInvites } from "./guest-invites.js?v=2027-
 import { mountMemberTees } from "./member-tees.js?v=2027-hole-button-1";
 import { openDirections } from "./event-directions.js?v=2027-event-day-1";
 import { mountTeeWeather } from "./event-weather.js?v=2027-event-day-1";
-import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-fullscreen-1";
-import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-fullscreen-1";
+import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-aim-point-1";
+import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, withdrawalNotice } from "./rsvp.js?v=2027-aim-point-1";
 
 const b = await window.barfordReady;
 const { escape: e, state } = b;

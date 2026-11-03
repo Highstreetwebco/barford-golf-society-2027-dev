@@ -1,4 +1,4 @@
-import { coordinates, distanceMetres } from './hole-map.js?v=2027-fullscreen-1';
+import { coordinates, distanceMetres, yardsBetween } from './hole-map.js?v=2027-fullscreen-1';
 
 export const HOLE_GPS_RANGE_METRES = 1000 * .9144;
 export const MAX_FIX_AGE = 15000;
@@ -32,4 +32,18 @@ export function holeGpsState(fix, hole, now = Date.now()) {
   const distance = distanceToHole(fix.point, hole);
   if (distance === null) return 'unavailable';
   return distance <= HOLE_GPS_RANGE_METRES ? 'live' : 'away';
+}
+
+// Keep the same aim point when GPS changes. Only the shot's origin changes;
+// aim-to-green distance always describes the second leg of the planned shot.
+export function holeMeasurements(fix, hole, target = null, now = Date.now()) {
+  const mode = holeGpsState(fix, hole, now), live = mode === 'live';
+  const origin = live ? coordinates(fix.point) : coordinates(hole?.tee);
+  const aim = coordinates(target);
+  return {
+    mode, live, origin,
+    green: yardsBetween(origin, hole?.green),
+    aim: aim ? yardsBetween(origin, aim) : null,
+    remaining: aim ? yardsBetween(aim, hole?.green) : null,
+  };
 }
