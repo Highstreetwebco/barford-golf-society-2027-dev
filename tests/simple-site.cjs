@@ -594,12 +594,12 @@ function resultBoard() {
           assert.equal(await page.locator('[data-delete]').count(),0,'Member view hides photo deletion');
         }
         if(name==='scores.html') {
-          await page.locator('.season-table tbody tr').first().waitFor();
-          assert.equal(await page.locator('.season-table .is-locked').count(),6,'Admin filming view redacts rounds 6 and 7');
+          await page.locator('.season-player').first().waitFor();
+          assert.equal(await page.locator('.season-list .is-locked').count(),4,'Admin filming view redacts rounds 6 and 7');
           await page.locator('#roundDetails > summary').click();
           await page.locator('#leagueRound').selectOption('6');
           await page.locator('.round-locked').waitFor();
-          assert.equal(await page.locator('.round-detail-table').count(),0);
+          assert.equal(await page.locator('.round-result-list').count(),0);
         }
       }
       model.events[0].tee_published_at='2027-06-01T10:00:00Z';
@@ -810,7 +810,7 @@ function resultBoard() {
       await context.close();
     }
 
-    for (const width of [390,1365]) {
+    for (const width of [320,390,768,1024,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width});
       const rosterNames=['Derek Lewis','Richard Jones','Gary Moyce','jack moyce-troth','Simon Morgan','Tim Oliver','Adrian Simms','Liz Oliver'];
       const roster=rosterNames.map((name,i)=>({id:`roster-${i}`,name,claimed:i===3}));
@@ -827,43 +827,65 @@ function resultBoard() {
         ? route.fulfill({status:400,json:{message:'Score service unavailable'}}) : route.fulfill({json:model.board}));
       await page.goto(base+'scores.html');
       await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
-      assert.equal(await page.locator('.season-table tbody tr').count(),rosterNames.length);
+      assert.equal(await page.locator('.season-player').count(),rosterNames.length);
+      const fits = async () => {
+        const overflow = await page.evaluate(() => [...document.querySelectorAll('.season-player,.player-summary,.player-name,.player-total,.player-rounds,.round-score,.round-score dd,.round-result,.round-result-heading,.round-handicaps,.round-handicaps dd,.league-rules .table-scroll,.league-rules table')]
+          .filter(el => el.getClientRects().length && el.clientWidth > 0)
+          .filter(el => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().left < -1 || el.getBoundingClientRect().right > innerWidth + 1)
+          .map(el => ({class:el.className,width:el.clientWidth,content:el.scrollWidth})));
+        assert.deepEqual(overflow,[],`Every visible score and handicap must fit at ${width}px`);
+        assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+      };
+      await fits();
+      assert.equal(await page.locator('.season-player').first().locator('[data-round]').count(),7);
+      assert(await page.locator('.counted-score dd').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=16),'Keep scores readable without scaling the screen');
+      assert.equal(await page.locator('.table-mobile-hint').count(),0);
       assert.match(await page.locator('#leagueDemo').innerText(),/Sample scores and handicaps/);
-      assert.equal(await page.locator('.season-table tbody tr.is-you').count(),1);
-      assert.match(await page.locator('.season-table tbody tr.is-you').innerText(),/jack moyce-troth/);
-      const shown=await page.locator('.season-table tbody .player-col').allTextContents();
+      assert.equal(await page.locator('.season-player.is-you').count(),1);
+      assert.match(await page.locator('.season-player.is-you').innerText(),/jack moyce-troth/);
+      const shown=await page.locator('.season-player .player-name').allTextContents();
       assert.deepEqual(new Set(shown.map(x=>x.replace(/You$/,''))),new Set(rosterNames));
-      assert.equal(await page.locator('.season-table tbody .round-win').count(),3);
-      assert.equal(await page.locator('.season-table tbody .not-played').count(),rosterNames.length*2);
-      assert.equal(await page.locator('.season-table .is-locked').count(),(rosterNames.length+1)*2);
-      const totals=await page.locator('.season-table tbody .total-col').allTextContents();
+      assert.equal(await page.locator('.season-list .round-win').count(),3);
+      assert.equal(await page.locator('.season-list .not-played').count(),rosterNames.length*2);
+      assert.equal(await page.locator('.season-list .is-locked').count(),rosterNames.length*2);
+      const totals=await page.locator('.season-player .player-total strong').allTextContents();
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
       await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
-      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),totals);
+      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),totals);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
       await page.screenshot({path:path.join(out,`demo-leaderboard-${width}.png`),fullPage:true});
-      await page.locator('#roundDetails > summary').click();
+      await page.locator('.season-player').first().scrollIntoViewIfNeeded();
+      await page.screenshot({path:path.join(out,`readable-standings-${width}.png`)});
+      await page.getByRole('link',{name:'Round details',exact:true}).click();
+      assert.equal(await page.locator('#roundDetails').evaluate(el=>el.open),true,'The shortcut opens the breakdown without scrolling through every member');
       assert.equal(await page.locator('#leagueRound').inputValue(),'3');
       for(const round of ['1','2','3']) {
         await page.locator('#leagueRound').selectOption(round);
-        assert.equal(await page.locator('.round-detail-table tbody tr').count(),rosterNames.length);
-        assert.equal(await page.locator('.round-detail-table .winner-label').count(),1);
+        assert.equal(await page.locator('.round-result').count(),rosterNames.length);
+        assert.equal(await page.locator('.round-result .winner-label').count(),1);
         assert.match(await page.locator('.round-summary').innerText(),/Sample round average/);
+        assert.equal(await page.locator('.round-result').first().locator('.round-handicaps > div').count(),3);
+        await fits();
       }
+      await page.locator('.round-result').first().scrollIntoViewIfNeeded();
+      await page.screenshot({path:path.join(out,`readable-round-${width}.png`)});
+      await page.locator('.league-rules > summary').click();
+      await fits();
+      await page.getByRole('link',{name:'Back to standings ↑',exact:true}).click();
       await page.locator('#leagueRound').selectOption('6');await page.locator('.round-locked').waitFor();
       await page.getByRole('button',{name:'Show actual results',exact:true}).click();
       await page.locator('#leagueBoard').getByText('The season starts here.',{exact:true}).waitFor();
-      assert.equal(await page.locator('.season-table').count(),0);
+      assert.equal(await page.locator('.season-list').count(),0);
       assert.equal(await page.locator('#roundDetails').isVisible(),false);
       await page.getByRole('button',{name:'Show demonstration',exact:true}).click();
       await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
-      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),totals);
+      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),totals);
       assert.equal(JSON.stringify(model.board),original,'Sample results must not mutate the real season');
       failRoster=true;
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
       await page.locator('#leagueBoard').getByText('Scores could not load.',{exact:true}).waitFor();
       assert.equal(await page.locator('#leagueDemo').isVisible(),false);
-      assert.equal(await page.locator('.season-table').count(),0);
+      assert.equal(await page.locator('.season-list').count(),0);
       failRoster=false;failBoard=true;
       const reads=rosterReads;
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
@@ -874,11 +896,30 @@ function resultBoard() {
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
       await page.locator('#standingsStatus').getByText('Standings after round 1',{exact:true}).waitFor();
       assert.equal(await page.locator('#leagueDemo').isVisible(),false);
-      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['46','38']);
+      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),['46','38']);
       assert.equal(rosterReads,reads,'Actual results take precedence without loading sample members');
+      model.board.players[0].name='Calvin Santana-Vaz';
+      model.board.rounds[0].results[0].points=108;model.board.rounds[0].results[0].winner=true;
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.locator('.season-player .player-name').filter({hasText:'Calvin Santana-Vaz'}).waitFor();
+      await fits();
+      if(width===320 || width===1365) {
+        await page.evaluate(()=>document.documentElement.style.fontSize='20px');
+        await fits();
+        await page.getByRole('link',{name:'Round details',exact:true}).click();
+        await fits();
+        await page.screenshot({path:path.join(out,`readable-enlarged-${width}.png`)});
+        await page.evaluate(()=>document.documentElement.style.fontSize='');
+      }
+      if(width===390) {
+        await page.evaluate(()=>document.body.classList.add('dark-mode'));
+        await page.locator('.season-player').first().scrollIntoViewIfNeeded();
+        await fits();
+        await page.screenshot({path:path.join(out,'readable-dark-390.png')});
+      }
       assert.equal(rpcCalls.some(name=>/league_(save|publish|complete|reset)/.test(name)),false);
       assert.deepEqual(errors,[]);
-      report.push(`PASS ${width}px: three-round member demonstration, stable scores, identity, winners, round detail, hidden rounds, actual-results toggle, failures and automatic real-result precedence`);
+      report.push(`PASS ${width}px: readable seven-round standings and handicap cards without sideways scrolling, round shortcut, enlarged text, member demo, hidden scores, failures and real-result precedence`);
       await context.close();
     }
 
@@ -886,23 +927,23 @@ function resultBoard() {
       const {context,page,model,errors}=await setup(browser,{admin,width:390,memberView:false});
       model.board=resultBoard(); // Deliberately contains all seven: member UI must still fail closed.
       await page.goto(base+'scores.html');
-      await page.locator('.season-table tbody tr').first().waitFor();
-      assert.equal(await page.locator('.season-table tbody tr').count(),2);
-      const totalBox = await page.locator('.season-table tbody .total-col').first().boundingBox();
+      await page.locator('.season-player').first().waitFor();
+      assert.equal(await page.locator('.season-player').count(),2);
+      const totalBox = await page.locator('.season-player .player-total strong').first().boundingBox();
       assert(totalBox.x + totalBox.width <= page.viewportSize().width, 'Season total must be visible on a phone without scrolling');
-      assert.equal(await page.locator('.season-table .is-locked').count(),6,'The ordinary leaderboard always uses member visibility');
-      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['176','164']);
+      assert.equal(await page.locator('.season-list .is-locked').count(),4,'The ordinary leaderboard always uses member visibility');
+      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),['176','164']);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.locator('#roundDetails > summary').click();
       await page.locator('#leagueRound').selectOption('6');
       await page.locator('.round-locked').waitFor();
-      assert.equal(await page.locator('.round-detail-table').count(),0);
+      assert.equal(await page.locator('.round-result-list').count(),0);
       await page.screenshot({path:path.join(out,`leaderboard-${admin?'admin':'member'}.png`),fullPage:true});
       if(admin) {
         await page.evaluate(()=>window.barford.raw.auth.signOut());
         await page.locator('#leagueVisibility').filter({hasText:'Member totals'}).waitFor();
-        assert.equal(await page.locator('.season-table .is-locked').count(),6);
-        assert.equal(await page.locator('.round-detail-table').count(),0);
+        assert.equal(await page.locator('.season-list .is-locked').count(),4);
+        assert.equal(await page.locator('.round-result-list').count(),0);
         assert.equal(await page.locator('[data-admin-menu]').count(),0,'Signing out removes dashboard navigation');
       }
       assert.deepEqual(errors,[]);
