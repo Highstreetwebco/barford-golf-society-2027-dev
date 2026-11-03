@@ -1,6 +1,5 @@
 import { rulesHTML } from "./league-rules.js?v=2027-simple-1";
 import { rankPlayers, signed, changeValue } from "./league-view.js?v=2027-simple-1";
-import { demonstrationBoard } from "./league-demo.js?v=2027-demo-1";
 
 const b = await window.barfordReady;
 const e = b.escape;
@@ -11,9 +10,6 @@ const refresh = document.getElementById("refreshLeague");
 const visibility = document.getElementById("leagueVisibility");
 const roundDetails = document.getElementById("roundDetails");
 const roundShortcut = document.getElementById("openRoundDetails");
-const demoPanel = document.getElementById("leagueDemo");
-const demoToggle = document.getElementById("toggleLeagueDemo");
-let showDemo = true;
 let request = 0;
 document.getElementById("leagueRules").innerHTML = rulesHTML;
 
@@ -36,8 +32,8 @@ function roundTile(player, round, visible, published) {
   return `<div class="round-score ${style}" data-round="${round}"><dt><span aria-hidden="true">R${round}</span><span class="sr-only">Round ${round}</span></dt><dd>${content}</dd></div>`;
 }
 
-function seasonHTML(ranked, cutoff, published, demo) {
-  return `<div class="season-board"><div class="season-columns" aria-hidden="true"><span>Pos</span><span>Player</span><span>Total</span>${Array.from({length:7},(_,i)=>`<span>R${i+1}</span>`).join("")}<span>Played</span></div><ol class="season-list" role="list" aria-label="${demo ? "Demonstration · " : ""}2027 Order of Merit. Best five scores count.">${ranked.map((p) => `<li class="season-player ${p.id === b.state.user?.id ? "is-you" : ""}"><div class="player-summary"><span class="player-position"><span class="sr-only">Position </span>${p.rank}</span><h3 class="player-name">${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}</h3><div class="player-total"><span class="metric-label">Total</span><strong aria-label="${p.total} points">${p.total}</strong></div></div><dl class="player-rounds">${Array.from({length:7},(_,i)=>roundTile(p,i+1,cutoff,published)).join("")}</dl><p class="player-played"><strong>${p.played}</strong><span> ${p.played === 1 ? "round" : "rounds"} played</span></p></li>`).join("")}</ol></div><div class="score-key"><span><strong>Bold</strong> · counted</span><span><s>Crossed out</s> · dropped</span><span>★ Round winner</span><span>DNP · Did not play</span><span>— Not completed</span></div>`;
+function seasonHTML(ranked, cutoff, published, waiting) {
+  return `<div class="season-board"><div class="season-columns" aria-hidden="true"><span>Pos</span><span>Player</span><span>Total</span>${Array.from({length:7},(_,i)=>`<span>R${i+1}</span>`).join("")}<span>Played</span></div><ol class="season-list" role="list" aria-label="${waiting ? "2027 registered members. Awaiting the first round." : "2027 Order of Merit. Best five scores count."}">${ranked.map((p) => `<li class="season-player ${p.id === b.state.user?.id ? "is-you" : ""}"><div class="player-summary"><span class="player-position">${waiting ? '<span aria-label="Not ranked yet">—</span>' : `<span class="sr-only">Position </span>${p.rank}`}</span><h3 class="player-name">${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}</h3><div class="player-total"><span class="metric-label">Total</span><strong aria-label="${waiting ? "No points yet" : `${p.total} points`}">${waiting ? "—" : p.total}</strong></div></div><dl class="player-rounds">${Array.from({length:7},(_,i)=>roundTile(p,i+1,cutoff,published)).join("")}</dl><p class="player-played"><strong>${p.played}</strong><span> ${p.played === 1 ? "round" : "rounds"} played</span></p></li>`).join("")}</ol></div>${waiting ? '<p class="score-key">— Awaiting the first completed round</p>' : `<div class="score-key"><span><strong>Bold</strong> · counted</span><span><s>Crossed out</s> · dropped</span><span>★ Round winner</span><span>DNP · Did not play</span><span>— Not completed</span></div>`}`;
 }
 
 function showRound(data, ranked) {
@@ -53,17 +49,15 @@ function showRound(data, ranked) {
   }
   const rows = ranked.map((p) => ({ ...p, result: p.scores.find((s) => s.round === n) }))
     .sort((a, c) => (c.result?.points ?? -1) - (a.result?.points ?? -1) || a.name.localeCompare(c.name));
-  target.innerHTML = `<p class="round-summary">${data.demo ? "Sample round average" : "Round average"}: <strong>${e(round.average ?? "—")} points</strong></p><ol class="round-result-list" role="list" aria-label="${data.demo ? "Demonstration · " : ""}Round ${n} scores and handicaps">${rows.map((p) => `<li class="round-result ${p.id === b.state.user?.id ? "is-you" : ""}"><div class="round-result-heading"><h3>${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}${p.result?.winner ? '<span class="winner-label">★ Round winner</span>' : ""}</h3><div class="round-points"><strong>${p.result?.points == null ? "DNP" : e(p.result.points)}</strong><span>${p.result?.points == null ? "Did not play" : "points"}</span></div></div><dl class="round-handicaps"><div><dt>Round HCP</dt><dd>${e(p.result?.handicap ?? "—")}</dd></div><div><dt>Change</dt><dd>${e(signed(changeValue(p.result)))}</dd></div><div><dt>Next HCP</dt><dd>${e(p.result?.next_handicap ?? "—")}</dd></div></dl></li>`).join("")}</ol>`;
+  target.innerHTML = `<p class="round-summary">Round average: <strong>${e(round.average ?? "—")} points</strong></p><ol class="round-result-list" role="list" aria-label="Round ${n} scores and handicaps">${rows.map((p) => `<li class="round-result ${p.id === b.state.user?.id ? "is-you" : ""}"><div class="round-result-heading"><h3>${e(p.name)}${p.id === b.state.user?.id ? '<small class="you-label">You</small>' : ""}${p.result?.winner ? '<span class="winner-label">★ Round winner</span>' : ""}</h3><div class="round-points"><strong>${p.result?.points == null ? "DNP" : e(p.result.points)}</strong><span>${p.result?.points == null ? "Did not play" : "points"}</span></div></div><dl class="round-handicaps"><div><dt>Round HCP</dt><dd>${e(p.result?.handicap ?? "—")}</dd></div><div><dt>Change</dt><dd>${e(signed(changeValue(p.result)))}</dd></div><div><dt>Next HCP</dt><dd>${e(p.result?.next_handicap ?? "—")}</dd></div></dl></li>`).join("")}</ol>`;
 }
 
 async function load() {
   const id = ++request;
   refresh.disabled = true;
-  demoToggle.disabled = true;
-  demoPanel.hidden = true;
   refresh.textContent = "Refreshing…";
   area.textContent = "Loading scores…";
-  document.getElementById("standingsStatus").textContent = "Published results";
+  document.getElementById("standingsStatus").textContent = "Loading the season…";
   area.setAttribute("aria-busy", "true");
   target.innerHTML = "";
   roundDetails.hidden = true;
@@ -78,38 +72,26 @@ async function load() {
     // Enforce the current viewer limit as well as the server's redaction.
     const limit = Number.isInteger(result?.visible_rounds) ? result.visible_rounds : 5;
     const cutoff = Math.max(0, Math.min(admin ? 7 : 5, limit));
-    let data = { ...result, visible_rounds: cutoff,
+    const data = { ...result, visible_rounds: cutoff,
       rounds: result?.rounds?.filter((r) => r.round <= cutoff) };
-    let ranked = rankPlayers(data);
-    // A failed score read never falls back to fictitious results. Any published
-    // round takes priority, including one beyond the current viewer's cutoff.
-    if (result.rounds.length === 0) {
-      if (showDemo) {
-        const { data: roster, error: rosterError } = await b.client.rpc("member_roster");
-        if (id !== request || user !== b.state.user?.id || admin !== b.state.admin) return;
-        if (rosterError) throw rosterError;
-        data = demonstrationBoard(roster, result.players);
-        ranked = rankPlayers(data);
-      }
-      demoPanel.hidden = false;
-      document.getElementById("leagueDemoTitle").textContent = showDemo ? "Demonstration · 3 rounds" : "Try the three-round demonstration";
-      document.getElementById("leagueDemoCopy").textContent = showDemo
-        ? "Sample scores and handicaps using society member names. Real results will appear here when the season begins."
-        : "See how the leaderboard will look with sample results from the member list.";
-      demoToggle.textContent = showDemo ? "Show actual results" : "Show demonstration";
-    }
+    const ranked = rankPlayers(data);
     const published = new Set(data.rounds.map((r) => r.round));
-    visibility.textContent = cutoff === 7
+    const waiting = published.size === 0;
+    visibility.textContent = waiting
+      ? "Members appear here when they create their account. Scores will follow after the first completed round."
+      : cutoff === 7
       ? "Admin view · All seven rounds count. Rounds 6 and 7 stay hidden from members."
       : "Rounds 6 and 7 are hidden. Member totals and positions use published rounds 1–5 only.";
-    if (!ranked.length || !published.size) {
-      area.innerHTML = b.empty("The season starts here.", "The leaderboard will appear when the first round is completed.") +
-        (cutoff < 7 ? `<div class="season-locks"><span>Round 6 ${lockedRound(6)}</span><span>Round 7 ${lockedRound(7)}</span></div>` : "");
+    document.getElementById("standingsStatus").textContent = waiting
+      ? "Registered members · Awaiting round 1"
+      : `Standings after round ${Math.max(...published)}`;
+    if (!ranked.length) {
+      area.innerHTML = b.empty("Ready for the 2027 season.", "Create your account to join the leaderboard.");
       return;
     }
+    area.innerHTML = seasonHTML(ranked, cutoff, published, waiting);
+    if (waiting) return;
     const through = Math.max(...published);
-    document.getElementById("standingsStatus").textContent = `${data.demo ? "Demo · " : ""}Standings after round ${through}`;
-    area.innerHTML = seasonHTML(ranked, cutoff, published, data.demo);
     const old = select.value;
     select.innerHTML = Array.from({length:7}, (_, i) => `<option value="${i + 1}">Round ${i + 1}${i + 1 > cutoff ? " · hidden" : !published.has(i + 1) ? " · not completed" : ""}</option>`).join("");
     select.value = published.has(Number(old)) || Number(old) > cutoff ? old : String(through);
@@ -125,7 +107,6 @@ async function load() {
   } finally {
     if (id === request) {
       refresh.disabled = false;
-      demoToggle.disabled = false;
       refresh.textContent = "Refresh";
       area.removeAttribute("aria-busy");
     }
@@ -140,7 +121,6 @@ roundShortcut.onclick = (event) => {
   roundDetails.scrollIntoView({block:"start"});
 };
 refresh.onclick = load;
-demoToggle.onclick = () => { showDemo = !showDemo; select.value = ""; load(); };
 window.addEventListener("barford-signout", () => {
   area.innerHTML = "Loading member standings…";
   target.innerHTML = "";

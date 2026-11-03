@@ -5,7 +5,7 @@ import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.
 import { loadAccounts } from "./account-admin.js?v=2027-admin-photos-1";
 import { packPlayers, participantId } from "./tee-groups.js?v=2027-guest-rsvp-1";
 import { operation } from "./operations.js?v=2027-results-1";
-import { mountSiteControls } from "./admin-site-controls.js?v=2027-admin-menu-1";
+import { mountSiteControls } from "./admin-site-controls.js?v=2027-season-ready-1";
 
 const b = await window.barfordReady, { client: c, escape: e } = b;
 const $ = id => document.getElementById(id);

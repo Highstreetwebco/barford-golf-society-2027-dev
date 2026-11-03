@@ -1,14 +1,9 @@
-/* Admin controls stay in the dashboard; member pages are ready for filming. */
+/* Publishing stays in the authenticated admin dashboard. */
 export async function mountSiteControls(host, b) {
   if (!b.state.adminAccess) return;
   const access = await window.barfordGate;
   const gate = window.barfordLaunch;
   host.innerHTML = `<div>
-    <h2>Member view</h2>
-    <p id="memberViewStatus">Your website pages always show the normal member view. Editing controls and secret round results stay in Admin.</p>
-    <a id="openMemberView" class="button secondary" href="home.html">Open member view</a>
-    <p class="muted admin-return-note">Return here through Menu → Admin dashboard. Your account keeps full admin access, so there is no need to sign out.</p>
-  </div><div>
     <h2>Website launch</h2>
     <p id="siteLaunchStatus" role="status"></p>
     <div class="actions"><button type="button" id="makeSiteLive" hidden>Make live for everyone</button><button type="button" id="exitPreview" class="secondary" hidden>Exit preview</button></div>
