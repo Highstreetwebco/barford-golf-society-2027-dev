@@ -109,3 +109,41 @@ test('Welcombe prepares all 18 greens with explicit route references for holes 4
   missingStart.source.validation.route_starts = 17;
   assert.equal(completeCourseMap(missingStart), false);
 });
+
+const k = JSON.parse(await readFile(new URL('./fixtures/kenilworth-course-source.json', import.meta.url)));
+test('Kenilworth retains numbered holes when route lengths corroborate one incorrect map par', async () => {
+  const result = await prepareCourseGps(k.course, discovery([k.scorecard]), {}, async (course, options) => buildCourseMapping(course, k.elements, options.scorecard));
+  assert.equal(result.status, 'ready');
+  assert.ok(completeCourseMap(result.draft));
+  const { validation } = result.draft.source;
+  assert.equal(validation.order_evidence, 'numbered_routes_with_matching_lengths_and_17_pars');
+  assert.equal(validation.par_matches, 17);
+  assert.equal(validation.route_length_matches, 18);
+  assert.deepEqual(validation.par_differences, [{ number: 9, map_par: 5, scorecard_par: 4 }]);
+  assert.equal(result.draft.source.numbering_shift, 0);
+  assert.ok(validation.evidence.every(h => h.number === h.osm_number && h.tee_feature_id && h.green_feature_id));
+  assert.deepEqual(result.draft.holes.map(h => ({ number: h.number, par: h.par, yards: h.yards, stroke_index: h.stroke_index })), k.scorecard.holes);
+  assert.ok(result.draft.source.warnings.some(w => w.includes('hole 9')));
+});
+
+test('A par mismatch still blocks a scorecard whose hole lengths do not corroborate the map', () => {
+  const wrong = structuredClone(k.scorecard);
+  wrong.holes[8].yards = 800;
+  assert.throws(() => buildCourseMapping(k.course, k.elements, wrong), e => e.code === 'HOLE_ORDER_UNCONFIRMED');
+});
+
+test('Multiple par conflicts and rotated numbering cannot use the single-par exception', () => {
+  const moreConflicts = structuredClone(k.elements);
+  moreConflicts.find(e => e.tags?.golf === 'hole' && e.tags.ref === '5').tags.par = '3';
+  assert.throws(() => buildCourseMapping(k.course, moreConflicts, k.scorecard), e => e.code === 'HOLE_ORDER_UNCONFIRMED');
+  const rotated = structuredClone(k.elements);
+  for (const e of rotated) if (e.tags?.golf === 'hole') e.tags.ref = String((Number(e.tags.ref) + 8) % 18 + 1);
+  assert.throws(() => buildCourseMapping(k.course, rotated, k.scorecard), e => e.code === 'HOLE_ORDER_UNCONFIRMED');
+});
+
+test('Corroborating lengths never bypass a missing green or duplicate numbered route', () => {
+  const missingGreen = k.elements.filter(e => e.id !== 1186594769);
+  assert.throws(() => buildCourseMapping(k.course, missingGreen, k.scorecard), e => e.code === 'HOLE_ANCHORS_UNCONFIRMED');
+  const duplicate = k.elements.find(e => e.tags?.golf === 'hole');
+  assert.throws(() => buildCourseMapping(k.course, [...k.elements, duplicate], k.scorecard), e => e.code === 'HOLE_ROUTES_AMBIGUOUS');
+});

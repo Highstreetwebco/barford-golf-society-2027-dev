@@ -1,4 +1,4 @@
-import { mountHoleSetup } from "./hole-admin.js?v=2027-edit-events-1";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-gps-lookup-1";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import { eventFields, updateEventType } from "./event-fields.js?v=2027-accurate-gps-1";
 import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-admin-bookings-1";

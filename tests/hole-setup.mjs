@@ -204,3 +204,30 @@ test('Retrying unavailable maps cannot erase the unchanged existing link', async
  await f.nodes.get('[data-course-prepare]').onclick();
  assert.equal(await f.setup.layoutId(),'existing');
 });
+
+test('Repairing an incomplete existing map replaces its retained link on event save', async () => {
+  const f = mount({ service: async () => ready(), rpc: async (action, payload, saves) => {
+    if (action === 'get') return { data: { ...mapped, id: 'incomplete', holes: [] } };
+    const saved = { ...payload, id: 'repaired' }; saves.push(saved); return { data: saved };
+  } });
+  await f.setup.setEvent({ ...course, id: 999, course_layout_id: 'incomplete' });
+  assert.equal(await f.setup.layoutId(), 'repaired');
+  assert.equal(f.saves.length, 1);
+  assert.ok(f.saves[0].holes.every(h => h.reviewed));
+});
+
+test('Kenilworth lookup saves all 18 holes and reloads without another provider request', async () => {
+  const k = JSON.parse(await readFile(new URL('./fixtures/kenilworth-course-source.json', import.meta.url)));
+  const result = await prepareCourseGps(k.course, { cards: [k.scorecard], warnings: [] }, {}, async (c, o) => buildCourseMapping(c, k.elements, o.scorecard));
+  const event = { ...k.course, course_name: k.course.name, id: 110, course_layout_id: null };
+  const f = mount({ service: async () => result });
+  await f.setup.setEvent(event);
+  assert.equal(await f.setup.layoutId(), 'saved-1');
+  assert.equal(f.saves[0].holes[8].par, 4);
+  assert.match(f.nodes.get('[data-map-source]').textContent, /Hole 9 uses the selected scorecard’s par 4/);
+  const saved = mount({ rpc: async action => { assert.equal(action, 'get'); return { data: f.saves[0] }; } });
+  await saved.setup.setEvent({ ...event, course_layout_id: 'saved-1' });
+  assert.equal(await saved.setup.layoutId(), 'saved-1');
+  assert.equal(saved.requests.length, 0);
+  assert.match(saved.nodes.get('[data-layout-status]').textContent, /Saved with this event/);
+});
