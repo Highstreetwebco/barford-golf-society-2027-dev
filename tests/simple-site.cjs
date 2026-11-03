@@ -810,6 +810,78 @@ function resultBoard() {
       await context.close();
     }
 
+    for (const width of [390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{admin:true,width});
+      const rosterNames=['Derek Lewis','Richard Jones','Gary Moyce','jack moyce-troth','Simon Morgan','Tim Oliver','Adrian Simms','Liz Oliver'];
+      const roster=rosterNames.map((name,i)=>({id:`roster-${i}`,name,claimed:i===3}));
+      roster.push({id:'ec1208f1-1cb7-4365-9b02-7ed93fa7ee6e',name:'2027 Test Member',claimed:false});
+      model.board={players:[{id:uid,name:rosterNames[3],starting_handicap:17}],rounds:[],visible_rounds:7};
+      const original=JSON.stringify(model.board),rpcCalls=[];
+      let rosterReads=0,failBoard=false,failRoster=false;
+      page.on('request',req=>{if(req.url().includes('/rpc/'))rpcCalls.push(req.url().split('/').pop());});
+      await context.route(backend+'/rest/v1/rpc/baseline_member_roster',route=>{
+        rosterReads++;
+        return failRoster ? route.fulfill({status:400,json:{message:'Member list unavailable'}}) : route.fulfill({json:roster});
+      });
+      await context.route(backend+'/rest/v1/rpc/baseline_league_board',route=>failBoard
+        ? route.fulfill({status:400,json:{message:'Score service unavailable'}}) : route.fulfill({json:model.board}));
+      await page.goto(base+'scores.html');
+      await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
+      assert.equal(await page.locator('.season-table tbody tr').count(),rosterNames.length);
+      assert.match(await page.locator('#leagueDemo').innerText(),/Sample scores and handicaps/);
+      assert.equal(await page.locator('.season-table tbody tr.is-you').count(),1);
+      assert.match(await page.locator('.season-table tbody tr.is-you').innerText(),/jack moyce-troth/);
+      const shown=await page.locator('.season-table tbody .player-col').allTextContents();
+      assert.deepEqual(new Set(shown.map(x=>x.replace(/You$/,''))),new Set(rosterNames));
+      assert.equal(await page.locator('.season-table tbody .round-win').count(),3);
+      assert.equal(await page.locator('.season-table tbody .not-played').count(),rosterNames.length*2);
+      assert.equal(await page.locator('.season-table .is-locked').count(),(rosterNames.length+1)*2);
+      const totals=await page.locator('.season-table tbody .total-col').allTextContents();
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
+      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),totals);
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+      await page.screenshot({path:path.join(out,`demo-leaderboard-${width}.png`),fullPage:true});
+      await page.locator('#roundDetails > summary').click();
+      assert.equal(await page.locator('#leagueRound').inputValue(),'3');
+      for(const round of ['1','2','3']) {
+        await page.locator('#leagueRound').selectOption(round);
+        assert.equal(await page.locator('.round-detail-table tbody tr').count(),rosterNames.length);
+        assert.equal(await page.locator('.round-detail-table .winner-label').count(),1);
+        assert.match(await page.locator('.round-summary').innerText(),/Sample round average/);
+      }
+      await page.locator('#leagueRound').selectOption('6');await page.locator('.round-locked').waitFor();
+      await page.getByRole('button',{name:'Show actual results',exact:true}).click();
+      await page.locator('#leagueBoard').getByText('The season starts here.',{exact:true}).waitFor();
+      assert.equal(await page.locator('.season-table').count(),0);
+      assert.equal(await page.locator('#roundDetails').isVisible(),false);
+      await page.getByRole('button',{name:'Show demonstration',exact:true}).click();
+      await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
+      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),totals);
+      assert.equal(JSON.stringify(model.board),original,'Sample results must not mutate the real season');
+      failRoster=true;
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.locator('#leagueBoard').getByText('Scores could not load.',{exact:true}).waitFor();
+      assert.equal(await page.locator('#leagueDemo').isVisible(),false);
+      assert.equal(await page.locator('.season-table').count(),0);
+      failRoster=false;failBoard=true;
+      const reads=rosterReads;
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.locator('#leagueBoard').getByText('Scores could not load.',{exact:true}).waitFor();
+      assert.equal(rosterReads,reads,'Never disguise a failed actual-score read with demo results');
+      failBoard=false;
+      model.board=resultBoard();model.board.rounds=model.board.rounds.slice(0,1);
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.locator('#standingsStatus').getByText('Standings after round 1',{exact:true}).waitFor();
+      assert.equal(await page.locator('#leagueDemo').isVisible(),false);
+      assert.deepEqual(await page.locator('.season-table tbody .total-col').allTextContents(),['46','38']);
+      assert.equal(rosterReads,reads,'Actual results take precedence without loading sample members');
+      assert.equal(rpcCalls.some(name=>/league_(save|publish|complete|reset)/.test(name)),false);
+      assert.deepEqual(errors,[]);
+      report.push(`PASS ${width}px: three-round member demonstration, stable scores, identity, winners, round detail, hidden rounds, actual-results toggle, failures and automatic real-result precedence`);
+      await context.close();
+    }
+
     for (const admin of [false,true]) {
       const {context,page,model,errors}=await setup(browser,{admin,width:390,memberView:false});
       model.board=resultBoard(); // Deliberately contains all seven: member UI must still fail closed.
