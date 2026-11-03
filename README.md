@@ -34,7 +34,7 @@ Rounds 6 and 7, their scores, wins and aggregate effects remain admin-only. The 
 
 ### Hole View
 
-Course Hole View is retained and can now be opened before the event day from Home or the event page. The existing course-layout RPC continues to enforce member/admin access and verified coordinate visibility. Mapping, GPS and camera implementation remain in the existing modules; GPS accuracy still needs a real on-course device check.
+Course Hole View is retained and can now be opened before the event day from Home or the event page. The existing course-layout RPC continues to enforce member/admin access and verified coordinate visibility. Overhead mapping and optional GPS yardages remain in the existing modules; GPS accuracy still needs a real on-course device check.
 
 ### Verification and deployment
 
@@ -194,7 +194,7 @@ Events are full-card links with the uploaded course photograph behind a short da
 
 The Welcombe regression fixture reproduces the unconfirmed tee areas at holes 4, 12 and 18. All 18 greens and numbered routes remain verified; those three starts retain explicit route-reference provenance. Missing or ambiguous greens still reject the layout.
 
-Admin previews also expose camera direction guidance for mapped greens; camera, location and compass permissions still require the user to press Start. GPS-only pars are retained from numbered map routes and labelled as map data.
+Admin previews use the same overhead satellite map. GPS-only pars are retained from numbered map routes and labelled as map data.
 
 Course preparation requests declare map_format 3. Older organiser pages receive an update-required message before provider lookups rather than an incompatible map. The service worker fetches same-site navigation and scripts with no-store so revisiting the page does not reuse cached HTML or JavaScript. Existing open forms are never automatically reloaded.
 
@@ -207,3 +207,12 @@ In Admin → RSVPs, Add member records a booking for any existing roster member,
 Offline attendees use a roster identity, never a fabricated authentication account. Registration links their existing RSVP, queue position, tee assignment and scores. Offline starting handicaps can be entered under Members. Account-based online payments and buggy booking ownership become available after registration; their attendance and buggy request are visible immediately.
 
 Run `tests/admin-member-bookings.sql` transactionally to verify booking, capacity, registration inheritance, scoring and authorization. All test records roll back. Browser checks are in the existing GitHub Actions workflow.
+
+
+### Editing published events and overhead Hole View
+
+Admin → Event details stays editable after tee groups are published. Saving a changed first tee time shifts the saved groups together, preserving custom gaps; changing the gap spaces those same groups from the first tee. The database commits event and tee updates together, rejects times that cross midnight, keeps player/guest assignments and any existing player-review warning, and records member time-change notices. Published group edits also update the event’s first tee time and uniform interval. Existing agreed booking charges remain unchanged. Round identity with saved scores and conversion of booked golf events to social events remain protected.
+
+A failed preview read no longer blocks editing an event with an unchanged saved course map. Pending draft group edits remain in the editor when event details are saved. Hole View now contains only the overhead satellite map, rotation, optional live GPS yardages, tap-to-measure targets and hole navigation; the camera/compass green finder has been removed.
+
+Verification: `tests/editable-events.sql` runs synthetic rollback-only database scenarios; `tests/editable-events.cjs` covers 320px, 390px and desktop in the existing CI browser environment. `tests/hole-setup.mjs` covers retained maps and failed/late lookups.

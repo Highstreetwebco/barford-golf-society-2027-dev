@@ -25,7 +25,7 @@ function ensureHoleStyles() {
   holeStyles = new Promise((resolve, reject) => {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "assets/css/holes.css?v=2027-simple-1";
+    css.href = "assets/css/holes.css?v=2027-overhead-1";
     css.dataset.holeStyles = "true";
     css.onload = resolve;
     css.onerror = () => { css.remove(); holeStyles = null; reject(new Error("Course styles unavailable")); };
@@ -44,7 +44,7 @@ export async function openCourseHoles(event, b, button) {
   try {
     if (!b.state.user && !(await b.requireMember())) return;
     const [, { openHolePicker }] = await Promise.all([
-      ensureHoleStyles(), import("./hole-view.js?v=2027-par-camera-1"),
+      ensureHoleStyles(), import("./hole-view.js?v=2027-overhead-1"),
     ]);
     openHolePicker(event, b);
   } catch {

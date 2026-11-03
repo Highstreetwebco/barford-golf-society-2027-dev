@@ -1,4 +1,4 @@
-import { mountHoleSetup } from "./hole-admin.js?v=2027-map-format-3";
+import { mountHoleSetup } from "./hole-admin.js?v=2027-edit-events-1";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import { eventFields, updateEventType } from "./event-fields.js?v=2027-accurate-gps-1";
 import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-admin-bookings-1";
@@ -79,6 +79,7 @@ if (!b.state.adminAccess) {
   });
   form.onsubmit = saveEvent;
   $("cancelEvent").onclick = cancelEvent;
+  $("editEventDetails").onclick = async () => { await showTab("details"); $("adminDetails").scrollIntoView({ block: "start", behavior: "smooth" }); };
   $("findCourse").onclick = findCourse;
   $("courseQuery").onkeydown = ev => { if (ev.key === "Enter") { ev.preventDefault(); findCourse(); } };
   $("refreshRsvps").onclick = loadResponses;
@@ -149,7 +150,7 @@ function fillEvent() {
   holeSetup.setEvent(selected).catch(error => { $("courseLookupStatus").textContent = error.message; });
   eventDirty = false;
   setSaveState("eventSaveState", selected ? "Saved" : "New event", selected ? "saved" : "new");
-  setSaveState("teeSaveState", selected?.tee_times_dirty ? "RSVPs changed · review groups" : selected?.tee_published_at ? "Published" : "Not published", selected?.tee_times_dirty ? "unsaved" : "saved");
+  setSaveState("teeSaveState", selected?.tee_times_dirty ? "Changes need review" : selected?.tee_published_at ? "Published" : "Not published", selected?.tee_times_dirty ? "unsaved" : "saved");
   form.querySelector(".form-status").textContent = "";
   updateEventSummary(); syncControls();
 }
@@ -180,7 +181,7 @@ async function saveEvent(ev) {
   if (!form.reportValidity()) return;
   const status = form.querySelector(".form-status");
   savingEvent = true; form.inert = true; syncControls();
-  setSaveState("eventSaveState", "Saving…", "saving"); status.textContent = "Saving event…";
+  setSaveState("eventSaveState", "Saving…", "saving"); status.dataset.state = "saving"; status.textContent = "Saving event…";
   try {
     if (coursePending) throw new Error("Course details are still loading. Please save in a moment.");
     const f = new FormData(form), name = String(f.get("name") || "").trim();
@@ -205,14 +206,26 @@ async function saveEvent(ev) {
       description: f.get("description"), course_link: f.get("course_link") || null, weather_link: f.get("weather_link") || null,
       video_type: f.get("video_type") || null, video_link: f.get("video_link") || null, per_hole_videos: selected?.per_hole_videos || null,
     };
+    const scheduleChanged = !!selected && (String(updates.first_time || "").slice(0,5) !== String(selected.first_time || "").slice(0,5) || updates.tee_interval !== selected.tee_interval);
+    const pendingGroups = scheduleChanged && teeDirty ? retimeDraft(groups, updates, selected) : null;
+    const wasPublished = !!selected?.tee_published_at;
     const query = selected ? c.from("events").update(updates).eq("id", selected.id) : c.from("events").insert(updates);
     const { data, error } = await query.select().single();
     if (error) throw error;
-    mergeSavedEvent(data); eventDirty = false;
+    const refreshed = await c.from("events").select("*").eq("id", data.id).single();
+    mergeSavedEvent(refreshed.error ? data : refreshed.data); eventDirty = false;
+    if (pendingGroups) { groups = pendingGroups; renderGroups(); }
+    else if (scheduleChanged) { groupsLoadedFor = null; groups = []; $("teeEditor").replaceChildren(); }
     fillEvent();
-    form.querySelector(".form-status").textContent = "Event saved. You can now view RSVPs or set up tee times.";
+    if (teeDirty) markTeeDirty();
+    form.querySelector(".form-status").textContent = scheduleChanged && wasPublished
+      ? (selected.tee_times_dirty ? "Event and tee times saved. Player groups kept. Review the outstanding player changes in Tee times before publishing." : "Event and published tee times updated. Player groups kept.")
+      : "Event saved. Existing RSVPs and tee groups kept.";
+    status.dataset.state = "saved";
+    if (teeDirty) form.querySelector(".form-status").textContent += " Your unsaved group changes are still in Tee times.";
     b.toast("Event saved.");
   } catch (error) {
+    status.dataset.state = "error";
     status.textContent = error.message || "Could not save the event. Please try again.";
     setSaveState("eventSaveState", "Not saved · check below", "unsaved");
   } finally { savingEvent = false; form.inert = false; syncControls(); }
@@ -392,6 +405,18 @@ function requireGolfEvent() {
   if (selected.event_type === "social" || selected.cancelled) { $("teeMessage").textContent = selected.cancelled ? "Reopen this event before setting up tee times." : "Social events do not need tee times."; return false; }
   return true;
 }
+function retimeDraft(draft, updates, previous) {
+  const minutes = time => { const [h,m] = String(time).split(":").map(Number); return h * 60 + m; };
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(updates.first_time || "")) throw new Error("Enter a first tee time to move the draft groups.");
+  const start = minutes(updates.first_time), base = minutes(draft[0]?.time);
+  const changeGap = updates.tee_interval !== previous.tee_interval;
+  return draft.map((g,i) => {
+    if (!changeGap && (!g.time || !Number.isFinite(base))) return g;
+    const next = changeGap ? start + i * updates.tee_interval : minutes(g.time) + start - base;
+    if (!Number.isFinite(next) || next < 0 || next >= 1440) throw new Error("The draft tee times would run into another day. Use an earlier start or shorter gap.");
+    return { ...g, time: `${String(Math.floor(next / 60)).padStart(2,"0")}:${String(next % 60).padStart(2,"0")}` };
+  });
+}
 function timesFor(count) {
   const start = $("teeStart").value, gap = Number($("teeGap").value);
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start) || !Number.isInteger(gap) || gap < 1 || gap > 60) throw new Error("Enter a first tee time and a whole-number gap from 1 to 60 minutes.");
@@ -439,7 +464,7 @@ async function loadGroups(automatic = false) {
     if (extra.length || changed || selected.tee_times_dirty) markTeeDirty();
     else setSaveState("teeSaveState", "Published", "saved");
     renderGroups();
-    $("teeMessage").textContent = teeDirty ? "The player list has changed. Check the groups and publish the updated tee times." : "Saved tee times loaded. Change a player's group or tee time below if needed.";
+    $("teeMessage").textContent = teeDirty ? "There are changes to review. Check the groups and publish the updated tee times." : "Saved tee times loaded. Change a player's group or tee time below if needed.";
   });
 }
 function renderGroups() {
@@ -472,6 +497,7 @@ function validateGroups() {
   return active;
 }
 async function saveGroups() {
+  if (eventDirty) { $("teeMessage").textContent = "Save your event details before publishing tee times."; return; }
   if (!requireGolfEvent() || teeBusy) return;
   return teeAction(async id => {
     const active = validateGroups();
@@ -490,7 +516,7 @@ async function saveGroups() {
     teeDirty = false; setSaveState("teeSaveState", "Published", "saved");
     $("teeMessage").textContent = "Tee times published. Members can see them on the event and must contact the committee to withdraw.";
     const refreshed = await c.from("events").select("*").eq("id", id).single();
-    if (!refreshed.error && selected?.id === id) { selected = refreshed.data; events = events.map(ev => ev.id === id ? selected : ev); }
+    if (!refreshed.error && selected?.id === id) { mergeSavedEvent(refreshed.data); fillEvent(); }
     b.toast("Tee times published.");
   });
 }

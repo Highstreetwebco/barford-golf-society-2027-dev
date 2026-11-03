@@ -19,10 +19,10 @@
     <link rel="stylesheet" href="assets/css/site.css?v=2027-admin-menu-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-gallery-1" />
     <link rel="stylesheet" href="assets/css/simple.css?v=2027-wordmark-1" />
-    <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-member-view-1" />
-    <link rel="stylesheet" href="assets/css/holes.css?v=2027-hole-ux-1" media="print" onload="this.media='all'" />
+    <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-event-editing-1" />
+    <link rel="stylesheet" href="assets/css/holes.css?v=2027-overhead-1" media="print" onload="this.media='all'" />
     <script src="assets/js/baseline.js?v=2027-admin-menu-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-guest-rsvp-1"></script>
+    <script type="module" src="assets/js/admin.js?v=2027-edit-events-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 <link rel="stylesheet" href="assets/css/guest-rsvp.css?v=2027-guest-rsvp-1">
 </head>
@@ -58,19 +58,19 @@
           <button id="tabAccounts" data-tab="accounts" role="tab" aria-controls="adminAccounts" aria-selected="false" tabindex="-1">Members</button>
         </div>
         <section id="adminDetails" class="panel admin-panel" role="tabpanel" aria-labelledby="tabDetails">
-          <div class="section-heading"><div><h2>Event details</h2><p class="muted">Fill in the essentials, then save.</p></div><span id="eventSaveState" class="save-state" role="status">New event</span></div>
+          <div class="section-heading"><div><h2>Event details</h2><p class="muted">Edit these details at any time, including after tee times are published.</p></div><span id="eventSaveState" class="save-state" role="status">New event</span></div>
           <form id="eventForm" class="form-grid">
             <label data-league-round>League round<select name="round_number" required><option value="">Choose a round</option><option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option><option value="4">Round 4</option><option value="5">Round 5</option><option value="6">Round 6 · scores private</option><option value="7">Round 7 · scores private</option></select></label>
             <label>Date<input name="date" type="date" required /></label>
             <label class="full">Event name<input name="name" required maxlength="200" placeholder="e.g. Round 1 — The Warwickshire" /></label>
             <div class="full course-search-box"><label for="courseQuery">Find the golf course</label><div class="actions"><input id="courseQuery" placeholder="Course name and town" /><button type="button" class="secondary" id="findCourse">Find course and hole view</button></div><p id="courseLookupStatus" role="status"></p><div id="courseResults" class="course-results"></div></div>
             <label class="full">Course / venue name<input name="course_name" maxlength="160" placeholder="Filled in when you choose a course" /><small>Use the search above to change the golf course and its hole view together.</small></label>
-            <label>First tee time<input name="first_time" type="time" /></label>
+            <label>First tee time<input name="first_time" type="time" /><small>Changing this moves existing tee times together and keeps the groups.</small></label>
             <label>Meet from<input name="refreshment_time" type="time" /></label>
             <label>Member price (£)<input name="member_price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="To be confirmed" /></label>
             <label>Maximum players<input name="max_players" type="number" min="1" max="200" step="1" placeholder="Leave blank for no limit" /></label>
             <label>RSVP closing date<input name="rsvp_deadline" type="date" /><small>Closes at the end of this day, UK time. Optional.</small></label>
-            <label>Tee time gap (minutes)<input name="tee_interval" type="number" min="1" max="60" step="1" value="8" /></label>
+            <label>Tee time gap (minutes)<input name="tee_interval" type="number" min="1" max="60" step="1" value="8" /><small>Changing the gap spaces existing groups from the first tee time.</small></label>
             <label class="full">Message for members<textarea name="description" rows="3" placeholder="Meeting arrangements, what is included or anything members need to know"></textarea></label>
             <details class="full admin-extra"><summary>Optional details and cover photo</summary><div class="form-grid section">
               <label>Event type<select name="event_type" required><option value="league">League round</option><option value="pairs">Pairs golf</option><option value="social">Social event</option></select></label>
@@ -78,12 +78,13 @@
               <label class="full">Address<input name="address" maxlength="300" /></label>
               <label>Course website<input name="course_link" type="url" placeholder="https://" /></label>
               <label>Course telephone<input name="course_phone" type="tel" maxlength="40" /></label>
+              <label>Cancellation deadline<input name="cancellation_deadline" type="date" /></label>
               <label>Guest price (£)<input name="guest_price" type="number" min="0" step="0.01" inputmode="decimal" /></label>
               <label class="full">Important event notice<textarea name="event_notice" rows="2"></textarea></label>
               <div class="full event-cover-picker"><label for="eventCoverFile">Cover photo</label><input id="eventCoverFile" name="cover_file" type="file" accept="image/jpeg,image/png,image/webp" /><input name="cover_url" type="hidden" /><small>Optional landscape photo, up to 10 MB.</small><img id="eventCoverPreview" alt="Event cover preview" hidden /><button id="removeEventCover" type="button" class="secondary" hidden>Remove cover photo</button><p id="eventCoverStatus" role="status"></p></div>
             </div></details>
             <input type="hidden" name="place_id" /><input type="hidden" name="latitude" /><input type="hidden" name="longitude" /><input type="hidden" name="location" />
-            <input type="hidden" name="course_member_price" /><input type="hidden" name="included" /><input type="hidden" name="practice" /><input type="hidden" name="payment_due" /><input type="hidden" name="cancellation_deadline" /><input type="hidden" name="cancellation_terms" /><input type="hidden" name="committed_places" value="0" /><input type="hidden" name="weather_link" /><input type="hidden" name="video_type" /><input type="hidden" name="video_link" />
+            <input type="hidden" name="course_member_price" /><input type="hidden" name="included" /><input type="hidden" name="practice" /><input type="hidden" name="payment_due" /><input type="hidden" name="cancellation_terms" /><input type="hidden" name="committed_places" value="0" /><input type="hidden" name="weather_link" /><input type="hidden" name="video_type" /><input type="hidden" name="video_link" />
             <div class="actions full admin-save-bar"><button id="saveEvent" type="submit">Save event</button><p class="form-status" role="status"></p></div>
           </form>
           <details id="eventManagement" class="admin-extra event-management" hidden><summary>Cancel or reopen this event</summary><p class="muted">Cancelled events remain in the history and are labelled clearly for members.</p><button type="button" class="secondary" id="cancelEvent">Cancel event</button></details>
@@ -95,6 +96,7 @@
         <section id="adminTees" class="panel admin-panel" role="tabpanel" aria-labelledby="tabTees" hidden>
           <div class="section-heading"><div><h2>Tee times</h2><p class="muted">Create groups, check the names and times, then publish.</p></div><span id="teeSaveState" class="save-state" role="status">No changes</span></div>
           <div class="form-grid tee-settings"><label>First tee time<input id="teeStart" type="time" value="09:00" /></label><label>Gap in minutes<input id="teeGap" type="number" min="1" max="60" step="1" value="8" /></label></div>
+          <p class="muted">Change the event date, venue or other details in <button type="button" id="editEventDetails" class="text-button">Edit event details</button>. Your groups are kept.</p>
           <div class="actions"><button id="generateTees" type="button" class="secondary">Create groups</button><button id="loadTees" type="button" class="text-button">Reload saved groups</button></div>
           <p id="teeMessage" class="form-status" role="status"></p><div id="teeEditor" class="stack"></div>
           <div class="actions admin-save-bar"><button id="saveTees" type="button" disabled>Publish tee times</button></div>
