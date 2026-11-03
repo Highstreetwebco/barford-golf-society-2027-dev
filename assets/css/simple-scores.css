@@ -2,11 +2,6 @@
 .score-page-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; }
 .score-page-heading .actions { flex-wrap:wrap; margin:0; }
 .score-page-heading h1 { margin-bottom:12px; }
-.league-demo { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:0 0 20px; padding:18px 20px; border:1px solid #c5a75c; border-radius:14px; background:var(--soft); }
-.league-demo[hidden] { display:none; }
-.league-demo strong { display:block; color:var(--ink); }
-.league-demo p { margin:5px 0 0; color:var(--muted); font-size:.875rem; line-height:1.5; }
-.league-demo button { flex-shrink:0; }
 .leaderboard-panel { padding:0; container-type:inline-size; }
 .leaderboard-heading { padding:22px 20px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
 .leaderboard-heading h2 { font-size:1.4rem; margin:0; }
@@ -61,8 +56,6 @@
 .winner-label { display:block; margin-top:4px; font-size:.8125rem; color:#826437; font-weight:600; }
 .round-locked { padding:22px 0 4px; }
 .round-locked p { color:var(--muted); font-size:.9375rem; }
-.season-locks { display:flex; flex-wrap:wrap; gap:16px 28px; justify-content:center; padding:0 20px 28px; color:var(--muted); font-size:.9375rem; }
-.season-locks > span { display:inline-flex; align-items:center; gap:8px; }
 .league-rules .table-scroll { overflow:visible; }
 .league-rules table { table-layout:fixed; width:100%; min-width:0; }
 .league-rules th,.league-rules td { white-space:normal; overflow-wrap:anywhere; padding:12px 8px; }
@@ -95,7 +88,6 @@
   .score-page-heading .actions { gap:8px; }
 }
 @media(max-width:600px) {
-  .league-demo { flex-direction:column; align-items:flex-start; gap:12px; }
   .leaderboard-heading { align-items:flex-start; flex-direction:column; gap:6px; }
   .leaderboard-heading h2 { font-size:1.25rem; }
   .round-details,.league-rules { padding:16px; }

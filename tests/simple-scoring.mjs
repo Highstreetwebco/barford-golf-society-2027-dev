@@ -1,38 +1,6 @@
 import assert from 'node:assert/strict';
 import { rankPlayers, changeValue } from '../assets/js/league-view.js';
 import { roundAverage, adjustment, handicapAt } from '../assets/js/league-rules.js';
-import { demonstrationBoard } from '../assets/js/league-demo.js';
-
-// Demonstrations use only the supplied roster, keep the signed-in identity,
-// remain repeatable for filming and never mutate real scores or handicaps.
-const demoRoster = ['Derek Lewis', 'Richard Jones', 'Gary Moyce', 'jack moyce-troth', 'Simon Morgan', 'Tim Oliver'].map((name, i) => ({ id: `roster-${i}`, name }));
-demoRoster.push({ id: 'ec1208f1-1cb7-4365-9b02-7ed93fa7ee6e', name: '2027 Test Member' }, { id: 'guest', name: 'Guest name', invite_only: true });
-const actualPeople = [{ id: 'jack-account', name: 'jack moyce-troth', starting_handicap: 17 }];
-const beforeDemo = JSON.stringify({ demoRoster, actualPeople });
-const demo = demonstrationBoard(demoRoster, actualPeople);
-assert.equal(JSON.stringify({ demoRoster, actualPeople }), beforeDemo);
-assert.equal(demo.demo, true);
-assert.equal(demo.visible_rounds, 5);
-assert.equal(demo.players.length, 6);
-assert.deepEqual(new Set(demo.players.map(p => p.name)), new Set(demoRoster.slice(0, 6).map(p => p.name)));
-assert.equal(demo.players.find(p => p.name === 'jack moyce-troth').id, 'jack-account');
-assert.deepEqual(demo, demonstrationBoard([...demoRoster].reverse(), actualPeople), 'Source order must not change the filmed standings');
-assert.deepEqual(demo.rounds.map(r => r.round), [1, 2, 3]);
-for (const p of rankPlayers(demo)) {
-  assert.equal(p.played, 3);
-  assert.equal(p.total, p.scores.reduce((sum, s) => sum + s.points, 0));
-  assert(p.scores.every(s => Number.isInteger(s.points) && s.points >= 20 && s.points <= 42));
-  assert.equal(p.scores[0].handicap, p.starting_handicap);
-  assert.equal(p.scores[1].handicap, p.scores[0].next_handicap);
-  assert.equal(p.scores[2].handicap, p.scores[1].next_handicap);
-}
-assert.equal(new Set(demo.rounds.map(r => r.results.find(s => s.winner).user_id)).size, 3);
-for (const r of demo.rounds) {
-  assert.equal(r.results.filter(s => s.winner).length, 1);
-  assert.equal(r.results.find(s => s.winner).points, Math.max(...r.results.map(s => s.points)));
-}
-assert.equal(demonstrationBoard([]).rounds.length, 0);
-assert.throws(() => demonstrationBoard(null), /member list/);
 
 function board(rows, visible = 7) {
   return {

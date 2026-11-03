@@ -112,8 +112,8 @@ window.barfordReady = (async () => {
       sessionStorage.getItem("barford-password-recovery") === "true",
   };
   function applyAdminView() {
-    // The role grants dashboard access; ordinary pages always show the member UI.
-    state.admin = state.adminAccess && page === "admin.html";
+    // Display permissions follow the verified account role on every page.
+    state.admin = state.adminAccess;
     document.querySelectorAll("[data-admin]").forEach(el => { el.hidden = !state.admin; });
     const nav = document.getElementById("siteNav");
     nav?.querySelector('a[data-admin][href="admin.html"]')?.remove();

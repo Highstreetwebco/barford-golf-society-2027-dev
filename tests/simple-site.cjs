@@ -27,12 +27,12 @@ async function launchMocks(context, launch = {live:false, publishes:0}) {
   return launch;
 }
 
-async function setup(browser, {admin = false, signedIn = true, width = 1365, height = 900, memberView, launch, timezoneId = 'Europe/London'} = {}) {
+async function setup(browser, {admin = false, signedIn = true, width = 1365, height = 900, legacyMemberView, launch, timezoneId = 'Europe/London'} = {}) {
   const context = await browser.newContext({viewport:{width,height},serviceWorkers:'block',timezoneId});
   const model = await mocks(context, {signedIn,admin});
   await context.addInitScript(token => sessionStorage.setItem('barford-2027-preview-session',token),previewToken);
   await launchMocks(context,launch);
-  if (typeof memberView === 'boolean') await context.addInitScript(({id,enabled})=>localStorage.setItem('barford-2027-view:'+id,enabled?'member':'admin'),{id:uid,enabled:memberView});
+  if (typeof legacyMemberView === 'boolean') await context.addInitScript(({id,enabled})=>localStorage.setItem('barford-2027-view:'+id,enabled?'member':'admin'),{id:uid,enabled:legacyMemberView});
   model.profile.is_admin = admin;
   model.events = [{...fixture, event_type:'league',round_number:1,member_price:45,course_name:'The Warwickshire',date:'2027-06-25',tee_published_at:null,course_layout_id:null}];
   await context.addInitScript(() => {
@@ -503,7 +503,7 @@ function resultBoard() {
         return {first:panel===document.querySelector('main').firstElementChild,below:button.getBoundingClientRect().top>=card.getBoundingClientRect().bottom,visible:scrollY===0&&button.getBoundingClientRect().bottom<=bottom,overflow:document.documentElement.scrollWidth>innerWidth+2};
       });
       assert.deepEqual(layout,{first:true,below:true,visible:true,overflow:false},'Four-player group and button fit above the fold');
-      assert.equal(await page.locator('a[data-admin]:visible').count(),0);
+      assert(await page.locator('a[data-admin]:visible').count()>0);
       await page.screenshot({path:path.join(out,`home-published-group-${width}.png`)});
       await group.getByRole('button',{name:'Enlarge photo of Gary Example',exact:true}).click();
       await page.getByRole('dialog',{name:'Gary Example profile photo',exact:true}).waitFor();
@@ -554,8 +554,8 @@ function resultBoard() {
       report.push('PASS signed-out homepage keeps tee groups private');
     }
     for (const width of [390,900,901,1365]) {
-      // A saved preference from the old toggle must never re-enable editing while filming.
-      const {context,page,model,errors}=await setup(browser,{admin:true,width,memberView:false});
+      // Old presentation preferences cannot override the verified admin role.
+      const {context,page,model,errors}=await setup(browser,{admin:true,width,legacyMemberView:true});
       model.board=resultBoard();
       const menu=page.locator(width<=900?'#menuToggle':'.admin-menu summary');
       const dashboard=page.getByRole('link',{name:'Admin dashboard',exact:true});
@@ -565,17 +565,17 @@ function resultBoard() {
       await context.route(backend+'/storage/v1/object/public/baseline-gallery-images/uploads/*', route=>route.fulfill({path:path.join(__dirname,'..','icon-logo.png'),contentType:'image/png'}));
       await page.goto(base+'home.html');
       await page.locator('[data-home-rsvp]').waitFor();
-      assert.equal(await page.locator('a[data-admin]:visible').count(),0,'Admin account defaults to the member experience');
+      assert(await page.locator('a[data-admin]:visible').count()>0,'Admin controls return on the homepage');
       assert.equal(await page.locator('.launch-preview-bar,#makeSiteLive').count(),0);
-      assert.deepEqual(await page.evaluate(()=>({id:barford.state.user.id,role:barford.state.adminAccess,view:barford.state.admin})),{id:uid,role:true,view:false});
+      assert.deepEqual(await page.evaluate(()=>({id:barford.state.user.id,role:barford.state.adminAccess,view:barford.state.admin})),{id:uid,role:true,view:true});
       assert.equal(await dashboard.count(),0,'Admin dashboard is hidden until Menu opens');
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),'Closed navigation fits the screen');
-      await page.screenshot({path:path.join(out,`filming-home-${width}.png`),fullPage:true});
+      await page.screenshot({path:path.join(out,`admin-home-${width}.png`),fullPage:true});
       await menu.click();
       await dashboard.waitFor();
       assert.equal(await dashboard.count(),1,'Exactly one accessible Admin link');
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2),'Open menu fits the screen');
-      await page.screenshot({path:path.join(out,`filming-menu-${width}.png`),fullPage:true});
+      await page.screenshot({path:path.join(out,`admin-menu-${width}.png`),fullPage:true});
       await page.keyboard.press('Escape');
       assert.equal(await dashboard.count(),0,'Escape closes the menu');
       assert(await menu.evaluate(el=>el===document.activeElement),'Escape returns focus to Menu');
@@ -583,31 +583,30 @@ function resultBoard() {
         await page.goto(base+name);
         await page.evaluate(()=>window.barfordReady);
         assert.equal(await dashboard.count(),0,`Dashboard link stays inside Menu on ${name}`);
-        assert.equal(await page.locator('a[data-admin]:visible').count(),0,`No admin links on ${name}`);
+        assert(await page.locator('a[data-admin]:visible').count()>0,`Admin links are visible on ${name}`);
         assert.equal(await page.locator('.launch-preview-bar,#makeSiteLive').count(),0,`No launch controls on ${name}`);
         if(name==='account.html') {
           await page.locator('#profileForm').waitFor();
-          assert.equal(await page.getByRole('link',{name:'Organiser tools',exact:true}).count(),0);
+          assert.equal(await page.getByRole('link',{name:'Organiser tools',exact:true}).count(),1);
         }
         if(name==='gallery.html') {
           await page.locator('[data-photo]').waitFor();
-          assert.equal(await page.locator('[data-delete]').count(),0,'Member view hides photo deletion');
+          assert.equal(await page.locator('[data-delete]').count(),1,'Admins can manage gallery photos');
         }
         if(name==='scores.html') {
           await page.locator('.season-player').first().waitFor();
-          assert.equal(await page.locator('.season-list .is-locked').count(),4,'Admin filming view redacts rounds 6 and 7');
+          assert.equal(await page.locator('.season-list .is-locked').count(),0,'Admins can see all seven rounds');
           await page.locator('#roundDetails > summary').click();
           await page.locator('#leagueRound').selectOption('6');
-          await page.locator('.round-locked').waitFor();
-          assert.equal(await page.locator('.round-result-list').count(),0);
+          await page.locator('.round-result-list').waitFor();
+          assert.equal(await page.locator('.round-result').count(),2);
         }
       }
       model.events[0].tee_published_at='2027-06-01T10:00:00Z';
       model.teeView={status:'published',round_number:7,provisional:true,groups:[{group_number:1,tee_time:'09:30',players:[{user_id:uid,name:'Test Member',handicap:17.4,handicap_secret:false,type:'walker'}]}]};
       await page.goto(base+'event.html?id=999');
       await page.locator('.member-tee-card').waitFor();
-      assert.match(await page.locator('[data-member-tees]').innerText(),/Handicap held by organisers/);
-      assert.doesNotMatch(await page.locator('[data-member-tees]').innerText(),/17\.4|Handicaps are provisional/,'Admin-only tee handicaps are masked in member view');
+      assert.match(await page.locator('[data-member-tees]').innerText(),/Round 7 HCP: 17\.4/,'Admins can see the secret-round tee handicap');
       model.teeView.round_number=6;
       await page.reload();
       await page.locator('.member-tee-card').waitFor();
@@ -617,27 +616,26 @@ function resultBoard() {
       await page.waitForURL('**/admin.html');
       await page.locator('#adminContent').waitFor({state:'visible'});
       assert.equal(await page.evaluate(()=>barford.state.admin),true,'Menu opens the full admin dashboard');
-      assert.equal(await page.locator('#memberViewToggle').count(),0,'No toggle can accidentally expose admin controls');
-      assert.match(await page.locator('#memberViewStatus').innerText(),/always show the normal member view/);
+      assert.equal(await page.locator('#memberViewToggle,#memberViewStatus,#openMemberView').count(),0,'Presentation-only controls have been removed');
       assert(await page.locator('#makeSiteLive').isVisible());
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.screenshot({path:path.join(out,`admin-site-controls-${width}.png`),fullPage:true});
-      await page.locator('#openMemberView').click();
+      await page.goto(base+'home.html');
       await page.locator('#nextEvent .simple-next-copy h2').waitFor();
       await page.reload();
       await page.locator('#nextEvent .simple-next-copy h2').waitFor();
-      assert.equal(await page.locator('a[data-admin]:visible').count(),0);
+      assert(await page.locator('a[data-admin]:visible').count()>0);
       assert.equal(await dashboard.count(),0);
       assert.equal(await page.locator('#makeSiteLive').count(),0);
-      assert.equal(await page.evaluate(()=>barford.state.admin),false,'Leaving Admin restores the member view automatically');
+      assert.equal(await page.evaluate(()=>barford.state.admin),true,'Admin permissions persist across the site');
       assert.equal(await page.evaluate(()=>barford.state.user.id),uid,'Switching view keeps the same account');
       assert.equal(authChanges,0,'Switching view never signs out or logs in to another account');
       assert.deepEqual(errors,[]);
       await context.close();
-      report.push(`PASS filming at ${width}px: member pages, hidden scores/tee handicaps, Menu to Admin, keyboard close, stale preference ignored and unchanged sign-in`);
+      report.push(`PASS full admin view at ${width}px: editing controls, secret scores/tee handicaps, Menu navigation, stale presentation preference ignored and unchanged sign-in`);
     }
     for (const signedIn of [true,false]) {
-      const {context,page}=await setup(browser,{admin:false,memberView:false,signedIn,width:390});
+      const {context,page}=await setup(browser,{admin:false,legacyMemberView:false,signedIn,width:390});
       await page.goto(base+'home.html');
       await page.evaluate(()=>window.barfordReady);
       await page.locator('#menuToggle').click();
@@ -703,7 +701,7 @@ function resultBoard() {
       assert.equal(await page.locator('header img.brand-lockup').count(),1,'Member header uses the same new Barford emblem');
       await page.locator('header img.brand-lockup').evaluate(img => img.decode());
       assert.equal(await page.locator('.more-nav').count(),0);
-      assert.equal(await page.locator('a[data-admin]:visible').count(),0);
+      assert(await page.locator('a[data-admin]:visible').count()>0);
       assert.equal(await page.locator('#homeHoles').count(),1);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.screenshot({path:path.join(out,`home-${width}.png`),fullPage:true});
@@ -812,22 +810,19 @@ function resultBoard() {
 
     for (const width of [320,390,768,1024,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width});
-      const rosterNames=['Derek Lewis','Richard Jones','Gary Moyce','jack moyce-troth','Simon Morgan','Tim Oliver','Adrian Simms','Liz Oliver'];
-      const roster=rosterNames.map((name,i)=>({id:`roster-${i}`,name,claimed:i===3}));
-      roster.push({id:'ec1208f1-1cb7-4365-9b02-7ed93fa7ee6e',name:'2027 Test Member',claimed:false});
-      model.board={players:[{id:uid,name:rosterNames[3],starting_handicap:17}],rounds:[],visible_rounds:7};
-      const original=JSON.stringify(model.board),rpcCalls=[];
-      let rosterReads=0,failBoard=false,failRoster=false;
+      model.events=[];
+      model.board={players:[{id:uid,name:'jack moyce-troth',starting_handicap:16}],rounds:[],visible_rounds:7};
+      const rpcCalls=[];
+      let rosterReads=0,failBoard=false;
       page.on('request',req=>{if(req.url().includes('/rpc/'))rpcCalls.push(req.url().split('/').pop());});
       await context.route(backend+'/rest/v1/rpc/baseline_member_roster',route=>{
         rosterReads++;
-        return failRoster ? route.fulfill({status:400,json:{message:'Member list unavailable'}}) : route.fulfill({json:roster});
+        return route.fulfill({json:[{id:'unregistered',name:'Unregistered Member',claimed:false}]});
       });
       await context.route(backend+'/rest/v1/rpc/baseline_league_board',route=>failBoard
         ? route.fulfill({status:400,json:{message:'Score service unavailable'}}) : route.fulfill({json:model.board}));
       await page.goto(base+'scores.html');
-      await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
-      assert.equal(await page.locator('.season-player').count(),rosterNames.length);
+      await page.locator('.season-player').first().waitFor();
       const fits = async () => {
         const overflow = await page.evaluate(() => [...document.querySelectorAll('.season-player,.player-summary,.player-name,.player-total,.player-rounds,.round-score,.round-score dd,.round-result,.round-result-heading,.round-handicaps,.round-handicaps dd,.league-rules .table-scroll,.league-rules table')]
           .filter(el => el.getClientRects().length && el.clientWidth > 0)
@@ -837,67 +832,56 @@ function resultBoard() {
         assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
       };
       await fits();
-      assert.equal(await page.locator('.season-player').first().locator('[data-round]').count(),7);
-      assert(await page.locator('.counted-score dd').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=16),'Keep scores readable without scaling the screen');
-      assert.equal(await page.locator('.table-mobile-hint').count(),0);
-      assert.match(await page.locator('#leagueDemo').innerText(),/Sample scores and handicaps/);
+      assert.equal(await page.locator('.season-player').count(),1);
+      assert.match(await page.locator('#standingsStatus').innerText(),/Registered members.*Awaiting round 1/);
+      assert.equal(await page.locator('.player-total strong').innerText(),'—');
+      assert.equal(await page.locator('.player-position').innerText(),'—');
+      assert.equal(await page.locator('.counted-score,.round-win,#leagueDemo,#toggleLeagueDemo').count(),0);
+      assert.equal(await page.locator('#roundDetails').isVisible(),false);
+      assert.equal(await page.locator('#openRoundDetails').isVisible(),false);
       assert.equal(await page.locator('.season-player.is-you').count(),1);
-      assert.match(await page.locator('.season-player.is-you').innerText(),/jack moyce-troth/);
-      const shown=await page.locator('.season-player .player-name').allTextContents();
-      assert.deepEqual(new Set(shown.map(x=>x.replace(/You$/,''))),new Set(rosterNames));
-      assert.equal(await page.locator('.season-list .round-win').count(),3);
-      assert.equal(await page.locator('.season-list .not-played').count(),rosterNames.length*2);
-      assert.equal(await page.locator('.season-list .is-locked').count(),rosterNames.length*2);
-      const totals=await page.locator('.season-player .player-total strong').allTextContents();
+      assert.equal(await page.locator('.season-player [data-round]').count(),7);
+      await page.screenshot({path:path.join(out,`season-ready-${width}.png`),fullPage:true});
+      // A new registered account appears on Refresh, without loading unclaimed roster names.
+      model.board.players.push({id:people[1],name:'Derek Lewis',starting_handicap:20});
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
-      await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
-      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),totals);
-      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
-      await page.screenshot({path:path.join(out,`demo-leaderboard-${width}.png`),fullPage:true});
-      await page.locator('.season-player').first().scrollIntoViewIfNeeded();
-      await page.screenshot({path:path.join(out,`readable-standings-${width}.png`)});
+      await page.locator('.season-player').nth(1).waitFor();
+      assert.deepEqual(await page.locator('.player-total strong').allTextContents(),['—','—']);
+      assert.equal(rosterReads,0);
+      model.board.players=[];
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.getByText('Create your account to join the leaderboard.',{exact:true}).waitFor();
+      assert.equal(await page.locator('.season-player').count(),0);
+      failBoard=true;
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.getByText('Scores could not load.',{exact:true}).waitFor();
+      assert.equal(await page.locator('.season-player').count(),0);
+      assert.equal(rosterReads,0,'A failed result read never fabricates standings');
+      failBoard=false;
+      model.board=resultBoard();model.board.rounds=model.board.rounds.slice(0,3);
+      for(const round of model.board.rounds)round.results[0].winner=true;
+      await page.getByRole('button',{name:'Refresh',exact:true}).click();
+      await page.locator('#standingsStatus').getByText('Standings after round 3',{exact:true}).waitFor();
+      await fits();
+      assert(await page.locator('.counted-score dd').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=16));
+      assert.equal(await page.locator('.season-list .round-win').count(),3);
+      assert.equal(await page.locator('.season-list .is-locked').count(),0);
+      await page.screenshot({path:path.join(out,`readable-standings-${width}.png`),fullPage:true});
       await page.getByRole('link',{name:'Round details',exact:true}).click();
-      assert.equal(await page.locator('#roundDetails').evaluate(el=>el.open),true,'The shortcut opens the breakdown without scrolling through every member');
+      assert.equal(await page.locator('#roundDetails').evaluate(el=>el.open),true);
       assert.equal(await page.locator('#leagueRound').inputValue(),'3');
       for(const round of ['1','2','3']) {
         await page.locator('#leagueRound').selectOption(round);
-        assert.equal(await page.locator('.round-result').count(),rosterNames.length);
+        assert.equal(await page.locator('.round-result').count(),2);
         assert.equal(await page.locator('.round-result .winner-label').count(),1);
-        assert.match(await page.locator('.round-summary').innerText(),/Sample round average/);
+        assert.match(await page.locator('.round-summary').innerText(),/Round average/);
         assert.equal(await page.locator('.round-result').first().locator('.round-handicaps > div').count(),3);
         await fits();
       }
       await page.locator('.round-result').first().scrollIntoViewIfNeeded();
       await page.screenshot({path:path.join(out,`readable-round-${width}.png`)});
-      await page.locator('.league-rules > summary').click();
-      await fits();
-      await page.getByRole('link',{name:'Back to standings ↑',exact:true}).click();
-      await page.locator('#leagueRound').selectOption('6');await page.locator('.round-locked').waitFor();
-      await page.getByRole('button',{name:'Show actual results',exact:true}).click();
-      await page.locator('#leagueBoard').getByText('The season starts here.',{exact:true}).waitFor();
-      assert.equal(await page.locator('.season-list').count(),0);
-      assert.equal(await page.locator('#roundDetails').isVisible(),false);
-      await page.getByRole('button',{name:'Show demonstration',exact:true}).click();
-      await page.locator('#standingsStatus').filter({hasText:'Demo · Standings after round 3'}).waitFor();
-      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),totals);
-      assert.equal(JSON.stringify(model.board),original,'Sample results must not mutate the real season');
-      failRoster=true;
-      await page.getByRole('button',{name:'Refresh',exact:true}).click();
-      await page.locator('#leagueBoard').getByText('Scores could not load.',{exact:true}).waitFor();
-      assert.equal(await page.locator('#leagueDemo').isVisible(),false);
-      assert.equal(await page.locator('.season-list').count(),0);
-      failRoster=false;failBoard=true;
-      const reads=rosterReads;
-      await page.getByRole('button',{name:'Refresh',exact:true}).click();
-      await page.locator('#leagueBoard').getByText('Scores could not load.',{exact:true}).waitFor();
-      assert.equal(rosterReads,reads,'Never disguise a failed actual-score read with demo results');
-      failBoard=false;
-      model.board=resultBoard();model.board.rounds=model.board.rounds.slice(0,1);
-      await page.getByRole('button',{name:'Refresh',exact:true}).click();
-      await page.locator('#standingsStatus').getByText('Standings after round 1',{exact:true}).waitFor();
-      assert.equal(await page.locator('#leagueDemo').isVisible(),false);
-      assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),['46','38']);
-      assert.equal(rosterReads,reads,'Actual results take precedence without loading sample members');
+      await page.locator('.league-rules > summary').click();await fits();
+      model.board.rounds=model.board.rounds.slice(0,1);
       model.board.players[0].name='Calvin Santana-Vaz';
       model.board.rounds[0].results[0].points=108;model.board.rounds[0].results[0].winner=true;
       model.board.rounds[0].results[1].points=null;
@@ -923,25 +907,25 @@ function resultBoard() {
       }
       assert.equal(rpcCalls.some(name=>/league_(save|publish|complete|reset)/.test(name)),false);
       assert.deepEqual(errors,[]);
-      report.push(`PASS ${width}px: readable seven-round standings and handicap cards without sideways scrolling, round shortcut, enlarged text, member demo, hidden scores, failures and real-result precedence`);
+      report.push(`PASS ${width}px: readable seven-round standings and handicap cards without sideways scrolling, round shortcut, enlarged text, registered members, no artificial scores, failures and published results`);
       await context.close();
     }
 
     for (const admin of [false,true]) {
-      const {context,page,model,errors}=await setup(browser,{admin,width:390,memberView:false});
+      const {context,page,model,errors}=await setup(browser,{admin,width:390,legacyMemberView:false});
       model.board=resultBoard(); // Deliberately contains all seven: member UI must still fail closed.
       await page.goto(base+'scores.html');
       await page.locator('.season-player').first().waitFor();
       assert.equal(await page.locator('.season-player').count(),2);
       const totalBox = await page.locator('.season-player .player-total strong').first().boundingBox();
       assert(totalBox.x + totalBox.width <= page.viewportSize().width, 'Season total must be visible on a phone without scrolling');
-      assert.equal(await page.locator('.season-list .is-locked').count(),4,'The ordinary leaderboard always uses member visibility');
+      assert.equal(await page.locator('.season-list .is-locked').count(),admin?0:4,'Secret rounds follow the verified role');
       assert.deepEqual(await page.locator('.season-player .player-total strong').allTextContents(),['176','164']);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.locator('#roundDetails > summary').click();
       await page.locator('#leagueRound').selectOption('6');
-      await page.locator('.round-locked').waitFor();
-      assert.equal(await page.locator('.round-result-list').count(),0);
+      if(admin)await page.locator('.round-result-list').waitFor();
+      else {await page.locator('.round-locked').waitFor();assert.equal(await page.locator('.round-result-list').count(),0);}
       await page.screenshot({path:path.join(out,`leaderboard-${admin?'admin':'member'}.png`),fullPage:true});
       if(admin) {
         await page.evaluate(()=>window.barford.raw.auth.signOut());

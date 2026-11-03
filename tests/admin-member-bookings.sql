@@ -47,7 +47,7 @@ do $$declare ev bigint:=(select event_id from booking_qa); state jsonb;begin
  state:=public.baseline_league_admin();
  state:=public.baseline_league_save_handicaps((select jsonb_build_array(jsonb_build_object('user_id',m1,'handicap',20),jsonb_build_object('user_id',m2,'handicap',21),jsonb_build_object('user_id',m3,'handicap',22),jsonb_build_object('user_id',m4,'handicap',23)) from booking_qa),(state->>'revision')::integer);
  state:=public.baseline_league_save_round(ev,(select jsonb_build_array(jsonb_build_object('user_id',m1,'points',36,'status','played'),jsonb_build_object('user_id',m2,'points',35,'status','played'),jsonb_build_object('user_id',m3,'points',34,'status','played'),jsonb_build_object('user_id',m4,'points',33,'status','played')) from booking_qa),null,true,(state->>'revision')::integer);
- if not exists(select 1 from jsonb_array_elements(public.baseline_league_board()->'players') x where x->>'id'=(select m1::text from booking_qa)) then raise exception 'Offline player missing from leaderboard'; end if;
+ if exists(select 1 from jsonb_array_elements(public.baseline_league_board()->'players') x where x->>'id'=(select m1::text from booking_qa)) then raise exception 'Unregistered player appeared on leaderboard'; end if;
  update booking_qa set requested=(select requested_at from public.baseline_rsvps where id=booking_qa.rsvp_id);
 end $$;
 reset role;
@@ -61,6 +61,7 @@ do $$declare q booking_qa;begin
  if not exists(select 1 from public.baseline_rsvps where id=q.rsvp_id and user_id=q.u1 and member_id=q.m1 and attending and buggy and preferred_time='End' and requested_at=q.requested) then raise exception 'Registration did not preserve booking details'; end if;
  if not exists(select 1 from public.baseline_tee_times,jsonb_array_elements(players) p where event_id=q.event_id and p->>'user_id'=q.u1::text) then raise exception 'Registration lost tee assignment'; end if;
  if not exists(select 1 from baseline_private.league_rounds,jsonb_array_elements(results) p where event_id=q.event_id and p->>'user_id'=q.u1::text and (p->>'points')::integer=36) then raise exception 'Registration lost existing score'; end if;
+ if not exists(select 1 from jsonb_array_elements(public.baseline_league_board()->'players') x where x->>'id'=q.u1::text) then raise exception 'Registered player missing from leaderboard'; end if;
  if not exists(select 1 from public.profiles where id=q.u1 and handicap=20) then raise exception 'Starting handicap not transferred'; end if;
  if not exists(select 1 from baseline_private.charges where user_id=q.u1 and event_id=q.event_id and amount=45) then raise exception 'Registered booking has no charge'; end if;
 end $$;
