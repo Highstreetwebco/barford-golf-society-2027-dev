@@ -903,7 +903,7 @@ function resultBoard() {
       model.board.rounds[0].results[1].points=null;
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
       await page.locator('.season-player .player-name').filter({hasText:'Calvin Santana-Vaz'}).waitFor();
-      assert.equal(await page.locator('.season-player .player-played').first().innerText(),'1 round played');
+      assert.equal((await page.locator('.season-player .player-played').first().innerText()).replace(/\s+/g,' ').trim(),'1 round played');
       await page.getByRole('link',{name:'Round details',exact:true}).click();
       assert.match(await page.locator('.round-result').filter({hasText:'Derek Lewis'}).innerText(),/DNP[\s\S]*Did not play/);
       await fits();
