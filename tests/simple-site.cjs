@@ -900,8 +900,12 @@ function resultBoard() {
       assert.equal(rosterReads,reads,'Actual results take precedence without loading sample members');
       model.board.players[0].name='Calvin Santana-Vaz';
       model.board.rounds[0].results[0].points=108;model.board.rounds[0].results[0].winner=true;
+      model.board.rounds[0].results[1].points=null;
       await page.getByRole('button',{name:'Refresh',exact:true}).click();
       await page.locator('.season-player .player-name').filter({hasText:'Calvin Santana-Vaz'}).waitFor();
+      assert.equal(await page.locator('.season-player .player-played').first().innerText(),'1 round played');
+      await page.getByRole('link',{name:'Round details',exact:true}).click();
+      assert.match(await page.locator('.round-result').filter({hasText:'Derek Lewis'}).innerText(),/DNP[\s\S]*Did not play/);
       await fits();
       if(width===320 || width===1365) {
         await page.evaluate(()=>document.documentElement.style.fontSize='20px');
