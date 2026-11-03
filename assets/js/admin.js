@@ -3,7 +3,7 @@ import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
 import { eventFields, updateEventType } from "./event-fields.js?v=2027-accurate-gps-1";
 import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-admin-bookings-1";
 import { loadAccounts } from "./account-admin.js?v=2027-admin-photos-1";
-import { packPlayers, participantId } from "./tee-groups.js?v=2027-admin-bookings-1";
+import { packPlayers, participantId } from "./tee-groups.js?v=2027-guest-rsvp-1";
 import { operation } from "./operations.js?v=2027-results-1";
 import { mountSiteControls } from "./admin-site-controls.js?v=2027-admin-menu-1";
 
@@ -329,6 +329,11 @@ async function addMember() {
 }
 function editResponse(person, choices = null) {
   if (!person || !selected || responseBusy) return;
+  if (person.guest_host_id && !person.user_id && person.member_id) {
+    responseBusy=true;syncControls();
+    import('./admin-guest-rsvp.js?v=2027-guest-rsvp-1').then(({editGuestRsvp})=>editGuestRsvp(person,selected,b,async()=>{groupsLoadedFor=null;const fresh=await c.from('events').select('*').eq('id',selected.id).single();if(!fresh.error){selected=fresh.data;events=events.map(ev=>ev.id===selected.id?selected:ev);}await loadResponses();updateEventSummary();})).catch(error=>b.toast(error.message)).finally(()=>{responseBusy=false;syncControls();});
+    return;
+  }
   const id = selected.id, dialog = document.createElement("dialog");
   dialog.className = "simple-admin-dialog";
   dialog.setAttribute("aria-labelledby", "responseTitle");

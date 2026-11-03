@@ -1,40 +1,23 @@
 export const participantId = player => player?.participant_id || player?.user_id || player?.member_id;
-// Keep buggy partners together; tee preferences are best-effort around these pairs.
+// Guest/host relationships and confirmed pairs are indivisible. Never silently split them.
 export function packPlayers(players, playingPairs = []) {
   const rank = (p) => ({ First: 0, Middle: 1, End: 2 })[p.preferred_time] ?? 1;
   const ordered = [...players].sort(
     (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name),
   );
-  const paired = new Set(),
-    units = [];
-  for (const pair of playingPairs) {
-    const a = ordered.find((p) => participantId(p) === pair.first_user),
-      b = ordered.find((p) => participantId(p) === pair.second_user);
-    if (a && b && !paired.has(participantId(a)) && !paired.has(participantId(b))) {
-      units.push([a, b]);
-      paired.add(participantId(a));
-      paired.add(participantId(b));
-    }
+  const units = [], paired = new Set(), parent = new Map(ordered.map(p=>[participantId(p),participantId(p)]));
+  const root = id => { while(parent.get(id)!==id)id=parent.get(id);return id; };
+  const unite = (a,b) => { if(parent.has(a)&&parent.has(b))parent.set(root(b),root(a)); };
+  for(const pair of playingPairs)unite(pair.first_user,pair.second_user);
+  for(const guest of ordered.filter(p=>p.guest_host_id)) {
+    if(!parent.has(guest.guest_host_id))throw new Error(`${guest.name}'s inviting member is not confirmed. Resolve their RSVP before creating tee groups.`);
+    unite(guest.guest_host_id,participantId(guest));
   }
-  // Host links are preferences. Confirmed playing pairs remain indivisible.
-  for (const guest of ordered.filter((p) => p.guest_host_id)) {
-    const host = ordered.find((p) => participantId(p) === guest.guest_host_id);
-    if (!host) continue;
-    const guestUnit = units.find((u) =>
-      u.some((p) => participantId(p) === participantId(guest)),
-    ) || [guest];
-    const hostUnit = units.find((u) =>
-      u.some((p) => participantId(p) === participantId(host)),
-    ) || [host];
-    if (guestUnit === hostUnit || guestUnit.length + hostUnit.length > 4)
-      continue;
-    for (const unit of [guestUnit, hostUnit]) {
-      const i = units.indexOf(unit);
-      if (i >= 0) units.splice(i, 1);
-    }
-    const merged = [...hostUnit, ...guestUnit];
-    units.push(merged);
-    merged.forEach((p) => paired.add(participantId(p)));
+  const components = new Map();
+  for(const person of ordered) { const id=root(participantId(person));if(!components.has(id))components.set(id,[]);components.get(id).push(person); }
+  for(const unit of components.values()) {
+    if(unit.length>4)throw new Error(`The linked group for ${unit[0].name} has ${unit.length} players. A tee group holds four; review guest invitations and confirmed playing pairs.`);
+    if(unit.length>1){units.push(unit);unit.forEach(p=>paired.add(participantId(p)));}
   }
   const remaining = ordered.filter((p) => !paired.has(participantId(p)));
   const buggy = remaining.filter((p) => p.buggy);

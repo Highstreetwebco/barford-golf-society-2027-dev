@@ -1,3 +1,4 @@
+import { invitePlaceholder, mountGuestInvites } from "./guest-invites.js?v=2027-guest-rsvp-1";
 import { mountMemberTees } from "./member-tees.js?v=2027-event-day-1";
 import { openDirections } from "./event-directions.js?v=2027-event-day-1";
 import { mountTeeWeather } from "./event-weather.js?v=2027-event-day-1";
@@ -95,13 +96,14 @@ async function render(ev, count) {
     <div class="simple-next-copy"><p class="eyebrow">${e(kind)}</p><div class="home-round-title"><h2>${e(ev.name)}</h2><button type="button" class="secondary" data-event-directions>Directions to event</button></div>${course && course !== ev.name ? `<p class="muted">${e(course)}</p>` : ""}
       <dl class="simple-event-facts"><div><dt>Date</dt><dd>${e(b.date(ev.date))}</dd></div><div><dt>${ev.event_type === "social" ? "Start time" : "First tee"}</dt><dd>${e(ev.first_time || "To be confirmed")}</dd></div><div><dt>${ev.member_price != null ? "Member price" : "Price"}</dt><dd>${e(fee)}</dd></div></dl>
     </div>${image ? `<div class="simple-next-image"><img src="${image}" alt="" loading="lazy">${ev.cover_credit ? `<small>${e(ev.cover_credit)}</small>` : ""}</div>` : ""}
-    <div class="simple-next-booking">${bookingHTML(ev)}</div>
+    <div class="simple-next-booking">${bookingHTML(ev)}${invitePlaceholder(ev)}</div>
     <div class="simple-next-footer"><span class="muted">${e(slots(ev, count))}</span><a href="event.html?id=${ev.id}">Event details &amp; players <span aria-hidden="true">→</span></a></div>
   </div>`;
   const img = area.querySelector(".simple-next-image img");
   if (img) img.onerror = () => img.parentElement.remove();
   area.querySelector("[data-home-rsvp]")?.addEventListener("click", () => saveRsvp().catch(() => b.toast("Your RSVP could not open. Please try again.")));
   area.querySelector("[data-retry-booking]")?.addEventListener("click", () => load({ force: true }).catch(showError));
+  await mountGuestInvites(area.querySelector("[data-guest-invites]"), ev);
   area.querySelector("[data-event-directions]").onclick = (click) => openDirections(ev, b, click.currentTarget);
 }
 
