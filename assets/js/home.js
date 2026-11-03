@@ -1,5 +1,5 @@
 import { invitePlaceholder, mountGuestInvites } from "./guest-invites.js?v=2027-guest-rsvp-1";
-import { mountMemberTees } from "./member-tees.js?v=2027-event-day-1";
+import { mountMemberTees } from "./member-tees.js?v=2027-hole-button-1";
 import { openDirections } from "./event-directions.js?v=2027-event-day-1";
 import { mountTeeWeather } from "./event-weather.js?v=2027-event-day-1";
 import { londonToday, slots, openCourseHoles } from "./event-experience.js?v=2027-overhead-1";
@@ -127,6 +127,8 @@ async function renderTees() {
   });
   const directions = teeArea.querySelector("[data-event-directions]");
   if (directions) directions.onclick = (click) => openDirections(event, b, click.currentTarget);
+  const holeMap = teeArea.querySelector("[data-tee-hole-view]");
+  if (holeMap) holeMap.onclick = (click) => openCourseHoles(event, b, click.currentTarget);
   await mountTeeWeather(teeArea.querySelector("[data-tee-weather]"), event, teeTime, b);
 }
 
