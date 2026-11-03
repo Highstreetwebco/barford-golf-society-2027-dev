@@ -16,7 +16,7 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
    model.groups=model.responses.map((r,i)=>({event_id:999,group_number:i+1,tee_time:i?'10:08':'10:00',players:[{user_id:r.user_id,participant_id:r.user_id,name:r.name,type:'walker'}]}));
    await context.addInitScript(token=>sessionStorage.setItem('barford-2027-preview-session',token),preview);
    await context.route(backend+'/rest/v1/rpc/baseline_site_gate',route=>route.fulfill({json:{live:false,preview:true}}));
-   await context.route(backend+'/rest/v1/rpc/baseline_course_layout',route=>route.request().postDataJSON().action==='event'?route.fulfill({json:layout}):route.fulfill({status:503,json:{message:'Map preview temporarily unavailable'}}));
+   await context.route(backend+'/rest/v1/rpc/baseline_course_layout',route=>route.request().postDataJSON().action==='event'?route.fulfill({json:{layout}}):route.fulfill({status:503,json:{message:'Map preview temporarily unavailable'}}));
    let failSave=false,saves=0,lastPayload;
    await context.route(backend+'/rest/v1/baseline_events*',async route=>{
     if(route.request().method()!=='PATCH')return route.fallback();

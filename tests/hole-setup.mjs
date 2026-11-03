@@ -197,3 +197,10 @@ test('Choosing an OSM course layout automatically resumes GPS without a scorecar
   await f.setup.setCourse({...course,place_id:'new-course'});
   assert.notEqual(await f.setup.layoutId(),'retained','A changed course must never reuse the previous map');
  });
+
+test('Retrying unavailable maps cannot erase the unchanged existing link', async () => {
+ const f=mount({rpc:async()=>({error:new Error('Read failed')}),service:async()=>({status:'unavailable'})});
+ await f.setup.setEvent({...course,id:999,course_layout_id:'existing'});
+ await f.nodes.get('[data-course-prepare]').onclick();
+ assert.equal(await f.setup.layoutId(),'existing');
+});

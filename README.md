@@ -34,7 +34,7 @@ Rounds 6 and 7, their scores, wins and aggregate effects remain admin-only. The 
 
 ### Hole View
 
-Course Hole View is retained and can now be opened before the event day from Home or the event page. The existing course-layout RPC continues to enforce member/admin access and verified coordinate visibility. Mapping, GPS and camera implementation remain in the existing modules; GPS accuracy still needs a real on-course device check.
+Course Hole View is retained and can now be opened before the event day from Home or the event page. The existing course-layout RPC continues to enforce member/admin access and verified coordinate visibility. Overhead mapping and optional GPS yardages remain in the existing modules; GPS accuracy still needs a real on-course device check.
 
 ### Verification and deployment
 
@@ -194,7 +194,7 @@ Events are full-card links with the uploaded course photograph behind a short da
 
 The Welcombe regression fixture reproduces the unconfirmed tee areas at holes 4, 12 and 18. All 18 greens and numbered routes remain verified; those three starts retain explicit route-reference provenance. Missing or ambiguous greens still reject the layout.
 
-Admin previews also expose camera direction guidance for mapped greens; camera, location and compass permissions still require the user to press Start. GPS-only pars are retained from numbered map routes and labelled as map data.
+Admin previews use the same overhead satellite map. GPS-only pars are retained from numbered map routes and labelled as map data.
 
 Course preparation requests declare map_format 3. Older organiser pages receive an update-required message before provider lookups rather than an incompatible map. The service worker fetches same-site navigation and scripts with no-store so revisiting the page does not reuse cached HTML or JavaScript. Existing open forms are never automatically reloaded.
 

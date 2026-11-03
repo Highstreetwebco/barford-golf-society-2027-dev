@@ -158,7 +158,7 @@ export function mountHoleSetup(form, b) {
       if (busy) throw new Error('The course holes are still being checked. Please wait for the lookup to finish.');
       if (needsChoice) throw new Error('Choose the course and tees so GPS can be prepared for the correct holes.');
       if (draft && !confirmed) return saveLayout();
-      return confirmed?.id || null;
+      return confirmed?.id || retainedLayout || null;
     },
     async setCourse(value) { reset(value); if (course?.place_id && !social()) await prepare(); },
     setEvent(value) {
