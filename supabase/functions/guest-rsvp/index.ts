@@ -64,6 +64,8 @@ export function createHandler(env: { url: string; service: string; anon: string 
     try {
       const body = await readBody(req);
       if (!body || !['view','save','photo','remove_photo'].includes(body.action) || !uuid.test(body.token || '')) return reply({error:'This invitation is unavailable. Open the complete link from your inviting member.'},400);
+      const ip = await digest((req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown').slice(0,128));
+      if (!await call('/rest/v1/rpc/baseline_take_budget','POST',{bucket:'guest-ip:'+ip,seconds:600,maximum:300})) return reply({error:'Too many attempts. Please wait a few minutes and try again.'},429);
       const token = body.token, hash = await digest(token);
       if (!await call('/rest/v1/rpc/baseline_take_budget','POST',{bucket:'guest:'+hash,seconds:600,maximum:100})) return reply({error:'Too many attempts. Please wait a few minutes and try again.'},429);
       if (body.action === 'view') return reply(await clean(await rpc('view',{token})));
