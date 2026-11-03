@@ -23,9 +23,9 @@
     <link rel="stylesheet" href="assets/css/site.css?v=2027-admin-menu-1" />
     <link rel="stylesheet" href="assets/css/next.css?v=2027-gallery-1" />
     <link rel="stylesheet" href="assets/css/simple.css?v=2027-wordmark-1" />
-    <link rel="stylesheet" href="assets/css/simple-scores.css?v=2027-simple-1" />
+    <link rel="stylesheet" href="assets/css/simple-scores.css?v=2027-demo-1" />
     <script src="assets/js/baseline.js?v=2027-admin-menu-1" defer></script>
-    <script type="module" src="assets/js/scores.js?v=2027-simple-1"></script>
+    <script type="module" src="assets/js/scores.js?v=2027-demo-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 </head>
   <body class="simple-site page-scores">
@@ -61,6 +61,10 @@
         <p class="lede">Seven rounds. Your best five scores count.</p></div>
         <div class="actions"><a class="button" href="admin.html?tab=scoring" data-admin hidden>Enter scores</a><button id="refreshLeague" class="secondary">Refresh</button></div>
       </div>
+      <aside id="leagueDemo" class="league-demo" aria-labelledby="leagueDemoTitle" hidden>
+        <div><strong id="leagueDemoTitle">Demonstration · 3 rounds</strong><p id="leagueDemoCopy"></p></div>
+        <button id="toggleLeagueDemo" class="secondary">Show actual results</button>
+      </aside>
       <p id="leagueVisibility" class="notice" role="status">Loading the season…</p>
       <section class="panel leaderboard-panel" aria-labelledby="standingsTitle">
         <div class="leaderboard-heading"><h2 id="standingsTitle">Order of Merit</h2><p id="standingsStatus">Published results</p></div>
