@@ -37,10 +37,11 @@ body.dark-mode {
 .simple-site .segmented button.active { background: #274b62; color: #fff; }
 .simple-site .panel { box-shadow: none; border: 1px solid var(--line); }
 .simple-site .eyebrow { color: var(--green); letter-spacing: .11em; font-size: .72rem; }
-.simple-site .page-heading { background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; margin-bottom: 26px; }
+.simple-site .page-heading { background: none; color: var(--ink); border: 0; box-shadow: none; border-radius: 0; padding: 0; margin-bottom: 26px; }
 .simple-site .page-heading::after { display: none; }
+.simple-site .page-heading .eyebrow { color: var(--green); }
 .simple-site .page-heading h1 { font-size: clamp(2rem, 4vw, 2.75rem); margin: 6px 0 12px; }
-.simple-site .page-heading .lede { max-width: 680px; font-size: 1rem; }
+.simple-site .page-heading .lede { color: var(--muted); max-width: 680px; font-size: 1rem; }
 .simple-site .site-footer { max-width: 1140px; margin-top: 44px; }
 .simple-site a:focus-visible,
 .simple-site button:focus-visible,
