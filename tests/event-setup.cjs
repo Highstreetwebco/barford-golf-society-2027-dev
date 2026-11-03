@@ -192,10 +192,8 @@ async function run() {
         await f.page.locator('dialog [data-hole="4"]').click();
         assert.match(await f.page.locator('[data-distance-origin]').textContent(), /mapped start reference/i);
         assert.match(await f.page.locator('[data-hole-stats]').textContent(), /Par \(map\)4/);
-        await f.page.locator('[data-find-green]').click();
-        await f.page.locator('[data-finder-start]').waitFor({ state: "visible" });
-        assert.match(await f.page.locator('[data-finder-course]').textContent(), /Hole 4/);
-        await f.page.locator('[data-finder-close]').click();
+        assert.equal(await f.page.locator('[data-find-green]').count(), 0);
+        assert(await f.page.locator('[data-hole-map]').isVisible());
         await f.page.locator('[data-hole-close]').click();
         await saveEvent(f);
         assert.equal(f.model.savedCourseLayouts.length, 1);

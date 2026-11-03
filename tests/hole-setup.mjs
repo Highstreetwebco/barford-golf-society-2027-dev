@@ -87,7 +87,7 @@ test('Existing events without GPS prepare automatically', async () => {
 test('Valid linked maps load without another provider lookup or map write', async () => {
   const linked = { ...mapped, id: 'existing', holes: mapped.holes.map(h => ({ ...h, reviewed: true })) };
   const f = mount({ rpc: async action => { assert.equal(action, 'get'); return { data: linked }; } });
-  await f.setup.setEvent({ ...course, course_layout_id: 'existing' });
+  await f.setup.setEvent({ ...course, id: 999, course_layout_id: 'existing' });
   assert.equal(await f.setup.layoutId(), 'existing');
   assert.equal(f.requests.length, 0);
 });
@@ -99,10 +99,10 @@ test('An incomplete linked map triggers fresh preparation', async () => {
   assert.equal(f.nodes.get('[data-preview-layout]').hidden, false);
 });
 
-test('A linked map read failure blocks saving instead of deleting the GPS link', async () => {
+test('An unchanged saved map survives a preview read failure while editing event details', async () => {
   const f = mount({ rpc: async () => ({ error: new Error('Read failed') }) });
-  await f.setup.setEvent({ ...course, course_layout_id: 'existing' });
-  await assert.rejects(f.setup.layoutId(), /saved maps could not load/);
+  await f.setup.setEvent({ ...course, id: 999, course_layout_id: 'existing' });
+  assert.equal(await f.setup.layoutId(), 'existing');
   assert.equal(f.requests.length, 0);
 });
 
@@ -187,3 +187,13 @@ test('Choosing an OSM course layout automatically resumes GPS without a scorecar
   assert.equal(f.requests[1].layout_name, 'South');
   assert.equal(f.requests[1].scorecard_key, undefined);
 });
+
+ test('Existing event metadata saves without waiting for an unchanged map preview', async () => {
+  const held=deferred(),f=mount({rpc:()=>held.promise});
+  const loading=f.setup.setEvent({...course,id:999,course_layout_id:'retained'});
+  assert.equal(await f.setup.layoutId(),'retained');
+  held.resolve({error:new Error('Unavailable')});await loading;
+  assert.equal(await f.setup.layoutId(),'retained');
+  await f.setup.setCourse({...course,place_id:'new-course'});
+  assert.notEqual(await f.setup.layoutId(),'retained','A changed course must never reuse the previous map');
+ });

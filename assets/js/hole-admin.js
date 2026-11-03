@@ -1,4 +1,4 @@
-import { openHolePicker } from './hole-view.js?v=2027-par-camera-1';
+import { openHolePicker } from './hole-view.js?v=2027-overhead-1';
 
 const point = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
 export function completeCourseMap(layout) {
@@ -41,6 +41,7 @@ export function mountHoleSetup(form, b) {
   form.querySelector('.actions.full').before(section);
   const $ = selector => section.querySelector(selector), select = $('[data-scorecard-choice]'), hidden = $('[name=course_layout_id]'), message = $('[data-course-preparation]'), status = $('[data-layout-status]');
   let course = null, draft = null, confirmed = null, cards = [], layouts = [], key = '', layoutName = '', sequence = 0, busy = false, loadFailed = false, needsChoice = false, pending = Promise.resolve();
+  let retainedLayout = null, preserveLayout = false;
   const social = () => form.elements.event_type.value === 'social';
   function render() {
     section.hidden = social();
@@ -59,6 +60,7 @@ export function mountHoleSetup(form, b) {
     draft = confirmed = null; hidden.value = ''; status.textContent = '';
   }
   function reset(value = null) {
+    retainedLayout = null; preserveLayout = false;
     sequence++; busy = false; loadFailed = false; needsChoice = false; pending = Promise.resolve(); course = courseDetails(value);
     clear(); cards = []; layouts = []; key = layoutName = ''; $('[data-scorecard-warnings]').hidden = true; select.innerHTML = '<option value="">Choose the course and tees</option>';
     message.textContent = course?.place_id ? 'Preparing GPS for this course…' : 'Choose the course above to set up GPS automatically.';
@@ -115,6 +117,7 @@ export function mountHoleSetup(form, b) {
     } finally { if (token === sequence) { busy = false; render(); } }
   }
   select.onchange = () => {
+    preserveLayout = false;
     const value = select.value;
     key = value.startsWith('layout:') ? '' : value;
     layoutName = value.startsWith('layout:') ? decodeURIComponent(value.slice(7)) : '';
@@ -122,7 +125,7 @@ export function mountHoleSetup(form, b) {
     if (key || layoutName) prepare(key, layoutName);
     else { sequence++; busy = false; needsChoice = true; pending = Promise.resolve(); message.textContent = 'Choose the course and tees to prepare GPS automatically.'; render(); }
   };
-  $('[data-course-prepare]').onclick = () => prepare();
+  $('[data-course-prepare]').onclick = () => { preserveLayout = false; return prepare(); };
   $('[data-preview-layout]').onclick = () => {
     if (draft && !busy) openHolePicker({ name: `${draft.name} · ${draft.tee_name}` }, b, draft);
   };
@@ -149,6 +152,7 @@ export function mountHoleSetup(form, b) {
   return {
     async layoutId() {
       if (social()) return null;
+      if (preserveLayout) return retainedLayout;
       await pending;
       if (loadFailed) throw new Error('The event’s saved maps could not load. Select the event again or find fresh hole positions before saving.');
       if (busy) throw new Error('The course holes are still being checked. Please wait for the lookup to finish.');
@@ -159,6 +163,8 @@ export function mountHoleSetup(form, b) {
     async setCourse(value) { reset(value); if (course?.place_id && !social()) await prepare(); },
     setEvent(value) {
       reset(value);
+      retainedLayout = value?.course_layout_id || null;
+      preserveLayout = !!value?.id && !!retainedLayout;
       if (social() || !course?.place_id) return Promise.resolve();
       if (!value?.course_layout_id) return prepare();
       pending = loadEvent(value);
@@ -174,7 +180,7 @@ export function mountHoleSetup(form, b) {
           confirmed = draft = linked; hidden.value = linked.id;
           message.textContent = `GPS loaded for ${linked.name} · ${linked.tee_name}.`;
         } else await prepare();
-      } catch (error) { if (token === sequence) { loadFailed = true; message.textContent = `The course maps could not load: ${error.message}`; } }
+      } catch (error) { if (token === sequence) { loadFailed = true; message.textContent = `The map preview could not load: ${error.message}. Your saved map will be kept when you save event details.`; } }
       finally { if (token === sequence) { busy = false; render(); } }
   }
 }

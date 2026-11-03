@@ -207,3 +207,12 @@ In Admin → RSVPs, Add member records a booking for any existing roster member,
 Offline attendees use a roster identity, never a fabricated authentication account. Registration links their existing RSVP, queue position, tee assignment and scores. Offline starting handicaps can be entered under Members. Account-based online payments and buggy booking ownership become available after registration; their attendance and buggy request are visible immediately.
 
 Run `tests/admin-member-bookings.sql` transactionally to verify booking, capacity, registration inheritance, scoring and authorization. All test records roll back. Browser checks are in the existing GitHub Actions workflow.
+
+
+### Editing published events and overhead Hole View
+
+Admin → Event details stays editable after tee groups are published. Saving a changed first tee time shifts the saved groups together, preserving custom gaps; changing the gap spaces those same groups from the first tee. The database commits event and tee updates together, rejects times that cross midnight, keeps player/guest assignments and any existing player-review warning, and records member time-change notices. Published group edits also update the event’s first tee time and uniform interval. Existing agreed booking charges remain unchanged. Round identity with saved scores and conversion of booked golf events to social events remain protected.
+
+A failed preview read no longer blocks editing an event with an unchanged saved course map. Pending draft group edits remain in the editor when event details are saved. Hole View now contains only the overhead satellite map, rotation, optional live GPS yardages, tap-to-measure targets and hole navigation; the camera/compass green finder has been removed.
+
+Verification: `tests/editable-events.sql` runs synthetic rollback-only database scenarios; `tests/editable-events.cjs` covers 320px, 390px and desktop in the existing CI browser environment. `tests/hole-setup.mjs` covers retained maps and failed/late lookups.
