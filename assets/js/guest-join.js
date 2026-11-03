@@ -1,102 +1,61 @@
-import { guestAction } from "./guest-invites.js?v=2027-results-1";
-import {
-  photoPickerHTML,
-  wirePhotoPicker,
-  savePhoto,
-} from "./member-photos.js?v=2027-results-1";
-const b = await window.barfordReady,
-  e = b.escape,
-  area = document.getElementById("guestJoin");
-const token = location.hash.slice(1);
-async function render() {
-  if (!/^[a-f0-9-]{36}$/i.test(token)) {
-    area.innerHTML =
-      "<h2>Invitation not found</h2><p>Open the complete link sent by your host.</p>";
-    return;
-  }
-  const invite = await guestAction("view", { token });
-  if (!["open", "joined"].includes(invite.status)) {
-    area.innerHTML = `<h2>${invite.status === "used" ? "This invitation has been used" : invite.status === "closed" ? "Bookings are closed" : "Invitation unavailable"}</h2><p>Ask your host for help or sign in if you already joined.</p><a class="button" href="account.html">Sign in</a>`;
-    return;
-  }
-  document.querySelector("h1").textContent =
-    `You’re invited to ${invite.event_name}.`;
-  const eventURL = `event.html?id=${invite.event_id}`;
-  if (invite.status === "joined") {
-    area.innerHTML = `<h2>You’ve joined this round</h2><p>Your RSVP is saved. You can view your booking, payment details and tee group on the event page.</p><a class="button" href="${eventURL}">View your round</a><a class="button secondary" href="index.html">Go to homepage</a>`;
-    return;
-  }
-  const golf = invite.event_type !== "social";
-  area.innerHTML = `<p class="eyebrow">INVITED BY ${e(invite.host_name)}</p><h2>${e(b.date(invite.date))}</h2><p>${e(invite.location || "")}${invite.first_time ? ` · ${golf ? "First tee" : "Starts"} ${e(invite.first_time)}` : ""}</p><p class="notice"><strong>Guest price: ${invite.guest_price == null ? "To be confirmed" : b.money(invite.guest_price)}</strong>${invite.payment_due ? ` · Pay by ${e(b.date(invite.payment_due))}` : ""}</p><p>${invite.waiting ? "This round is currently full. Join the waiting list; you will not be charged until a place is confirmed." : "Joining adds you to this round, subject to places still being available."} We’ll try to place you with ${e(invite.host_name)}.</p>${invite.guest_price == null ? "<p>The organiser must set the guest price before you can join.</p>" : `<form class="form-stack" id="guestForm"><h3>${b.state.user ? "Join with your account" : "Create your guest account"}</h3>${b.state.user ? `<p>Signed in as <strong>${e(b.state.profile?.full_name)}</strong>. <a href="account.html">Use a different account</a></p>` : `<label>Full name<input name="full_name" autocomplete="name" required minlength="2" maxlength="150"></label><small>Your full name will be your username. Use it with your password next time.</small><label>Contact number<input name="phone" type="tel" autocomplete="tel" required minlength="10" maxlength="25"></label><small>Visible to organisers and your assigned buggy partner.</small><label>Create a password<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>`}${golf ? `<label>Your current handicap<input name="guest_handicap" type="number" inputmode="decimal" min="0" max="54" step="0.1" required value="${e(b.state.profile?.handicap ?? "")}"></label><small>The committee approves new society handicaps before play. Existing society handicaps continue to apply.</small><label class="check"><input type="checkbox" name="buggy"> I need a buggy</label><label for="guestPreferred">Preferred tee time</label><select id="guestPreferred" name="preferred_time"><option value="">No preference</option><option>First</option><option>Middle</option><option>End</option></select>` : ""}<div data-photo>${photoPickerHTML()}</div>${invite.cancellation_terms ? `<div class="notice preserve-lines">${e(invite.cancellation_terms)}</div><label class="check"><input name="accept_terms" type="checkbox" required> I accept the cancellation terms</label>` : ""}<button type="submit">${b.state.user ? "Join this round" : invite.waiting ? "Create account & join waiting list" : "Create account & join round"}</button><p class="form-status" role="status"></p>${!b.state.user ? '<p>Already have an account? <button type="button" class="text-button" data-sign-in>Sign in to join</button></p>' : ""}</form>`}`;
-  const form = area.querySelector("form");
-  if (!form) return;
-  const portrait = wirePhotoPicker(form.querySelector("[data-photo]"));
-  form.querySelector("[data-sign-in]")?.addEventListener("click", async () => {
-    if (await b.signIn()) await render();
-  });
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    b.submit(form, async () => {
-      const f = new FormData(form),
-        photo = await portrait();
-      const payload = {
-        token,
-        guest_token: token,
-        guest_price: invite.guest_price,
-        guest_handicap: f.get("guest_handicap") || null,
-        buggy: f.has("buggy"),
-        preferred_time: f.get("preferred_time") || null,
-        accept_terms: f.has("accept_terms"),
-        terms_snapshot: invite.cancellation_terms,
-      };
-      let user = b.state.user;
-      if (!user) {
-        const { data, error } = await b.raw.auth.signUp({
-          email: `member-${crypto.randomUUID()}@members.barford2027.invalid`,
-          password: String(f.get("password")),
-          options: {
-            data: {
-              ...payload,
-              full_name: String(f.get("full_name")).trim(),
-              phone: String(f.get("phone")).trim(),
-              name_confirmation: true,
-            },
-          },
-        });
-        if (error)
-          throw new Error(
-            error.message.includes("Database")
-              ? "We could not create this account. If your name or mobile is already registered, sign in instead. Otherwise refresh the invite to check the price and availability."
-              : error.message,
-          );
-        if (!data.session)
-          throw new Error(
-            "Your account was created but needs organiser help to sign in. Do not create another account.",
-          );
-        user = data.user;
-      } else await guestAction("join", payload);
-      let photoMessage = "";
-      if (photo) {
-        try {
-          await savePhoto(
-            photo,
-            user.id,
-            b.state.profile?.baseline_avatar_path,
-          );
-        } catch {
-          photoMessage =
-            " Your booking is saved, but your photo could not upload. Add it later in My account.";
-        }
-      }
-      await b.refresh();
-      const mine = await guestAction("mine"),
-        booking = (mine.bookings || []).find(
-          (x) => x.event_id === invite.event_id,
-        );
-      area.innerHTML = `<h2>${booking?.reserve ? "You’re on the waiting list" : "You’re booked as a guest"}</h2><p>${booking?.reserve ? "No payment is due until your place is confirmed." : "Your account and RSVP are saved. View the bank details and payment reference on your round page."}${e(photoMessage)}</p><p>Your username is <strong>${e(b.state.profile?.full_name)}</strong>. This device remembers your sign-in.</p><a class="button" href="${eventURL}">View round & payment details</a><a class="button secondary" href="index.html">Go to homepage</a>`;
-    });
-  };
+import {photoPickerHTML,wirePhotoPicker} from './photo-input.js?v=2027-guest-rsvp-1';
+import {guestFields,guestPayload,wireTerms} from './guest-form.js?v=2027-guest-rsvp-1';
+import {calendarLinks,calendarICS} from './event-calendar.js?v=2027-guest-rsvp-1';
+const area=document.getElementById('guestJoin'), title=document.getElementById('guestTitle');
+const token=location.hash.slice(1), endpoint='https://xspzmthygrajzktydvvj.supabase.co/functions/v1/guest-rsvp';
+const e=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const date=value=>new Date(value+'T12:00:00Z').toLocaleDateString('en-GB',{timeZone:'Europe/London',weekday:'short',day:'numeric',month:'long',year:'numeric'});
+const money=value=>new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(value);
+let invite,dirty=false,busy=false;
+window.addEventListener('beforeunload',event=>{if(dirty||busy){event.preventDefault();event.returnValue='';}});
+async function action(name,payload={}) {
+  const response=await fetch(endpoint,{method:'POST',headers:{apikey:'sb_publishable_xLM39PjQf4XdTVfNHFOzAQ_i4re6w_c','Content-Type':'application/json'},body:JSON.stringify({action:name,token,...payload}),signal:AbortSignal.timeout(20000)});
+  const data=await response.json();if(!response.ok||data.error)throw new Error(data.error||'Your RSVP could not be saved. Please try again.');return data;
 }
-render().catch((err) => {
-  area.innerHTML = `<h2>Invitation could not load</h2><p>${e(err.message)}</p><button onclick="location.reload()">Try again</button>`;
-});
+function eventDetails() {
+  title.textContent=`You’ve been invited to ${invite.event_name}`;
+  document.title=invite.event_name+' guest invitation | Barford Golf Society';
+  return `<p class="eyebrow">INVITED BY ${e(invite.host_name)}</p><div class="guest-event-facts"><p><strong>${e(date(invite.date))}</strong></p><p>${e(invite.address||invite.location||'Venue details to follow')}</p><p>${invite.guest_price==null?'Guest price: <strong>To be confirmed</strong>. Your inviting member will confirm any cost before payment.':`Guest price <strong>${money(invite.guest_price)}</strong>`}${invite.payment_due?` · Payment due ${e(date(invite.payment_due))}`:''}</p></div>`;
+}
+function focusHeading(){area.querySelector('h2')?.focus({preventScroll:true});}
+function showForm() {
+  const joined=invite.status==='joined';dirty=false;
+  area.innerHTML=eventDetails()+`<h2 tabindex="-1">${joined?'Edit your RSVP':'Join the event'}</h2><p>No account or password needed. ${invite.event_type!=='social'?`You’ll be grouped with ${e(invite.host_name)} when both of you have confirmed places.`:''}</p>${!joined&&invite.waiting?'<p class="notice">The event is full. Your RSVP will join the waiting list; it is not a confirmed place.</p>':''}<form id="guestForm" class="form-stack">${guestFields(invite,e,date)}${invite.photo_url?`<img class="photo-preview" src="${e(invite.photo_url)}" alt="Your current profile photo"><label class="check"><input type="checkbox" name="remove_photo">Remove current photo</label>`:''}<div data-photo>${photoPickerHTML()}</div><p class="muted">Keep this invitation private. Anyone with its link can view and edit this RSVP before the deadline.</p><div class="actions"><button type="submit">${joined?'Save RSVP':invite.waiting?'Join waiting list':'RSVP to event'}</button>${joined?'<button type="button" class="secondary" data-back>Back to confirmation</button>':''}</div><p class="form-status" role="status"></p><button type="button" class="text-button" data-reload hidden>Reload latest RSVP</button></form>`;
+  const form=area.querySelector('form'), selected=wirePhotoPicker(form.querySelector('[data-photo]')), status=form.querySelector('.form-status');
+  wireTerms(form);form.addEventListener('input',()=>dirty=true);
+  form.querySelector('[data-back]')?.addEventListener('click',()=>{if(!dirty||confirm('Discard your unsaved changes?'))showConfirmation();});
+  form.querySelector('[data-reload]').onclick=async()=>{if(!dirty||confirm('Reload and discard unsaved changes?')){dirty=false;await load();}};
+  form.onsubmit=async event=>{
+    event.preventDefault();if(busy||!form.reportValidity())return;
+    busy=true;form.inert=true;status.textContent='Saving your RSVP…';
+    try {
+      const photo=await selected(),payload=guestPayload(form,invite),remove=form.elements.remove_photo?.checked;
+      invite=await action('save',{payload});dirty=false;
+      let warning='';
+      if(photo||remove){
+        try {
+          if(photo){const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(photo);});invite=await action('photo',{photo:data});}
+          else invite=await action('remove_photo');
+        }catch{warning='Your RSVP is saved, but the photo change failed. Use Edit RSVP to try adding or removing it again.';}
+      }
+      showConfirmation(warning,true);
+    }catch(error){status.textContent=error.message||'Could not save. Please try again.';form.querySelector('[data-reload]').hidden=false;}
+    finally{busy=false;form.inert=false;}
+  };
+  focusHeading();
+}
+function showConfirmation(warning='',saved=false) {
+  dirty=false;
+  const joined=invite.status==='joined',confirmed=invite.attending&&!invite.reserve,withdrawn=joined&&!invite.attending&&!invite.reserve;
+  const heading=invite.cancelled?'Event cancelled':!joined?'Guest bookings are closed':withdrawn?'Your RSVP has been withdrawn':invite.reserve?'You’re on the waiting list':saved?'You’ve successfully RSVP’d':'Your RSVP is confirmed';
+  area.innerHTML=eventDetails()+`<div class="guest-confirmation"><span class="guest-confirm-mark" aria-hidden="true">${confirmed&&!invite.cancelled?'✓':'•'}</span><h2 tabindex="-1">${heading}</h2>${joined?`<p><strong>${e(invite.full_name)}</strong></p>`:''}<p>${invite.cancelled?'Please contact your inviting member about the cancellation.':!joined?'Ask your inviting member to contact the admins if you would like to join.':withdrawn?'Your place is no longer reserved. Any cancellation charges are subject to the event terms.':invite.reserve?'Your response is saved, but your place is not confirmed. No payment is due until a place is confirmed. Your inviting member can check with the admins.':`Your place is saved.${invite.event_type!=='social'?` You’ll be in ${e(invite.host_name)}’s tee group when both of you are playing.`:''}`}</p>${invite.tee_time&&confirmed?`<p class="notice">Your tee time: <strong>${e(invite.tee_time)}</strong> (UK time)</p>`:''}</div>${warning?`<p class="notice" role="status">${e(warning)}</p>`:''}${confirmed&&!invite.cancelled?'<section data-calendar class="guest-calendar"><h3>Save to calendar</h3></section>':''}<p class="guest-deadline">${invite.editable?`You can edit until 00:00 UK time on <strong>${e(date(invite.cutoff_date))}</strong>.`:'Online guest edits are closed.'} After the 10-day cutoff, ask ${e(invite.host_name)} to contact the admins for changes.</p>${invite.editable&&joined&&!invite.cancelled?'<button type="button" data-edit>Edit RSVP</button>':''}<p class="muted">Return using the same link in your invitation message. Keep it private: it gives access to your booking.</p>`;
+  area.querySelector('[data-edit]')?.addEventListener('click',showForm);
+  const calendar=area.querySelector('[data-calendar]');
+  if(calendar){const links=calendarLinks(invite);calendar.insertAdjacentHTML('beforeend',`<div class="actions"><a class="button secondary" target="_blank" rel="noopener noreferrer" href="${e(links.google)}">Google Calendar</a><button type="button" class="secondary" data-ics>Apple / download calendar</button><a class="button secondary" target="_blank" rel="noopener noreferrer" href="${e(links.outlook)}">Outlook</a></div>${links.allDay?'<p class="muted">Saved as an all-day event until your individual tee time is published. Check with your inviting member before travelling.</p>':''}`);calendar.querySelector('[data-ics]').onclick=()=>{const url=URL.createObjectURL(new Blob([calendarICS(invite)],{type:'text/calendar;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='barford-event.ics';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);};}
+  focusHeading();
+}
+async function load(){
+  try{if(!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(token))throw new Error('Open the complete invitation link sent by your inviting member.');invite=await action('view');if(invite.status==='open'&&invite.booking_open&&!invite.cancelled)showForm();else showConfirmation();}
+  catch(error){area.innerHTML=`<h2 tabindex="-1">Invitation unavailable</h2><p>${e(error.message||'Check your connection and try again.')}</p><button data-retry>Try again</button>`;area.querySelector('[data-retry]').onclick=load;focusHeading();}
+}
+await load();
