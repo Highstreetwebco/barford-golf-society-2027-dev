@@ -701,7 +701,7 @@ function resultBoard() {
       assert.equal(await page.locator('header img.brand-lockup').count(),1,'Member header uses the same new Barford emblem');
       await page.locator('header img.brand-lockup').evaluate(img => img.decode());
       assert.equal(await page.locator('.more-nav').count(),0);
-      assert(await page.locator('a[data-admin]:visible').count()>0);
+      assert.equal(await page.locator('a[data-admin]:visible').count(),0,'Ordinary members do not receive admin controls');
       assert.equal(await page.locator('#homeHoles').count(),1);
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
       await page.screenshot({path:path.join(out,`home-${width}.png`),fullPage:true});

@@ -2,7 +2,7 @@
 
 Production site: https://barfordgolf.co.uk/
 
-The domain serves the **Coming soon** page until Jack launches it. Enter the admin preview password to open the preparation view. The authenticated **Admin** page has **Make live for everyone**; it asks for the password again and updates one shared Supabase release flag. Cancel or an incorrect password keeps the site closed. After publication, every visitor passes directly to the homepage, including fresh devices. Member and administrator account permissions remain separate from preview access. Member pages show no preview banner or launch controls. Admin accounts default to the ordinary member view outside Admin: editing links, photo deletion and private rounds are hidden. The Member view switch in Admin saves a preference for the current account on this device; it never changes the account role. Admin remains available directly at `admin.html` without signing out.
+The domain serves the **Coming soon** page until Jack launches it. Enter the admin preview password to open the preparation view. The authenticated **Admin** page has **Make live for everyone**; it asks for the password again and updates one shared Supabase release flag. Cancel or an incorrect password keeps the site closed. After publication, every visitor passes directly to the homepage, including fresh devices. Member and administrator account permissions remain separate from preview access. Member pages show no preview banner or launch controls. Verified admin accounts have full editing, gallery management and private-round access on every page. Presentation-only view restrictions and switches have been removed. The dashboard remains available through Menu → Admin dashboard and directly at `admin.html`.
 
 The existing password is stored as a bcrypt hash in `baseline_private.preview_access`; it is never committed to this repository. Preview sessions expire after 12 hours. Password attempts are limited. The launch flag, password hashes and session hashes have no direct browser access. A PostgREST pre-request hook blocks all other Data API routes while closed unless the request carries a valid preview token. The `baseline-services` Edge Function applies the same gate before its existing action checks. Scheduled public weather refresh pauses until launch.
 
@@ -10,7 +10,7 @@ GitHub Pages and this repository still serve public static source files. The gat
 
 `tests/launch-control.sql` exercises the real release flag, token expiry, throttling and direct-API guard inside a rollback transaction using a temporary fixture password. It never publishes the real site. The current browser suite uses isolated mocks to test the complete preview-to-launch journey and fresh visitors.
 
-## Current workflow · October 2026
+## Current workflow · November 2026
 
 The 2027 site keeps the established navy, cream and tan identity and uses a small set of member journeys. Home leads with the next upcoming event, its date, tee time and booking action. The welcome message and shortcuts for **RSVP**, **Leaderboard**, **Course hole view** and **All events** follow below. Admins also see **Enter scores**. Gallery is available from the five-tab mobile navigation and the main menu, with a photo grid, swipe/arrow viewer and the existing member uploads. Shop, trips and the old payment screens are no longer part of the site navigation; their old page URLs return to the core pages. Existing stored records are not deleted by the simplification.
 
@@ -28,13 +28,21 @@ The score grid accepts each player's **total Stableford points for 18 holes**. *
 
 ### Leaderboard and private rounds
 
-The season table shows all seven columns and sums each player's best five published scores. Four or fewer scores all count; six scores drop the lowest; seven scores drop the lowest two. Equal points use round wins, then equal rank. Tied round winners require organiser countback selection.
+Only registered, enabled society accounts appear on the leaderboard. Before the first published round, registered members have blank positions and points; no demonstration results or roster-name fallback is generated. Account creation adds the member automatically. Offline attendees remain available in Admin, and registration transfers their bookings and any recorded scores.
+
+The responsive season list shows all seven rounds without sideways scrolling and sums each player's best five published scores. Four or fewer scores all count; six scores drop the lowest; seven scores drop the lowest two. Equal points use round wins, then equal rank. Tied round winners require organiser countback selection.
 
 Rounds 6 and 7, their scores, wins and aggregate effects remain admin-only. The database returns only published rounds 1–5 to members and anonymous viewers. The member table uses blurred dummy marks, never hidden scores in CSS, HTML, data attributes or totals. The client also applies its current viewer limit and clears previously rendered scores during refresh and sign-out. Round 7 playing handicaps remain protected because they could expose round 6 adjustments.
 
 ### Hole View
 
 Course Hole View is retained and can now be opened before the event day from Home or the event page. The existing course-layout RPC continues to enforce member/admin access and verified coordinate visibility. Overhead mapping and optional GPS yardages remain in the existing modules; GPS accuracy still needs a real on-course device check.
+
+### Season reset
+
+The authorised post-presentation reset removes 2027 events and their dependent bookings, tee groups, weather, guest invitations and event operations. Three setup/guest roster entries are removed; genuine member names remain available for registration. The only existing account, its admin role and profile, gallery images, reusable course maps and launch configuration are preserved.
+
+The one-time operation uses a guarded transaction and stores a recovery snapshot in `baseline_private.season_reset_archives`, which denies browser roles all access. It does not expose a repeatable reset action in the app. The migration only changes leaderboard eligibility and creates the private archive table; it does not automatically delete data. `tests/season-readiness.sql` and `tests/admin-member-bookings.sql` check registration, offline bookings and archive permissions with rollback-only fixtures.
 
 ### Verification and deployment
 
