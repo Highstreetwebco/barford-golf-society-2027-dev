@@ -53,6 +53,11 @@ const layout = { name: 'Test course', tee_name: 'Yellow', source: { attribution:
       assert.ok(Number(await page.locator('[data-distance="green"]').innerText()) < before);
       assert.match(await page.locator('[data-gps-status]').innerText(), /GPS ±5 yd/);
       await dialog.screenshot({ path: path.join(out, `hole-live-${viewport.width}x${viewport.height}.png`) });
+      await page.evaluate(() => google.maps.event.trigger(window.__maps.instances[0], 'click', { latLng: new google.maps.LatLng(52.0025, -1.5) }));
+      const target = page.locator('[data-target-distances]'); await target.waitFor();
+      const targetBox = await target.boundingBox();
+      assert.ok(targetBox.x + targetBox.width <= viewport.width - 64, 'Tapped-target details must leave the map zoom controls clear');
+      await page.locator('[data-clear-target]').click(); assert.equal(await target.isVisible(), false);
       await page.locator('[data-hole-next]').click(); assert.equal(await page.locator('[data-hole-title]').innerText(), 'Hole 2');
       assert.equal(await page.evaluate(() => gpsWatches), 1);
 

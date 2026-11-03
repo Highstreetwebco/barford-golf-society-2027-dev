@@ -60,9 +60,9 @@ html.has-hole-dialog,html.has-hole-dialog body{overflow:hidden}
 .is-hole-view .hole-map-pin-green{width:18px;height:18px;background:#66b54f;border:3px solid #fff}
 .is-hole-view .hole-map-pin-player{width:19px;height:19px;background:#009eff;border:3px solid #fff;box-shadow:0 0 0 11px #009eff33,0 1px 5px #0004}
 .is-hole-view .hole-map-pin-target{width:16px;height:16px;background:#ffd66d}
-.is-hole-view .hole-target-distances{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:16px;max-width:calc(100% - 24px);box-sizing:border-box;width:max-content;margin:0;padding:9px 12px;border:1px solid #ffe6a2;border-radius:14px;background:#102f46f2;color:#e7f1f7;font-size:.67rem;box-shadow:0 3px 16px #0004}
+.is-hole-view .hole-target-distances{position:absolute;left:12px;bottom:38px;z-index:3;display:flex;align-items:center;gap:16px;max-width:calc(100% - 88px);box-sizing:border-box;width:max-content;margin:0;padding:9px 12px;border:1px solid #ffe6a2;border-radius:14px;background:#102f46f2;color:#e7f1f7;font-size:.67rem;box-shadow:0 3px 16px #0004}
 .is-hole-view .hole-target-distances strong{color:#ffe18d;font-size:1rem}
-.is-hole-view .hole-target-distances button{padding:7px;width:36px;min-height:36px;background:transparent;border:1px solid #ffffff50;border-radius:50%;color:#fff;box-shadow:none}
+.is-hole-view .hole-target-distances button{padding:9px;width:44px;min-height:44px;background:transparent;border:1px solid #ffffff50;border-radius:50%;color:#fff;box-shadow:none}
 .hole-dialog button:focus-visible{outline:3px solid #f2c86a;outline-offset:2px}
 @media(max-width:360px){.is-hole-view .hole-dialog-top{gap:8px}.is-hole-view .hole-heading{gap:7px}.is-hole-view .hole-heading h2{font-size:1.2rem}.is-hole-view [data-hole-grid-back]{padding:8px 10px}.hole-readout{top:12px;right:10px;min-width:118px;padding:10px 10px 6px}.hole-live-yardage strong{font-size:2.35rem}}
 @media(orientation:landscape) and (max-height:500px){.hole-dialog.is-hole-view .hole-dialog-top{min-height:52px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:4px}.is-hole-view .hole-navigation{padding-top:2px;padding-bottom:0}.is-hole-view .hole-map-attribution{padding-top:0;font-size:8px}.hole-readout{top:10px;padding-top:8px}.hole-live-yardage strong{font-size:2.2rem}}

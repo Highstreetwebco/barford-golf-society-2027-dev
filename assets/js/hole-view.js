@@ -44,7 +44,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     gps.setAttribute("aria-label",wanted?"GPS active. Pause live distances":"Use GPS for live distances");
     gps.title=mode==="away"?"Live yardage appears within 1,000 yards of this hole.":mode==="inaccurate"?"Waiting for GPS accuracy of 20 metres or better.":wanted?"Pause live distances":"Allow location to see your distance to the green centre.";
     const targetPanel=$("[data-target-distances]");targetPanel.hidden=!live||!target;
-    if(live&&target)targetPanel.innerHTML=`<span>To target <strong>${yardsBetween(fix.point,target)} yd</strong></span><span>Then green <strong>${yardsBetween(target,selected.green)} yd</strong></span><button type="button" data-clear-target aria-label="Clear target">${cross}</button>`;
+    if(live&&target)targetPanel.innerHTML=`<span>To target <strong>${yardsBetween(fix.point,target)} yd</strong></span><button type="button" data-clear-target aria-label="Clear target">${cross}</button>`;
     targetPanel.querySelector("button")?.addEventListener("click",()=>{target=null;controller?.setTarget(null);updateDistances();});
   }
   function stopWatching(){watchGeneration++;if(watch!==null){navigator.geolocation?.clearWatch(watch);watch=null;}fix=null;updateDistances();}
