@@ -22,6 +22,7 @@ jobs:
       - run: node tests/guest-rsvp.mjs
       - run: node tests/event-day.mjs
       - run: node tests/editable-events.cjs
+      - run: node tests/gps-lookup.cjs
       - run: node tests/simple-site.cjs
       - run: node tests/guest-site.cjs
       - run: node tests/course-mapping.mjs

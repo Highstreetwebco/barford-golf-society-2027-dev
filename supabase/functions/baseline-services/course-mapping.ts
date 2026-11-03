@@ -162,7 +162,7 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   if (matching.length !== 1) throw new CourseMappingError('COURSE_BOUNDARY_UNCONFIRMED', matching.length ? 'More than one course boundary matches this venue. The hole map has not been produced.' : 'The selected course boundary could not be confirmed. The hole map has not been produced.');
   const selected = matching[0];
   const inCourse = (p: Point) => selected.outer.some(g => contains(p, g)) && !selected.inner.some(g => contains(p, g));
-  const rows: Array<{ id?: number; number: number; label: string; g: Point[]; par: number | null; si: number | null; yards: number | null }> = [];
+  const rows: Array<{ id?: number; number: number; label: string; g: Point[]; lengthYards: number; par: number | null; si: number | null; yards: number | null }> = [];
   for (const e of elements) {
     if (e.tags?.golf !== 'hole') continue;
     const n = integer(e.tags.ref, 1, 18), g = geometry(e);
@@ -171,7 +171,7 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
     if (g.some(p => !inCourse(p))) continue;
     const length = routeLength(g);
     if (length < 25 || length > 1100) continue;
-    rows.push({ id: e.id, number: n, label: layoutLabel(e.tags), g, par: integer(e.tags.par, 3, 6), si: integer(e.tags.handicap ?? e.tags.stroke_index, 1, 18), yards: integer(e.tags['length:yards'] ?? e.tags['distance:yards'], 1, 1200) });
+    rows.push({ id: e.id, number: n, label: layoutLabel(e.tags), g, lengthYards: length / .9144, par: integer(e.tags.par, 3, 6), si: integer(e.tags.handicap ?? e.tags.stroke_index, 1, 18), yards: integer(e.tags['length:yards'] ?? e.tags['distance:yards'], 1, 1200) });
   }
   const labels = [...new Set(rows.map(r => r.label).filter(Boolean))];
   const requestedLayout = course.layout_name || scorecard?.course_name || '';
@@ -203,34 +203,52 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   if (new Set(unique.map(row => `${row.g[0].lat},${row.g[0].lng}`)).size !== 18 || new Set(teeAnchors.map(a => a.tee!.e)).size !== teeAnchors.length || new Set([...anchors.values()].map(a => a.green.e)).size !== 18) throw new CourseMappingError('HOLE_ANCHORS_SHARED', 'Two holes point to the same mapped start, tee or green area. The hole map has not been produced.');
   if (referenceHoles.length) warnings.push(`Holes ${referenceHoles.join(', ')} use the numbered route start as a reference; a separate tee area is not confirmed. Live GPS distances use the player’s position.`);
   let shift = 0, orderEvidence = 'numbered_map_routes';
+  let lengthConfirmed = false;
+  const parDifferences: Array<{ number: number; map_par: number; scorecard_par: number }> = [];
   if (cardValid) {
     const rankings = Array.from({ length: 18 }, (_, offset) => {
-      let parMatches = 0, parEvidence = 0, siMatches = 0, siEvidence = 0;
+      let parMatches = 0, parEvidence = 0, siMatches = 0, siEvidence = 0, lengthMatches = 0;
       for (const row of unique) {
         const h = official.get(((row.number + offset - 1) % 18) + 1)!;
         if (row.par) { parEvidence++; if (row.par === h.par) parMatches++; }
         if (row.si) { siEvidence++; if (row.si === h.stroke_index) siMatches++; }
+        // Geometry is corroborating evidence only, never an official yardage.
+        // Allow for different tee positions and a route ending inside its green.
+        if (Math.abs(row.lengthYards - h.yards!) <= Math.max(35, h.yards! * .15)) lengthMatches++;
       }
-      return { offset, parMatches, parEvidence, siMatches, siEvidence };
+      return { offset, parMatches, parEvidence, siMatches, siEvidence, lengthMatches };
     });
     const parMatches = rankings.filter(r => r.parEvidence === 18 && r.parMatches === 18);
     const combinedMatches = rankings.filter(r => r.siEvidence >= 15 && r.siMatches === r.siEvidence && r.parEvidence >= 9 && r.parMatches === r.parEvidence);
-    const chosen = parMatches.length === 1 ? parMatches[0] : combinedMatches.length === 1 ? combinedMatches[0] : null;
+    let chosen = parMatches.length === 1 ? parMatches[0] : combinedMatches.length === 1 ? combinedMatches[0] : null;
+    if (!chosen) {
+      // One erroneous par tag must not discard 18 independently numbered routes.
+      // Only retain the original numbering when 17 pars AND every route length
+      // uniquely support it. Never rotate the course using incomplete par evidence.
+      const corroborated = rankings.filter(r => r.parEvidence === 18 && r.parMatches === 17 && r.lengthMatches === 18);
+      if (corroborated.length === 1 && corroborated[0].offset === 0) {
+        chosen = corroborated[0]; lengthConfirmed = true;
+      }
+    }
     if (!chosen) throw new CourseMappingError('HOLE_ORDER_UNCONFIRMED', 'The numbered map routes do not uniquely match the selected scorecard. The hole map has not been produced.');
     shift = chosen.offset;
-    orderEvidence = parMatches.length === 1 ? 'unique_18_hole_par_sequence' : 'matching_par_and_stroke_index_sequence';
+    orderEvidence = lengthConfirmed ? 'numbered_routes_with_matching_lengths_and_17_pars' : parMatches.length === 1 ? 'unique_18_hole_par_sequence' : 'matching_par_and_stroke_index_sequence';
     if (shift) warnings.push(`Map numbering was aligned by ${shift} holes against the selected scorecard. Check the first hole and both nines in the preview.`);
-    if (chosen.siMatches < chosen.siEvidence) warnings.push('Map stroke indexes differ from the selected tee scorecard. The scorecard stroke indexes are used; hole order was confirmed by its unique 18-hole par sequence.');
+    if (chosen.siMatches < chosen.siEvidence) warnings.push('Map stroke indexes differ from the selected tee scorecard. The selected scorecard stroke indexes are used after checking the hole order.');
   }
   const evidence: Array<Record<string, unknown>> = [];
   for (const row of unique) {
     const n = ((row.number + shift - 1) % 18) + 1, h = holes[n - 1];
-    if (cardValid && row.par && row.par !== h.par) throw new CourseMappingError('SCORECARD_CONFLICT', `Hole ${n} map data conflicts with the selected scorecard. The hole map has not been produced.`);
+    if (cardValid && row.par && row.par !== h.par) {
+      if (!lengthConfirmed) throw new CourseMappingError('SCORECARD_CONFLICT', `Hole ${n} map data conflicts with the selected scorecard. The hole map has not been produced.`);
+      parDifferences.push({ number: n, map_par: row.par, scorecard_par: h.par! });
+    }
     if (!cardValid) { h.par = row.par; h.stroke_index = row.si; h.yards = row.yards; }
     const anchor = anchors.get(row)!;
     h.tee = row.g[0]; h.green = polygonCentre(anchor.green.g, row.g[row.g.length - 1]); h.dogleg = corner(row.g);
     evidence.push({ number: n, osm_number: row.number, route_id: row.id, start_evidence: anchor.tee ? 'tee_area' : 'numbered_route_start', tee_feature_id: anchor.tee?.e.id ?? null, green_feature_id: anchor.green.e.id });
   }
+  if (parDifferences.length) warnings.push(`Map par differs from the selected scorecard on hole ${parDifferences[0].number}. The original hole numbers, 17 matching pars and all 18 route lengths confirm the order; the selected scorecard par is used.`);
   // Conflicting OSM SI values are unknown, not guessed into a 1–18 permutation.
   if (!cardValid) {
     const counts = new Map<number, number>();
@@ -248,7 +266,7 @@ export function buildCourseMapping(course: CourseInput, elements: Element[], sco
   return {
     name: `${course.name.trim()}${chosenLabel && !cleanName(course.name).includes(cleanName(chosenLabel)) ? ` · ${chosenLabel}` : ''}`.slice(0, 200), tee_name: (cardValid ? scorecard!.tee_name : course.tee_name || 'Yellow').slice(0, 80),
     place_id: course.place_id, center, address: String(course.address || '').slice(0, 500), holes,
-    source: { provider: 'openstreetmap', attribution: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright', fetched_at: new Date().toISOString(), coverage, warnings, boundary_id: selected.e.id, boundary_type: selected.e.type || 'way', ...(cardValid && scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), numbering_shift: shift, validation: { status: 'verified', method: 'numbered_routes_with_verified_greens', mapped: 18, route_starts: 18, tee_anchors: teeAnchors.length, green_anchors: 18, course_name: chosenLabel || requestedLayout || course.name, tee_colour_confirmed: false, scorecard_order_confirmed: cardValid, order_evidence: orderEvidence, ...(scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), evidence } },
+    source: { provider: 'openstreetmap', attribution: '© OpenStreetMap contributors', url: 'https://www.openstreetmap.org/copyright', fetched_at: new Date().toISOString(), coverage, warnings, boundary_id: selected.e.id, boundary_type: selected.e.type || 'way', ...(cardValid && scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), numbering_shift: shift, validation: { status: 'verified', method: 'numbered_routes_with_verified_greens', mapped: 18, route_starts: 18, tee_anchors: teeAnchors.length, green_anchors: 18, course_name: chosenLabel || requestedLayout || course.name, tee_colour_confirmed: false, scorecard_order_confirmed: cardValid, order_evidence: orderEvidence, ...(lengthConfirmed ? { par_matches: 17, route_length_matches: 18, par_differences: parDifferences } : {}), ...(scorecard?.source_url ? { scorecard_url: scorecard.source_url } : {}), evidence } },
   };
 }
 

@@ -51,10 +51,11 @@ export function mountHoleSetup(form, b) {
     $('[data-preview-layout]').hidden = !draft;
     $('[data-preview-layout]').disabled = busy;
     $('[data-scorecard-field]').hidden = cards.length < 2 && layouts.length < 2;
-    status.textContent = draft ? `GPS ready for all 18 holes · ${draft.name} · ${draft.tee_name}. ${confirmed ? 'Linked when you save the event.' : 'Saves automatically with the event. Preview is optional.'}` : '';
+    status.textContent = draft ? `GPS ready for all 18 holes · ${draft.name} · ${draft.tee_name}. ${confirmed?.id === retainedLayout ? 'Saved with this event.' : 'Save the event to keep these maps. Preview is optional.'}` : '';
     const source = $('[data-map-source]');
     source.hidden = !draft;
-    source.textContent = draft ? `${draft.source.attribution || 'OpenStreetMap'} · Numbered hole routes matched to green areas. ${draft.source.setup_mode === 'gps_only' ? 'Hole numbers follow the mapped course; pars, where available, come from the map; tee-specific scorecard details are not verified. ' : ''}Mapped starts are reference positions; separate tee areas and tee colours may be unconfirmed. Live GPS distances use the player’s location.` : '';
+    const differences = draft?.source?.validation?.par_differences || [];
+    source.textContent = draft ? `${draft.source.attribution || 'OpenStreetMap'} · Numbered hole routes matched to green areas. ${differences.map(h => `Hole ${h.number} uses the selected scorecard’s par ${h.scorecard_par}. `).join('')}${draft.source.setup_mode === 'gps_only' ? 'Hole numbers follow the mapped course; pars, where available, come from the map; tee-specific scorecard details are not verified. ' : ''}Mapped starts are reference positions; separate tee areas and tee colours may be unconfirmed. Live GPS distances use the player’s location.` : '';
   }
   function clear() {
     draft = confirmed = null; hidden.value = ''; status.textContent = '';
@@ -105,7 +106,8 @@ export function mountHoleSetup(form, b) {
       if (result.status === 'ready') {
         if (!completeCourseMap(result.draft) || result.draft.place_id !== requested) throw new Error('The returned course map did not pass all 18 hole checks. No map has been created.');
         draft = result.draft;
-        message.textContent = draft.source.setup_mode === 'gps_only' ? 'All 18 GPS holes are ready. Scorecard details are unavailable or not selected, but live GPS distances will work.' : 'All 18 numbered holes match the selected scorecard and mapped routes and green areas.';
+        preserveLayout = false;
+        message.textContent = draft.source.setup_mode === 'gps_only' ? 'All 18 GPS holes are ready. Scorecard details are unavailable or not selected, but live GPS distances will work.' : 'All 18 hole maps are ready. Hole order has been checked against the selected scorecard.';
       } else if (result.status === 'choice_required') {
         needsChoice = true;
         message.textContent = result.message || 'Choose the course and tees below. Different courses at the same club must be matched separately.';
