@@ -14,10 +14,11 @@ const invite=()=>({status:'open',event_id:999,event_name:'Round 2 · Kenilworth'
   await context.route(backend+'/rest/v1/rpc/baseline_site_gate',route=>route.fulfill({json:{live:false,preview:true}}));
   const page=await context.newPage();page.setDefaultTimeout(10000);
   for(const url of ['home.html','event.html?id=999']){
+   if(url.startsWith('event'))model.events[0].guest_price=null;
    await page.goto(base+url);const rsvp=page.getByRole('button',{name:'RSVP',exact:true}),button=page.getByRole('button',{name:'Invite a guest',exact:true});await button.waitFor();
    assert((await button.boundingBox()).y>(await rsvp.boundingBox()).y,'Invite belongs beneath RSVP');
    await button.click();await page.getByRole('dialog',{name:'Share guest invitation'}).waitFor();await page.getByRole('button',{name:'Choose app & recipient'}).click();
-   const text=await page.evaluate(()=>window.sharedInvite.text);assert.match(text,/no account or password needed/i);assert.match(text,/guest.html#aaaaaaaa/);assert.match(text,/10 days/);
+   const text=await page.evaluate(()=>window.sharedInvite.text);assert.match(text,/no account or password needed/i);assert.match(text,/guest.html#aaaaaaaa/);assert.match(text,/10 days/);if(url.startsWith('event'))assert.match(text,/To be confirmed/);
    await page.screenshot({path:path.join(out,'guest-share-390.png'),fullPage:true});await page.getByRole('button',{name:'Close',exact:true}).click();
   }
   await context.close();report.push('PASS member: Invite a guest below RSVP on Home and event; generated message, native sharing and unique fragment link');
@@ -52,6 +53,7 @@ const invite=()=>({status:'open',event_id:999,event_name:'Round 2 · Kenilworth'
   data=invite();data.waiting=true;photoFail=true;await p.reload();await p.locator('[name=full_name]').fill('Taylor Guest');await p.locator('[name=phone]').fill('07012345679');await p.locator('[name=host_id]').selectOption(uid);await p.locator('[name=guest_handicap]').fill('18');await p.locator('[name=accept_terms]').check();await p.locator('#profilePhoto').setInputFiles(path.join(__dirname,'..','icon-logo.png'));await p.locator('#profilePhotoPreview:not([hidden])').waitFor();await p.getByRole('button',{name:'Join waiting list',exact:true}).click();await p.getByRole('heading',{name:'You’re on the waiting list'}).waitFor();assert.match(await p.locator('#guestJoin').innerText(),/photo change failed/);assert.equal(await p.getByRole('link',{name:'Google Calendar'}).count(),0);
   data.editable=false;data.booking_open=false;await p.reload();await p.getByRole('heading',{name:'You’re on the waiting list'}).waitFor();assert.equal(await p.getByRole('button',{name:'Edit RSVP',exact:true}).count(),0);assert.match(await p.locator('#guestJoin').innerText(),/ask Test Member to contact the admins/);
   await p.screenshot({path:path.join(out,'guest-cutoff-390.png'),fullPage:true});await p.setViewportSize({width:320,height:740});await p.screenshot({path:path.join(out,'guest-cutoff-320.png'),fullPage:true});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  data=invite();data.guest_price=null;await p.reload();await p.getByRole('heading',{name:'Join the event',exact:true}).waitFor();assert.match(await p.locator('#guestJoin').innerText(),/confirm any cost before payment/);
   assert.deepEqual(errors,[]);assert.equal(authCalls,0);assert(calls.some(c=>c.action==='photo'));await guest.close();report.push('PASS guest: no account/preview; personal details, host, handicap, optional portrait; confirmed/waitlist/withdrawn states; calendar download; same-link edits; failed-save retention; photo failure recovery; cutoff on 390px and 320px');
   // Admin can find and edit guest records after cutoff without impersonating a guest.
   const admin=await browser.newContext({viewport:{width:1365,height:900},serviceWorkers:'block'}),am=await mocks(admin,{signedIn:true,admin:true});am.profile.is_admin=true;am.events=[{...fixture,event_type:'league',guest_price:45}];

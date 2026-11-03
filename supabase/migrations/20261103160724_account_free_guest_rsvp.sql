@@ -73,7 +73,6 @@ begin
   if wants and (r.id is null or not(r.attending or r.reserve)) and (select count(*) from public.baseline_rsvps x where x.event_id=ev.id and x.guest_host_id=l.host_id and (x.attending or x.reserve) and x.id is distinct from r.id)>=3 then raise exception 'Your inviting member already has three guest places. Ask them to contact the admins'; end if;
   if g.id is null and not wants then raise exception 'Choose Join event to save a new RSVP'; end if;
   if wants and not p_admin and (r.id is null or not(r.attending or r.reserve)) and ev.rsvp_deadline is not null and today>ev.rsvp_deadline then raise exception 'Bookings have closed. Ask your inviting member to contact the admins'; end if;
-  if ev.guest_price is null and g.id is null then raise exception 'The admins need to confirm the guest price first'; end if;
   if g.id is null and (payload->>'guest_price')::numeric is distinct from ev.guest_price then raise exception 'The guest price changed. Reload the invitation'; end if;
   if wants and not p_admin and coalesce(ev.cancellation_terms,'')<>'' and
    (payload->>'accept_terms' is distinct from 'true' or payload->>'terms_snapshot' is distinct from ev.cancellation_terms) then
@@ -145,7 +144,7 @@ begin
  end if;
  return jsonb_build_object('status',case when g.id is null then 'open' else 'joined' end,'event_id',ev.id,'event_name',ev.name,'date',ev.date,'first_time',ev.first_time,
   'location',ev.location,'address',ev.address,'event_type',ev.event_type,'cancelled',ev.cancelled,'host_id',l.host_id,'host_name',host_name,
-  'guest_price',coalesce(g.agreed_price,ev.guest_price),'payment_due',ev.payment_due,'cancellation_terms',ev.cancellation_terms,
+  'guest_price',case when g.id is null then ev.guest_price else g.agreed_price end,'payment_due',ev.payment_due,'cancellation_terms',ev.cancellation_terms,
   'editable',editable or p_admin,'cutoff_date',ev.date-10,'booking_open',editable and(ev.rsvp_deadline is null or today<=ev.rsvp_deadline),
   'waiting',ev.max_players is not null and(select count(*) from public.baseline_rsvps where event_id=ev.id and attending and not reserve)>=ev.max_players,
   'revision',coalesce(g.revision,0),'member_id',g.member_id,'full_name',g.name,'phone',g.phone,'email',g.email,'guest_handicap',g.requested_handicap,'handicap_status',g.status,
@@ -192,7 +191,6 @@ begin
  if ev.id is null or ev.cancelled or ev.date<(now() at time zone 'Europe/London')::date or (ev.rsvp_deadline is not null and ev.rsvp_deadline<(now() at time zone 'Europe/London')::date) then raise exception 'Bookings for this round are closed';end if;
  if ev.date-10<=(now() at time zone 'Europe/London')::date then raise exception 'Guest invitations close 10 days before the event. Contact the admins'; end if;
  if not exists(select 1 from public.baseline_rsvps where event_id=ev.id and user_id=uid and attending and not reserve) then raise exception 'RSVP and confirm your own place before inviting a guest'; end if;
- if ev.guest_price is null then raise exception 'Ask an organiser to add the guest price to this event first';end if;
  perform pg_advisory_xact_lock(hashtextextended(uid::text,2028));
  if (select count(*) from baseline_private.guest_links where host_id=uid and created_at>now()-interval '1 day')>=10 then raise exception 'You have created ten invitations today. Reuse an unused invite or contact an organiser';end if;
  if (select count(*) from baseline_private.guest_links lk left join baseline_private.guest_requests gr on gr.link_token=lk.token left join public.baseline_rsvps r on r.member_id=gr.member_id and r.event_id=lk.event_id where lk.host_id=uid and lk.event_id=ev.id and not lk.revoked and (gr.id is null or r.attending or r.reserve))>=3 then raise exception 'A fourball can include you and three guests. Reuse an unused invitation or contact the admins'; end if;

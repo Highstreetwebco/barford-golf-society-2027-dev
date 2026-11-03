@@ -101,5 +101,22 @@ do $$begin
  begin perform public.baseline_guest_rsvp('view','{}');raise exception 'Anonymous backend endpoint access';exception when insufficient_privilege then null;end;
 end $$;
 reset role;
+-- Invitations also work while a guest price is still to be confirmed. No fee is invented.
+select set_config('request.jwt.claim.sub',(select host::text from guest_flow_qa),true);
+update public.baseline_events set guest_price=null,date=(now() at time zone 'Europe/London')::date+30 where id=(select event_id from guest_flow_qa);
+set local role service_role;
+do $$declare q guest_flow_qa;d jsonb;begin
+ select * into q from guest_flow_qa;
+ d:=public.baseline_guest_rsvp('save',q.payload||jsonb_build_object('token',q.token3,'full_name','QA Price Pending','phone','07012345004','guest_price',null));
+ if d->>'guest_price' is not null then raise exception 'Invented a guest fee';end if;
+end $$;
+reset role;
+update public.baseline_events set guest_price=55 where id=(select event_id from guest_flow_qa);
+set local role service_role;
+do $$declare d jsonb;begin
+ d:=public.baseline_guest_rsvp('view',jsonb_build_object('token',(select token3 from guest_flow_qa)));
+ if d->>'guest_price' is not null then raise exception 'A later fee was silently assigned';end if;
+end $$;
+reset role;
 rollback;
 select 'PASS guest RSVP: no Auth accounts; isolated bearer bookings; private contacts; same-name guests; host confirmation; terms/price/revision guards; capacity, waitlist and withdrawal; portraits; hard tee pairing; published-sheet invalidation; server 10-day cutoff; late admin edits and role denials. Fixtures rolled back.' verification;
