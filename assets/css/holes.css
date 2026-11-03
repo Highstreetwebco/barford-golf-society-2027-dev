@@ -18,3 +18,51 @@
 .hole-mode-choices .hole-gps-controls{display:block;padding:10px 0 0;background:transparent}.hole-mode-choices .hole-gps-controls button{width:100%;min-height:44px;background:#fff;color:#125d60;border:1px solid #a5cfc9;border-radius:11px;box-shadow:none}
 .hole-mode-choices .hole-gps-controls [data-gps-status]{display:block;margin:7px 0 0;font-size:.72rem;color:#395f64}
 @media(max-width:600px){.hole-mode-choices{padding:13px}.hole-screen-heading{padding-bottom:8px}.hole-stats{padding-bottom:10px}.hole-map-canvas{max-height:42dvh;min-height:240px}.hole-map-actions{top:8px;right:8px}.hole-map-actions button{min-width:36px;min-height:36px}}
+
+/* Playing view: the map owns the screen; controls never scroll out of reach. */
+html.has-hole-dialog,html.has-hole-dialog body{overflow:hidden}
+.hole-dialog .hole-dialog-top{gap:12px;padding:16px}
+.hole-dialog .hole-heading{flex:1;min-width:0}
+.hole-dialog .hole-close{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:10px;border:1px solid #ffffff75;border-radius:50%;background:transparent;color:#fff;box-shadow:none}
+.hole-dialog svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hole-dialog .hole-map-attribution{margin:0;padding:8px 14px;font-size:10px;line-height:1.35;text-align:center}
+.hole-dialog.is-hole-view{position:fixed;inset:0;margin:0;width:100%;height:100dvh;max-width:none;max-height:none;border:0;border-radius:0;overflow:hidden;background:#102f46;display:flex;flex-direction:column;box-sizing:border-box}
+.hole-dialog.is-hole-view .hole-dialog-top{flex-shrink:0;min-height:64px;padding:calc(8px + env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left));box-sizing:border-box;background:#102f46}
+.is-hole-view .hole-heading{display:flex;align-items:baseline;gap:10px}
+.is-hole-view .hole-heading .eyebrow{display:none}
+.is-hole-view .hole-heading h2{font-size:1.4rem;line-height:1.15;white-space:nowrap;margin:0;letter-spacing:-.04em}
+.is-hole-view .hole-heading p{font-size:.8rem;line-height:1.1;white-space:nowrap;margin:0;color:#d9e8e9}
+.is-hole-view [data-hole-grid-back]{padding:9px 12px;min-height:44px;border:1px solid #85d5d3;border-radius:12px;font-size:.78rem;white-space:nowrap;background:#12696c;color:#fff;box-shadow:none}
+.is-hole-view [data-hole-screen]{display:flex;flex-direction:column;flex:1;min-height:0}
+.is-hole-view .hole-map-wrap{flex:1;min-height:0;isolation:isolate}
+.is-hole-view .hole-map-canvas{position:absolute;inset:0;height:100%;min-height:0;max-height:none;width:100%}
+.is-hole-view .hole-map-message{inset:12px auto auto 12px;max-width:min(260px,calc(100% - 24px));z-index:5;font-size:.8rem;padding:12px 14px}
+.hole-readout{position:absolute;top:16px;right:16px;z-index:3;max-width:174px;min-width:130px;box-sizing:border-box;padding:12px 14px 7px;border:1px solid #ffffffaa;border-radius:18px;background:#fffffff2;box-shadow:0 5px 22px #041c3755;color:#102f46;text-align:center;backdrop-filter:blur(8px)}
+.hole-live-yardage>div{display:flex;justify-content:center;align-items:baseline;gap:5px}
+.hole-live-yardage strong{font-size:2.65rem;line-height:1;letter-spacing:-.065em;font-weight:800;font-variant-numeric:tabular-nums}
+.hole-live-yardage>div>span{font-size:.85rem;font-weight:700}
+.hole-distance-label{display:block;font-size:.7rem;color:#3e596a;margin-top:5px}
+.hole-overview-label{display:block;font-size:.9rem;padding:2px 0 5px;font-weight:800}
+.hole-dialog .hole-gps-button{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;padding:8px 0 2px;margin-top:8px;border:0;border-top:1px solid #d7e3e7;border-radius:0;background:none;color:#486272;box-shadow:none;font-size:.65rem;line-height:1.3;font-weight:650}
+.hole-gps-dot{flex-shrink:0;width:7px;height:7px;border-radius:50%;background:#8a9da5}
+[data-gps-state=live] .hole-gps-dot{background:#16857a;box-shadow:0 0 0 3px #16857a1a}
+[data-gps-state=live] .hole-gps-button{color:#0d7069}
+.is-hole-view .hole-navigation{display:grid;grid-template-columns:1fr 54px 1fr;gap:12px;align-items:center;flex-shrink:0;padding:6px max(10px,env(safe-area-inset-right)) 3px max(10px,env(safe-area-inset-left));background:#102f46;border-top:1px solid #ffffff20}
+.is-hole-view .hole-navigation button{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;margin:0;padding:5px 10px;border:0;border-radius:10px;background:transparent;color:#fff;box-shadow:none;font-size:.86rem;font-weight:750}
+.is-hole-view .hole-navigation button:hover:not(:disabled){background:#ffffff14}
+.is-hole-view .hole-navigation button:disabled{opacity:.35}
+.is-hole-view .hole-navigation span{font-size:1.7rem;line-height:1;color:inherit}
+.is-hole-view .hole-navigation .hole-fit{padding:9px;border:1px solid #ffffff30;border-radius:50%;width:44px;height:44px;justify-self:center}
+.is-hole-view .hole-fit svg{width:25px;height:25px}
+.is-hole-view .hole-map-attribution{flex-shrink:0;padding:3px 8px calc(5px + env(safe-area-inset-bottom));background:#102f46;color:#a9c2cd;font-size:9px}
+.is-hole-view .hole-map-attribution a{color:#bfd7df}
+.is-hole-view .hole-map-pin{width:12px;height:12px;box-sizing:border-box;padding:0;border:2px solid #fff;box-shadow:0 1px 4px #0008}
+.is-hole-view .hole-map-pin-green{width:18px;height:18px;background:#66b54f;border:3px solid #fff}
+.is-hole-view .hole-map-pin-player{width:19px;height:19px;background:#009eff;border:3px solid #fff;box-shadow:0 0 0 11px #009eff33,0 1px 5px #0004}
+.is-hole-view .hole-map-pin-target{width:16px;height:16px;background:#ffd66d}
+.is-hole-view .hole-target-distances{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:16px;max-width:calc(100% - 24px);box-sizing:border-box;width:max-content;margin:0;padding:9px 12px;border:1px solid #ffe6a2;border-radius:14px;background:#102f46f2;color:#e7f1f7;font-size:.67rem;box-shadow:0 3px 16px #0004}
+.is-hole-view .hole-target-distances strong{color:#ffe18d;font-size:1rem}
+.is-hole-view .hole-target-distances button{padding:7px;width:36px;min-height:36px;background:transparent;border:1px solid #ffffff50;border-radius:50%;color:#fff;box-shadow:none}
+.hole-dialog button:focus-visible{outline:3px solid #f2c86a;outline-offset:2px}
+@media(max-width:360px){.is-hole-view .hole-dialog-top{gap:8px}.is-hole-view .hole-heading{gap:7px}.is-hole-view .hole-heading h2{font-size:1.2rem}.is-hole-view [data-hole-grid-back]{padding:8px 10px}.hole-readout{top:12px;right:10px;min-width:118px;padding:10px 10px 6px}.hole-live-yardage strong{font-size:2.35rem}}
+@media(orientation:landscape) and (max-height:500px){.hole-dialog.is-hole-view .hole-dialog-top{min-height:52px;padding-top:max(4px,env(safe-area-inset-top));padding-bottom:4px}.is-hole-view .hole-navigation{padding-top:2px;padding-bottom:0}.is-hole-view .hole-map-attribution{padding-top:0;font-size:8px}.hole-readout{top:10px;padding-top:8px}.hole-live-yardage strong{font-size:2.2rem}}

@@ -1,5 +1,6 @@
 /* Existing CI browser environment; synthetic API and map provider responses only. */
 const {chromium}=require('playwright');
+const {installMap}=require('./fixtures/hole-browser.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {mocks,fixture,server,base,backend,uid}=require('./baseline.cjs');
 const out=path.join(__dirname,'..','test-results'),report=[];
@@ -42,9 +43,9 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.locator('#adminDetails').screenshot({path:path.join(out,`editable-event-${width}.png`)});
    // Map access, rotation and live GPS survive removal of the camera finder.
    page.on('dialog',dialog=>dialog.accept());await page.goto(base+'event.html?id=999');await page.locator('[data-hole-view]').click();await page.locator('[data-hole="1"]').click();await page.waitForFunction(()=>window.__maps.instances.length===1);
-   assert.equal(await page.locator('[data-find-green]').count(),0);assert.equal(await page.locator('video').count(),0);assert.equal(await page.evaluate(()=>window.gpsWatches),0);assert.equal(await page.evaluate(()=>window.cameraCalls),0);
-   const heading=await page.evaluate(()=>window.__maps.instances[0].getHeading());await page.locator('[data-hole-rotate-right]').click();assert.notEqual(await page.evaluate(()=>window.__maps.instances[0].getHeading()),heading);await page.locator('[data-hole-fit]').click();assert.equal(await page.evaluate(()=>window.__maps.instances[0].getHeading()),heading);
-   await page.locator('[data-gps-toggle]').click();await page.locator('[data-distance-origin].is-live').waitFor();assert.equal(await page.evaluate(()=>window.gpsWatches),1);assert.match(await page.locator('[data-gps-status]').innerText(),/GPS is live/);
+   assert.equal(await page.locator('[data-find-green]').count(),0);assert.equal(await page.locator('video').count(),0);assert.equal(await page.evaluate(()=>window.gpsWatches),1);assert.equal(await page.evaluate(()=>window.cameraCalls),0);
+   const heading=await page.evaluate(()=>window.__maps.instances[0].getHeading());await page.evaluate(()=>window.__maps.instances[0].setHeading(window.__maps.instances[0].getHeading()+30));assert.notEqual(await page.evaluate(()=>window.__maps.instances[0].getHeading()),heading);await page.locator('[data-hole-fit]').click();assert.equal(await page.evaluate(()=>window.__maps.instances[0].getHeading()),heading);
+   await page.locator('[data-distance-origin].is-live').waitFor();assert.equal(await page.evaluate(()=>window.gpsWatches),1);assert.match(await page.locator('[data-gps-status]').innerText(),/GPS ±/);
    await page.evaluate(()=>google.maps.event.trigger(window.__maps.instances[0],'click',{latLng:new google.maps.LatLng(52.0011,-1.5)}));assert(await page.locator('[data-target-distances]').isVisible());
    await page.locator('[data-hole-next]').click();assert.equal(await page.locator('[data-hole-title]').innerText(),'Hole 2');assert.equal(await page.evaluate(()=>window.__maps.instances.length),1);
    await page.locator('dialog.hole-dialog').screenshot({path:path.join(out,`overhead-hole-${width}.png`)});assert(await page.locator('dialog.hole-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth+1));
@@ -60,43 +61,3 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
   await browser.close();await new Promise(resolve=>server.close(resolve));
  }
 })().catch(error=>{console.error(error);process.exitCode=1;server.close();});
-
-async function installMap(context) {
- await context.addInitScript(() => {
-    window.__maps = { instances: [], lines: [] };
-    class LatLng { constructor(a, b) { this.point = typeof a === "object" ? a : { lat: a, lng: b }; } lat() { return typeof this.point.lat === "function" ? this.point.lat() : this.point.lat; } lng() { return typeof this.point.lng === "function" ? this.point.lng() : this.point.lng; } toJSON() { return { lat: this.lat(), lng: this.lng() }; } }
-    class MapMock {
-      constructor(node, settings) { this.node = node; this.settings = { ...settings }; this.listeners = {}; this.pane = document.createElement("div"); this.pane.className = "mock-map-pane"; this.pane.style.cssText = "position:relative;overflow:hidden;width:100%;height:100%;background:#244c45"; node.append(this.pane); window.__maps.instances.push(this); }
-      addListener(type, listener) { this.listeners[type] = listener; return { remove: () => delete this.listeners[type] }; }
-      setOptions(settings) { Object.assign(this.settings, settings); }
-      setCenter(center) { this.settings.center = center; }
-      panTo(center) { this.settings.center = center; }
-      setZoom(zoom) { this.settings.zoom = zoom; }
-      getZoom() { return this.settings.zoom || 17; }
-      setHeading(heading) { this.settings.heading = heading; }
-      getHeading() { return this.settings.heading || 0; }
-      setTilt(tilt) { this.settings.tilt = tilt; }
-      getTilt() { return this.settings.tilt || 0; }
-      getCenter() { return new LatLng(this.settings.center); }
-      getDiv() { return this.node; }
-      getProjection() { return { fromLatLngToPoint: point => ({ x: point.lng(), y: point.lat() }) }; }
-      fitBounds(bounds) { this.bounds = bounds; }
-      moveCamera(settings) { this.setOptions(settings); }
-    }
-    class OverlayView {
-      setMap(map) { if (this.map && this.onRemove) this.onRemove(); this.map = map; if (map) { this.onAdd?.(); this.draw?.(); } }
-      getMap() { return this.map; }
-      getPanes() { return { overlayMouseTarget: this.map.pane, overlayLayer: this.map.pane, floatPane: this.map.pane }; }
-      getProjection() { return { fromLatLngToDivPixel: p => ({ x: (p.lng() + 1.502) * 100000, y: (52.004 - p.lat()) * 100000 }), fromDivPixelToLatLng: p => new LatLng(52.004 - p.y / 100000, p.x / 100000 - 1.502) }; }
-      static preventMapHitsAndGesturesFrom() {}
-    }
-    class Polyline { constructor(settings) { this.settings = settings; window.__maps.lines.push(this); } setMap(map) { this.settings.map = map; } setPath(points) { this.settings.path = points; } setOptions(settings) { Object.assign(this.settings, settings); } }
-    class LatLngBounds { constructor() { this.points = []; } extend(point) { this.points.push(point); return this; } }
-    const maps = { Map: MapMock, OverlayView, Polyline, LatLng, LatLngBounds, MapTypeId: { SATELLITE: "satellite" }, RenderingType: { VECTOR: "VECTOR", RASTER: "RASTER" }, event: { clearInstanceListeners() {}, removeListener(listener) { listener.remove?.(); }, trigger(obj, type, value) { obj.listeners?.[type]?.(value); } } };
-    maps.importLibrary = async () => { return maps; };
-    window.google = { maps };
-  window.gpsWatches=0;window.gpsClears=0;window.cameraCalls=0;
-  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{watchPosition(ok){window.gpsWatches++;queueMicrotask(()=>ok({coords:{latitude:52.001,longitude:-1.5,accuracy:6},timestamp:Date.now()}));return 7;},clearWatch(){window.gpsClears++;}}});
-  Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia(){window.cameraCalls++;throw new Error('Camera must not be requested');}}});
- });
-}
