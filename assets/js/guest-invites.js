@@ -15,7 +15,7 @@ export function inviteURL(token) {
 }
 export function shareInvite(ev, token, host) {
   const url = inviteURL(token);
-  const message = `${host} has invited you to join Barford Golf Society for ${ev.name} on ${b.date(ev.date)}${ev.first_time ? `, first tee ${ev.first_time}` : ""}.\n\nGuest price: ${ev.guest_price==null?"To be confirmed by your inviting member before payment":b.money(ev.guest_price)}. RSVP using the link below — no account or password needed. Enter your name, contact number and handicap, and add a photo if you like. We’ll keep you in my tee group when we both have confirmed places. Places are subject to availability. You can return to this same private link to edit your RSVP until 10 days before the event; after that, ask me to contact the admins. Please do not forward your personal link.\n\n${url}`;
+  const message = `${host} has invited you to join Barford Golf Society for ${ev.name} on ${b.date(ev.date)}${ev.first_time ? `, first tee ${ev.first_time}` : ""}.\n\nGuest price: ${ev.guest_price==null?"To be confirmed by your inviting member before payment":b.money(ev.guest_price)}. RSVP using the link below — no account or password needed. Enter your name, contact number and handicap, and add a photo if you like. We’ll keep you in ${host}’s tee group when you both have confirmed places. Places are subject to availability. You can return to this same private link to edit your RSVP until 10 days before the event; after that, ask ${host} to contact the admins. Please do not forward your personal link.\n\n${url}`;
   const trigger = document.activeElement;
   const dialog = document.createElement("dialog");
   dialog.className = "invite-dialog";

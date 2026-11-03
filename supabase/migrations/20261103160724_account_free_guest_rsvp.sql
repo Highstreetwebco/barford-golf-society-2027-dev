@@ -47,8 +47,8 @@ begin
  if action not in ('view','save','photo_check','photo_save') then raise exception 'Unknown guest action'; end if;
  if action<>'view' then perform pg_advisory_xact_lock(2027,501); end if;
  select * into l from baseline_private.guest_links where token=(payload->>'token')::uuid for update;
- if l.token is null or l.revoked or l.claimed_by is not null then raise exception 'This invitation is unavailable. Please contact the member who invited you'; end if;
- if not exists(select 1 from public.baseline_member_accounts where user_id=l.host_id and not disabled) then
+ if l.token is null or (l.revoked and not p_admin) or l.claimed_by is not null then raise exception 'This invitation is unavailable. Please contact the member who invited you'; end if;
+ if not p_admin and not exists(select 1 from public.baseline_member_accounts where user_id=l.host_id and not disabled) then
   raise exception 'This invitation is unavailable. Please contact the member who invited you';
  end if;
  select * into ev from public.baseline_events where id=l.event_id for update;
@@ -70,7 +70,7 @@ begin
   if wants and not p_admin and not exists(select 1 from public.baseline_rsvps where event_id=l.event_id and user_id=l.host_id and attending and not reserve) then
    raise exception 'Your inviting member needs a confirmed place first. Please contact them';
   end if;
-  if wants and (r.id is null or not(r.attending or r.reserve)) and (select count(*) from public.baseline_rsvps x where x.event_id=ev.id and x.guest_host_id=l.host_id and (x.attending or x.reserve) and x.id is distinct from r.id)>=3 then raise exception 'Your inviting member already has three guest places. Ask them to contact the admins'; end if;
+  if ev.event_type<>'social' and wants and (r.id is null or not(r.attending or r.reserve)) and (select count(*) from public.baseline_rsvps x where x.event_id=ev.id and x.guest_host_id=l.host_id and (x.attending or x.reserve) and x.id is distinct from r.id)>=3 then raise exception 'Your inviting member already has three guest places. Ask them to contact the admins'; end if;
   if g.id is null and not wants then raise exception 'Choose Join event to save a new RSVP'; end if;
   if wants and not p_admin and (r.id is null or not(r.attending or r.reserve)) and ev.rsvp_deadline is not null and today>ev.rsvp_deadline then raise exception 'Bookings have closed. Ask your inviting member to contact the admins'; end if;
   if g.id is null and (payload->>'guest_price')::numeric is distinct from ev.guest_price then raise exception 'The guest price changed. Reload the invitation'; end if;
@@ -193,7 +193,7 @@ begin
  if not exists(select 1 from public.baseline_rsvps where event_id=ev.id and user_id=uid and attending and not reserve) then raise exception 'RSVP and confirm your own place before inviting a guest'; end if;
  perform pg_advisory_xact_lock(hashtextextended(uid::text,2028));
  if (select count(*) from baseline_private.guest_links where host_id=uid and created_at>now()-interval '1 day')>=10 then raise exception 'You have created ten invitations today. Reuse an unused invite or contact an organiser';end if;
- if (select count(*) from baseline_private.guest_links lk left join baseline_private.guest_requests gr on gr.link_token=lk.token left join public.baseline_rsvps r on r.member_id=gr.member_id and r.event_id=lk.event_id where lk.host_id=uid and lk.event_id=ev.id and not lk.revoked and (gr.id is null or r.attending or r.reserve))>=3 then raise exception 'A fourball can include you and three guests. Reuse an unused invitation or contact the admins'; end if;
+ if ev.event_type<>'social' and (select count(*) from baseline_private.guest_links lk left join baseline_private.guest_requests gr on gr.link_token=lk.token left join public.baseline_rsvps r on r.member_id=gr.member_id and r.event_id=lk.event_id where lk.host_id=uid and lk.event_id=ev.id and not lk.revoked and (gr.id is null or r.attending or r.reserve))>=3 then raise exception 'A fourball can include you and three guests. Reuse an unused invitation or contact the admins'; end if;
  insert into baseline_private.guest_links(host_id,event_id) values(uid,ev.id) returning * into l;
  return jsonb_build_object('token',l.token,'event_id',ev.id,'host_name',(select full_name from public.profiles where id=uid));
  elsif action='join' then raise exception 'Open the guest invitation link to RSVP without an account';
