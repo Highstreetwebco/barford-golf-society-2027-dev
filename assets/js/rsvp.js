@@ -1,5 +1,5 @@
 // A member edits one saved RSVP. submit_rsvp also enforces this in the database.
-import { londonToday } from "./event-experience.js?v=2027-fullscreen-1";
+import { londonToday } from "./event-experience.js?v=2027-aim-point-1";
 
 export const rsvpClosed = (event) => event.cancelled || event.date < londonToday();
 export const rsvpChangeLocked = (event, response, admin = false) => {

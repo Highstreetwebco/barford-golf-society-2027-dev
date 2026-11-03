@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { distanceToHole, holeGpsState, HOLE_GPS_RANGE_METRES, MAX_FIX_AGE } from '../assets/js/hole-gps.js';
+import { distanceToHole, holeGpsState, holeMeasurements, HOLE_GPS_RANGE_METRES, MAX_FIX_AGE } from '../assets/js/hole-gps.js';
 import { yardsBetween } from '../assets/js/hole-map.js';
 
 const now = 1800000000000;
@@ -44,4 +44,36 @@ test('Yardage changes with the player and is reevaluated for each selected hole'
   assert.equal(holeGpsState(near, hole, now), 'live');
   assert.ok(yardsBetween({ lat: .003, lng: 0 }, hole.green) < yardsBetween(near.point, hole.green));
   assert.equal(holeGpsState(near, { tee: { lat: 1, lng: 1 }, green: { lat: 1.004, lng: 1 } }, now), 'away');
+});
+
+test('Aim-point measurements use GPS nearby and the mapped tee when away', () => {
+  const aim = { lat: .002, lng: 0 };
+  const nearby = holeMeasurements(fix({ lat: .001, lng: 0 }), hole, aim, now);
+  assert.deepEqual([nearby.green, nearby.aim, nearby.remaining], [365, 122, 243]);
+  assert.equal(nearby.live, true);
+  const away = holeMeasurements(fix({ lat: 52, lng: -1.5 }), hole, aim, now);
+  assert.deepEqual([away.green, away.aim, away.remaining], [486, 243, 243]);
+  assert.deepEqual(away.origin, hole.tee);
+  const moved = holeMeasurements(fix({ lat: .0015, lng: 0 }), hole, aim, now);
+  assert.ok(moved.aim < nearby.aim);
+  assert.equal(moved.remaining, nearby.remaining, 'The second shot does not change when the player moves');
+});
+
+test('Missing, stale and poor GPS use the tee for both planning distances', () => {
+  const aim = { lat: .003, lng: 0 };
+  for (const reading of [null, fix(undefined, { accuracy: 80 }), fix(undefined, { timestamp: now - 16000 })]) {
+    const result = holeMeasurements(reading, hole, aim, now);
+    assert.equal(result.live, false);
+    assert.deepEqual([result.green, result.aim, result.remaining], [486, 365, 122]);
+  }
+});
+
+test('Clearing or moving an aim point never retains the previous shot distances', () => {
+  const reading = fix({ lat: .001, lng: 0 });
+  const first = holeMeasurements(reading, hole, { lat: .002, lng: 0 }, now);
+  const next = holeMeasurements(reading, hole, { lat: .003, lng: 0 }, now);
+  assert.ok(next.aim > first.aim && next.remaining < first.remaining);
+  const cleared = holeMeasurements(reading, hole, null, now);
+  assert.equal(cleared.aim, null); assert.equal(cleared.remaining, null);
+  assert.equal(cleared.green, first.green);
 });

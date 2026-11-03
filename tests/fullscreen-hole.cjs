@@ -24,7 +24,9 @@ const layout = { name: 'Test course', tee_name: 'Yellow', source: { attribution:
       await page.locator('[data-hole="1"]').click(); await page.waitForFunction(() => window.__maps.instances.length === 1);
       const dialog = page.locator('.hole-dialog'), map = page.locator('[data-hole-map]');
       assert.equal(await page.evaluate(() => gpsWatches), 1, 'Opening a hole automatically requests GPS once');
-      assert.equal(await page.locator('[data-distances]').isVisible(), false, 'No made-up tee distance while GPS is pending');
+      assert.equal(await page.locator('[data-distances]').isVisible(), true);
+      assert.equal(await page.locator('[data-distance="green"]').innerText(), '365');
+      assert.equal(await page.locator('[data-yardage-origin]').innerText(), 'From tee');
       const box = await dialog.boundingBox(), mapBox = await map.boundingBox();
       assert.ok(box.x <= 1 && box.y <= 1 && box.width >= viewport.width - 1 && box.height >= viewport.height - 1);
       assert.ok(mapBox.height >= viewport.height * (viewport.height > 500 ? .74 : .61), JSON.stringify({ viewport, mapBox }));
@@ -39,9 +41,18 @@ const layout = { name: 'Test course', tee_name: 'Yellow', source: { attribution:
       const overview = await page.evaluate(() => window.__maps.instances[0].settings.center);
       await page.evaluate(() => emitGps({ latitude: 51.5, longitude: -.12, accuracy: 6 }));
       await page.locator('.hole-dialog[data-gps-state="away"]').waitFor();
-      assert.equal(await page.locator('[data-distances]').isVisible(), false);
+      assert.equal(await page.locator('[data-distance="green"]').innerText(), '365');
       assert.equal(await page.locator('.hole-map-pin-player').count(), 0);
       assert.deepEqual(await page.evaluate(() => window.__maps.instances[0].settings.center), overview);
+      await page.evaluate(() => google.maps.event.trigger(window.__maps.instances[0], 'click', { latLng: new google.maps.LatLng(52.0025, -1.5) }));
+      const target = page.locator('[data-target-distances]'); await target.waitFor();
+      assert.equal(await page.locator('[data-target-origin]').innerText(), 'From tee');
+      assert.equal(await page.locator('[data-distance="aim"]').innerText(), '292 yd');
+      assert.equal(await page.locator('[data-distance="remaining"]').innerText(), '73 yd');
+      const teeLegs = await page.evaluate(() => window.__maps.lines.filter(l => l.settings.map && l.settings.strokeColor === '#ffd66d').map(l => l.settings.path));
+      assert.equal(teeLegs.length, 2);
+      assert.deepEqual(teeLegs[0][0], layout.holes[0].tee);
+      assert.deepEqual(teeLegs[1][1], layout.holes[0].green);
       await dialog.screenshot({ path: path.join(out, `hole-overview-${viewport.width}x${viewport.height}.png`) });
 
       // Nearby movement drives the live green-centre distance.
@@ -49,22 +60,41 @@ const layout = { name: 'Test course', tee_name: 'Yellow', source: { attribution:
       await page.locator('.hole-dialog[data-gps-state="live"]').waitFor();
       const before = Number(await page.locator('[data-distance="green"]').innerText());
       assert.ok(before > 200 && before < 300); assert.equal(await page.locator('.hole-map-pin-player').count(), 1);
+      assert.equal(await page.locator('[data-target-origin]').innerText(), 'From your GPS');
+      assert.equal(await page.locator('[data-distance="aim"]').innerText(), '182 yd');
+      assert.equal(await page.locator('[data-distance="remaining"]').innerText(), '73 yd');
       await page.evaluate(() => emitGps({ latitude: 52.002, longitude: -1.5, accuracy: 4 }));
       assert.ok(Number(await page.locator('[data-distance="green"]').innerText()) < before);
       assert.match(await page.locator('[data-gps-status]').innerText(), /GPS ±5 yd/);
+      assert.equal(await page.locator('[data-distance="aim"]').innerText(), '61 yd');
+      assert.equal(await page.locator('[data-distance="remaining"]').innerText(), '73 yd');
       await dialog.screenshot({ path: path.join(out, `hole-live-${viewport.width}x${viewport.height}.png`) });
-      await page.evaluate(() => google.maps.event.trigger(window.__maps.instances[0], 'click', { latLng: new google.maps.LatLng(52.0025, -1.5) }));
-      const target = page.locator('[data-target-distances]'); await target.waitFor();
+      await page.evaluate(() => google.maps.event.trigger(window.__maps.instances[0], 'click', { latLng: new google.maps.LatLng(52.0028, -1.5) }));
+      assert.equal(await page.locator('[data-distance="aim"]').innerText(), '97 yd');
+      assert.equal(await page.locator('[data-distance="remaining"]').innerText(), '36 yd');
       const targetBox = await target.boundingBox();
       assert.ok(targetBox.x + targetBox.width <= viewport.width - 64, 'Tapped-target details must leave the map zoom controls clear');
+      assert.ok(await target.evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'Both distances must fit on small phones');
+      await page.evaluate(() => emitGps({ latitude: 51.5, longitude: -.12, accuracy: 6 }));
+      assert.equal(await page.locator('[data-target-origin]').innerText(), 'From tee');
+      assert.equal(await page.locator('[data-distance="aim"]').innerText(), '328 yd');
+      assert.equal(await page.locator('[data-distance="remaining"]').innerText(), '36 yd');
+      assert.equal(await page.locator('.hole-map-pin-target').count(), 1, 'The aim point survives changing GPS mode');
       await page.locator('[data-clear-target]').click(); assert.equal(await target.isVisible(), false);
+      assert.equal(await page.locator('.hole-map-pin-target').count(), 0);
+      await page.evaluate(() => google.maps.event.trigger(window.__maps.instances[0], 'click', { latLng: new google.maps.LatLng(52.0025, -1.5) }));
       await page.locator('[data-hole-next]').click(); assert.equal(await page.locator('[data-hole-title]').innerText(), 'Hole 2');
+      assert.equal(await target.isVisible(), false, 'Switching holes clears the old aim point');
       assert.equal(await page.evaluate(() => gpsWatches), 1);
+      await page.evaluate(() => google.maps.event.trigger(window.__maps.instances[0], 'click', { latLng: new google.maps.LatLng(52.0025, -1.5) }));
 
       for (const [accuracy, age, expected] of [[80, 0, 'inaccurate'], [5, 16000, 'stale'], [5, -10000, 'invalid']]) {
         await page.evaluate(({ accuracy, age }) => emitGps({ latitude: 52.002, longitude: -1.5, accuracy }, Date.now() - age), { accuracy, age });
         await page.locator(`.hole-dialog[data-gps-state="${expected}"]`).waitFor();
-        assert.equal(await page.locator('[data-distances]').isVisible(), false);
+        assert.equal(await page.locator('[data-yardage-origin]').innerText(), 'From tee');
+        assert.equal(await page.locator('[data-distance="green"]').innerText(), '365');
+        assert.equal(await page.locator('[data-distance="aim"]').innerText(), '280 yd');
+        assert.equal(await page.locator('[data-distance="remaining"]').innerText(), '85 yd');
         assert.equal(await page.locator('.hole-map-pin-player').count(), 0);
       }
       await page.evaluate(() => emitGpsError(1));
@@ -80,7 +110,8 @@ const layout = { name: 'Test course', tee_name: 'Yellow', source: { attribution:
       await page.evaluate(() => { window.realNow = Date.now; const future = Date.now() + 16000; Date.now = () => future; });
       await page.locator('.hole-dialog[data-gps-state="stale"]').waitFor();
       await page.evaluate(() => { Date.now = window.realNow; });
-      assert.equal(await page.locator('[data-distances]').isVisible(), false);
+      assert.equal(await page.locator('[data-yardage-origin]').innerText(), 'From tee');
+      assert.equal(await page.locator('[data-distance="green"]').innerText(), '365');
       await page.evaluate(() => { window.testHidden = true; Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.testHidden }); document.dispatchEvent(new Event('visibilitychange')); });
       assert.equal(await page.evaluate(() => window.__gps.active.size), 0);
       await page.evaluate(() => { window.testHidden = false; document.dispatchEvent(new Event('visibilitychange')); });

@@ -1,5 +1,5 @@
-import {createHoleMap,normaliseHole,coordinates,distanceMetres,yardsBetween} from "./hole-map.js?v=2027-fullscreen-1";
-import {holeGpsState} from "./hole-gps.js?v=2027-fullscreen-1";
+import {createHoleMap,normaliseHole,coordinates,distanceMetres} from "./hole-map.js?v=2027-fullscreen-1";
+import {holeGpsState,holeMeasurements} from "./hole-gps.js?v=2027-aim-point-1";
 
 const cross='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
 const locate='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></svg>';
@@ -15,8 +15,8 @@ export function openHolePicker(event,b,preparedLayout=null) {
     <section data-hole-picker hidden><p class="hole-picker-note">${preview?"Preview the hole maps before saving the event.":"Choose a hole to open its map."}</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section>
     <section data-hole-screen hidden>
       <div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p>
-        <aside class="hole-readout" aria-label="Hole distance"><div class="hole-live-yardage" data-distances hidden><div><strong data-distance="green"></strong><span>yd</span></div><span class="hole-distance-label">To green centre</span></div><strong class="hole-overview-label" data-overview>Hole overview</strong><button type="button" class="hole-gps-button" data-gps-toggle aria-pressed="false"><span class="hole-gps-dot" aria-hidden="true"></span><span data-distance-origin><span data-gps-status role="status">Use GPS</span></span></button></aside>
-        <div class="hole-target-distances" data-target-distances hidden></div>
+        <aside class="hole-readout" aria-label="Hole distance"><span class="hole-distance-start" data-yardage-origin>From tee</span><div class="hole-live-yardage" data-distances hidden><div><strong data-distance="green"></strong><span>yd</span></div><span class="hole-distance-label">To green centre</span></div><button type="button" class="hole-gps-button" data-gps-toggle aria-pressed="false"><span class="hole-gps-dot" aria-hidden="true"></span><span data-distance-origin><span data-gps-status role="status">Use GPS</span></span></button></aside>
+        <div class="hole-target-distances" data-target-distances role="group" aria-label="Aim point distances" hidden><span class="hole-target-origin" data-target-origin>From tee</span><span>To aim <strong data-distance="aim"></strong></span><span>Then green <strong data-distance="remaining"></strong></span><button type="button" data-clear-target aria-label="Clear aim point">${cross}</button></div>
       </div>
       <nav class="hole-navigation" aria-label="Hole navigation"><button type="button" data-hole-prev><span aria-hidden="true">‹</span> Previous</button><button type="button" class="hole-fit" data-hole-fit aria-label="Fit hole on screen" title="Fit hole">${locate}</button><button type="button" data-hole-next>Next <span aria-hidden="true">›</span></button></nav>
     </section><footer class="hole-map-attribution" data-hole-source hidden></footer>`;
@@ -29,24 +29,26 @@ export function openHolePicker(event,b,preparedLayout=null) {
   const state=()=>holeGpsState(fix,selected);
   function updateDistances({fit=false}={}){
     if(!selected||closed)return;
-    const mode=state(),live=mode==="live",changed=live!==wasLive;
+    const measurements=holeMeasurements(fix,selected,target),{mode,live}=measurements,changed=live!==wasLive;
     dialog.dataset.gpsState=mode;
-    if(!live&&target){target=null;controller?.setTarget(null);}
     controller?.setPosition(live?fix.point:null);
     if(fit||changed)controller?.fitHole();
     wasLive=live;
-    $("[data-distances]").hidden=!live;$("[data-overview]").hidden=live;
-    setText($("[data-distance=green]"),live?String(yardsBetween(fix.point,selected.green)):"");
+    $("[data-distances]").hidden=measurements.green===null;
+    setText($("[data-distance=green]"),String(measurements.green??"—"));
+    setText($("[data-yardage-origin]"),live?"From your GPS":"From tee");
     $("[data-distance-origin]").classList.toggle("is-live",live);
     const messages={live:live?`GPS ±${Math.ceil(fix.accuracy/.9144)} yd`:"",away:"Outside 1,000 yd",inaccurate:"Weak GPS · waiting",stale:"Refreshing GPS…",invalid:"Waiting for GPS…"};
     setText($("[data-gps-status]"),messages[mode]||statusMessage);
     const gps=$("[data-gps-toggle]");gps.setAttribute("aria-pressed",String(wanted));
     gps.setAttribute("aria-label",wanted?"GPS active. Pause live distances":"Use GPS for live distances");
     gps.title=mode==="away"?"Live yardage appears within 1,000 yards of this hole.":mode==="inaccurate"?"Waiting for GPS accuracy of 20 metres or better.":wanted?"Pause live distances":"Allow location to see your distance to the green centre.";
-    const targetPanel=$("[data-target-distances]");targetPanel.hidden=!live||!target;
-    if(live&&target)targetPanel.innerHTML=`<span>To target <strong>${yardsBetween(fix.point,target)} yd</strong></span><button type="button" data-clear-target aria-label="Clear target">${cross}</button>`;
-    targetPanel.querySelector("button")?.addEventListener("click",()=>{target=null;controller?.setTarget(null);updateDistances();});
+    $("[data-target-distances]").hidden=!target;
+    setText($("[data-target-origin]"),live?"From your GPS":"From tee");
+    setText($("[data-distance=aim]"),`${measurements.aim??"—"} yd`);
+    setText($("[data-distance=remaining]"),`${measurements.remaining??"—"} yd`);
   }
+  $("[data-clear-target]").onclick=()=>{target=null;controller?.setTarget(null);updateDistances();};
   function stopWatching(){watchGeneration++;if(watch!==null){navigator.geolocation?.clearWatch(watch);watch=null;}fix=null;updateDistances();}
   function beginGPS(){
     requestedGPS=true;wanted=true;stopWatching();
@@ -95,7 +97,7 @@ export function openHolePicker(event,b,preparedLayout=null) {
     if(controller||mapPromise)return;
     mapPromise=createHoleMap($("[data-hole-map]"),{
       center:hole.tee,
-      onClick(point){if(state()!=="live")return;target=point;controller?.setTarget(point);updateDistances();},
+      onClick(point){target=point;controller?.setTarget(point);updateDistances();},
       onError(error){if(!closed){$("[data-map-status]").hidden=false;$("[data-map-status]").textContent=error.message;}},
     }).then(map=>{
       if(closed){map.destroy();return;}
