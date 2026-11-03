@@ -9,7 +9,7 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
  await new Promise(resolve=>server.listen(8765,'127.0.0.1',resolve));const browser=await chromium.launch({headless:true});
  try{
   for(const width of [320,390,1365]){
-   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'}),model=await mocks(context,{signedIn:true,admin:true});
+   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block',locale:'en-GB'}),model=await mocks(context,{signedIn:true,admin:true});
    model.profile.is_admin=true;
    model.events=[{...fixture,event_type:'pairs',round_number:null,member_price:40,guest_price:50,first_time:'10:00',tee_interval:8,tee_published_at:'2027-06-01T12:00:00Z',tee_revision:1,place_id:'existing-course',course_name:'Test course',course_layout_id:'retained-layout'}];
    model.responses=[{id:1,event_id:999,user_id:uid,participant_id:uid,name:'Test Member',attending:true,reserve:false,buggy:false},{id:2,event_id:999,user_id:other,participant_id:other,name:'Other Member',attending:true,reserve:false,buggy:false}];
@@ -48,7 +48,7 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
    await page.evaluate(()=>google.maps.event.trigger(window.__maps.instances[0],'click',{latLng:new google.maps.LatLng(52.0011,-1.5)}));assert(await page.locator('[data-target-distances]').isVisible());
    await page.locator('[data-hole-next]').click();assert.equal(await page.locator('[data-hole-title]').innerText(),'Hole 2');assert.equal(await page.evaluate(()=>window.__maps.instances.length),1);
    await page.locator('dialog.hole-dialog').screenshot({path:path.join(out,`overhead-hole-${width}.png`)});assert(await page.locator('dialog.hole-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth+1));
-   await page.locator('[data-hole-close]').click();assert.equal(await page.evaluate(()=>window.gpsClears),1);assert.equal(await page.evaluate(()=>window.cameraCalls),0);assert.deepEqual(errors,[]);
+   await page.locator('[data-hole-close]').click();await page.locator('dialog.hole-dialog').waitFor({state:'detached'});assert.equal(await page.evaluate(()=>window.gpsClears),1);assert.equal(await page.evaluate(()=>window.cameraCalls),0);assert.deepEqual(errors,[]);
    report.push(`PASS ${width}px: published event editing, map-service failure, saved map/groups preserved, pending draft retained, failed save retained, overhead map/rotation/GPS/target/navigation without camera`);await context.close();
   }
   fs.writeFileSync(path.join(out,'editable-events.json'),JSON.stringify(report,null,2));console.log(report.join('\n'));

@@ -181,7 +181,7 @@ async function saveEvent(ev) {
   if (!form.reportValidity()) return;
   const status = form.querySelector(".form-status");
   savingEvent = true; form.inert = true; syncControls();
-  setSaveState("eventSaveState", "Saving…", "saving"); status.textContent = "Saving event…";
+  setSaveState("eventSaveState", "Saving…", "saving"); status.dataset.state = "saving"; status.textContent = "Saving event…";
   try {
     if (coursePending) throw new Error("Course details are still loading. Please save in a moment.");
     const f = new FormData(form), name = String(f.get("name") || "").trim();
@@ -221,9 +221,11 @@ async function saveEvent(ev) {
     form.querySelector(".form-status").textContent = scheduleChanged && wasPublished
       ? (selected.tee_times_dirty ? "Event and tee times saved. Player groups kept. Review the outstanding player changes in Tee times before publishing." : "Event and published tee times updated. Player groups kept.")
       : "Event saved. Existing RSVPs and tee groups kept.";
+    status.dataset.state = "saved";
     if (teeDirty) form.querySelector(".form-status").textContent += " Your unsaved group changes are still in Tee times.";
     b.toast("Event saved.");
   } catch (error) {
+    status.dataset.state = "error";
     status.textContent = error.message || "Could not save the event. Please try again.";
     setSaveState("eventSaveState", "Not saved · check below", "unsaved");
   } finally { savingEvent = false; form.inert = false; syncControls(); }
