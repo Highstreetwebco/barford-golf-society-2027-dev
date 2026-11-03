@@ -10,6 +10,7 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
  try{
   for(const width of [320,390,1365]){
    const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'}),model=await mocks(context,{signedIn:true,admin:true});
+   model.profile.is_admin=true;
    model.events=[{...fixture,event_type:'pairs',round_number:null,member_price:40,guest_price:50,first_time:'10:00',tee_interval:8,tee_published_at:'2027-06-01T12:00:00Z',tee_revision:1,place_id:'existing-course',course_name:'Test course',course_layout_id:'retained-layout'}];
    model.responses=[{id:1,event_id:999,user_id:uid,participant_id:uid,name:'Test Member',attending:true,reserve:false,buggy:false},{id:2,event_id:999,user_id:other,participant_id:other,name:'Other Member',attending:true,reserve:false,buggy:false}];
    model.groups=model.responses.map((r,i)=>({event_id:999,group_number:i+1,tee_time:i?'10:08':'10:00',players:[{user_id:r.user_id,participant_id:r.user_id,name:r.name,type:'walker'}]}));
@@ -51,7 +52,13 @@ const layout={name:'Test overhead course',tee_name:'Yellow',source:{attribution:
    report.push(`PASS ${width}px: published event editing, map-service failure, saved map/groups preserved, pending draft retained, failed save retained, overhead map/rotation/GPS/target/navigation without camera`);await context.close();
   }
   fs.writeFileSync(path.join(out,'editable-events.json'),JSON.stringify(report,null,2));console.log(report.join('\n'));
- }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+ }finally{
+  if(report.length<3)for(const context of browser.contexts())for(const page of context.pages()){
+   await page.screenshot({path:path.join(out,'editable-events-failure.png'),fullPage:true}).catch(()=>{});
+   fs.writeFileSync(path.join(out,'editable-events-failure.txt'),await page.locator('body').innerText().catch(()=>''));
+  }
+  await browser.close();await new Promise(resolve=>server.close(resolve));
+ }
 })().catch(error=>{console.error(error);process.exitCode=1;server.close();});
 
 async function installMap(context) {
