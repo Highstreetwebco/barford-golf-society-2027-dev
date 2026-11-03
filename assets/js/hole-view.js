@@ -1,111 +1,116 @@
-import {createHoleMap,normaliseHole,coordinates,distanceMetres,yardsBetween} from "./hole-map.js?v=2027-route-start-1";
+import {createHoleMap,normaliseHole,coordinates,distanceMetres,yardsBetween} from "./hole-map.js?v=2027-fullscreen-1";
+import {holeGpsState} from "./hole-gps.js?v=2027-fullscreen-1";
 
-const MAX_FIX_AGE=30000,MAX_ACCURACY=150;
+const cross='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+const locate='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/></svg>';
 let activeDialog;
 export function openHolePicker(event,b,preparedLayout=null) {
-  // A prepared map is only an organiser preview. Members always use the event
-  // RPC, which withholds coordinates until an organiser confirms the course.
   const preview=!!preparedLayout&&b.state?.admin===true;
   if(activeDialog?.open){activeDialog.focus();return activeDialog;}
   const dialog=document.createElement("dialog");
   dialog.className="hole-dialog";
-  dialog.setAttribute("aria-label","View hole");
-  dialog.innerHTML=`<div class="hole-dialog-top"><div><span class="eyebrow">ON THE COURSE</span><h2>Choose your hole</h2><p>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-close>Close</button></div><div data-hole-loading role="status" class="hole-load">Loading the course…</div><section data-hole-picker hidden><p class="hole-picker-note">Tap a hole to see its overhead satellite map and yardages.</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section><p class="hole-map-attribution" data-hole-source hidden></p><section data-hole-screen hidden><div class="hole-screen-heading"><div><h2 data-hole-title></h2><p data-hole-course></p></div><button type="button" class="secondary" data-hole-grid-back>All holes</button></div><div class="hole-stats" data-hole-stats></div><div class="hole-mode-choices"><div class="hole-mode-map"><strong>Satellite map & distances</strong><span>See the hole, then use your location for live yardages.</span></div><div class="hole-gps-controls"><button type="button" data-gps-toggle>Use my location for distances</button><p data-gps-status role="status">Showing distances from the mapped start reference. Tap the button for your live position.</p></div></div><div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p><div class="hole-map-actions"><button type="button" data-hole-rotate-left aria-label="Rotate map left">↶</button><button type="button" data-hole-rotate-right aria-label="Rotate map right">↷</button><button type="button" class="hole-recentre" data-hole-fit>Fit hole</button></div></div><div class="hole-distance-panel"><p data-distance-origin>From mapped start reference</p><div class="hole-distances" data-distances></div><div class="hole-target-distances" data-target-distances hidden></div></div><p class="hole-help">Tap anywhere on the map to measure a shot. ↶ ↷ rotate the map; Fit hole recentres it. Yardages are a guide.</p><div class="hole-navigation"><button type="button" class="secondary" data-hole-prev>← Previous</button><span data-hole-count></span><button type="button" class="secondary" data-hole-next>Next →</button></div></section>`;
-  document.body.append(dialog);
-  if(preview){
-    dialog.setAttribute("aria-label","Course map preview");
-    dialog.querySelector(".eyebrow").textContent="ADMIN PREVIEW";
-    dialog.querySelector(".hole-dialog-top h2").textContent="Course map preview";
-    dialog.querySelector(".hole-picker-note").textContent="Preview the discovered tee and green positions. They are added automatically when you save the event.";
-  }
-  activeDialog=dialog;
-  dialog.showModal();
-  const $=(selector)=>dialog.querySelector(selector);
-  let layout,holes=[],selected,controller,mapPromise,closed=false;
-  let watch=null,watchGeneration=0,wanted=false,fix=null,target=null;
-  function gpsStatus(message){$("[data-gps-status]").textContent=message;}
-  function clearPosition(){fix=null;controller?.setPosition(null);updateDistances();}
-  function stopWatching(){watchGeneration++;if(watch!==null){navigator.geolocation?.clearWatch(watch);watch=null;}clearPosition();}
-  function validFix(){return !!fix&&Date.now()-fix.timestamp<=MAX_FIX_AGE&&fix.accuracy<=MAX_ACCURACY;}
-  function updateDistances(){
+  dialog.setAttribute("aria-label",preview?"Course map preview":"View hole");
+  dialog.innerHTML=`<header class="hole-dialog-top"><button type="button" class="hole-close" data-hole-close aria-label="Close hole map">${cross}</button><div class="hole-heading"><span class="eyebrow">${preview?"ADMIN PREVIEW":"ON THE COURSE"}</span><h2 data-hole-title>${preview?"Course map preview":"Choose your hole"}</h2><p data-hole-course>${b.escape(event.name||"Today's round")}</p></div><button type="button" class="secondary" data-hole-grid-back hidden>All holes</button></header>
+    <div data-hole-loading role="status" class="hole-load">Loading the course…</div>
+    <section data-hole-picker hidden><p class="hole-picker-note">${preview?"Preview the hole maps before saving the event.":"Choose a hole to open its map."}</p><div class="hole-number-grid" data-hole-grid></div><p class="hole-picker-note" data-hole-readiness></p></section>
+    <section data-hole-screen hidden>
+      <div class="hole-map-wrap"><div class="hole-map-canvas" data-hole-map aria-label="Satellite map of the selected hole"></div><p class="hole-map-message" role="status" data-map-status>Loading satellite map…</p>
+        <aside class="hole-readout" aria-label="Hole distance"><div class="hole-live-yardage" data-distances hidden><div><strong data-distance="green"></strong><span>yd</span></div><span class="hole-distance-label">To green centre</span></div><strong class="hole-overview-label" data-overview>Hole overview</strong><button type="button" class="hole-gps-button" data-gps-toggle aria-pressed="false"><span class="hole-gps-dot" aria-hidden="true"></span><span data-distance-origin><span data-gps-status role="status">Use GPS</span></span></button></aside>
+        <div class="hole-target-distances" data-target-distances hidden></div>
+      </div>
+      <nav class="hole-navigation" aria-label="Hole navigation"><button type="button" data-hole-prev><span aria-hidden="true">‹</span> Previous</button><button type="button" class="hole-fit" data-hole-fit aria-label="Fit hole on screen" title="Fit hole">${locate}</button><button type="button" data-hole-next>Next <span aria-hidden="true">›</span></button></nav>
+    </section><footer class="hole-map-attribution" data-hole-source hidden></footer>`;
+  document.body.append(dialog);activeDialog=dialog;dialog.showModal();
+  document.documentElement.classList.add("has-hole-dialog");
+  const $=selector=>dialog.querySelector(selector);
+  let layout,holes=[],selected,controller,mapPromise,closed=false,screenOpen=false,resize;
+  let watch=null,watchGeneration=0,wanted=false,requestedGPS=false,fix=null,target=null,wasLive=false,statusMessage="Use GPS";
+  const setText=(element,text)=>{if(element.textContent!==text)element.textContent=text;};
+  const state=()=>holeGpsState(fix,selected);
+  function updateDistances({fit=false}={}){
     if(!selected||closed)return;
-    const live=validFix(),origin=live?fix.point:selected.tee;
-    $("[data-distance-origin]").textContent=live?`From your GPS location · accuracy ±${Math.round(fix.accuracy)} m`:"From mapped start reference · turn on your location for live distances";
+    const mode=state(),live=mode==="live",changed=live!==wasLive;
+    dialog.dataset.gpsState=mode;
+    if(!live&&target){target=null;controller?.setTarget(null);}
+    controller?.setPosition(live?fix.point:null);
+    if(fit||changed)controller?.fitHole();
+    wasLive=live;
+    $("[data-distances]").hidden=!live;$("[data-overview]").hidden=live;
+    setText($("[data-distance=green]"),live?String(yardsBetween(fix.point,selected.green)):"");
     $("[data-distance-origin]").classList.toggle("is-live",live);
-    $("[data-distances]").innerHTML=[["front","Front"],["green","Centre"],["back","Back"]].filter(([key])=>selected[key]).map(([key,label])=>`<div><span>${label}</span><strong data-distance="${key}">${yardsBetween(origin,selected[key])??"—"}</strong><small>yards</small></div>`).join("");
-    const targetPanel=$("[data-target-distances]");targetPanel.hidden=!target;
-    if(target)targetPanel.innerHTML=`<span>To target <strong>${yardsBetween(origin,target)??"—"} yd</strong></span><span>Target to centre <strong>${yardsBetween(target,selected.green)??"—"} yd</strong></span><button type="button" class="secondary" data-clear-target>Clear</button>`;
+    const messages={live:live?`GPS ±${Math.ceil(fix.accuracy/.9144)} yd`:"",away:"Outside 1,000 yd",inaccurate:"Weak GPS · waiting",stale:"Refreshing GPS…",invalid:"Waiting for GPS…"};
+    setText($("[data-gps-status]"),messages[mode]||statusMessage);
+    const gps=$("[data-gps-toggle]");gps.setAttribute("aria-pressed",String(wanted));
+    gps.setAttribute("aria-label",wanted?"GPS active. Pause live distances":"Use GPS for live distances");
+    gps.title=mode==="away"?"Live yardage appears within 1,000 yards of this hole.":mode==="inaccurate"?"Waiting for GPS accuracy of 20 metres or better.":wanted?"Pause live distances":"Allow location to see your distance to the green centre.";
+    const targetPanel=$("[data-target-distances]");targetPanel.hidden=!live||!target;
+    if(live&&target)targetPanel.innerHTML=`<span>To target <strong>${yardsBetween(fix.point,target)} yd</strong></span><button type="button" data-clear-target aria-label="Clear target">${cross}</button>`;
     targetPanel.querySelector("button")?.addEventListener("click",()=>{target=null;controller?.setTarget(null);updateDistances();});
   }
+  function stopWatching(){watchGeneration++;if(watch!==null){navigator.geolocation?.clearWatch(watch);watch=null;}fix=null;updateDistances();}
   function beginGPS(){
-    wanted=true;
-    if(!navigator.geolocation){wanted=false;gpsStatus("This browser does not support GPS. You can still view distances from the mapped start reference.");return;}
-    if(!window.isSecureContext){wanted=false;gpsStatus("GPS needs a secure connection. Open the website using HTTPS.");return;}
-    stopWatching();
+    requestedGPS=true;wanted=true;stopWatching();
+    if(!navigator.geolocation||!window.isSecureContext){wanted=false;statusMessage="GPS unavailable";updateDistances();return;}
+    statusMessage="Finding GPS…";updateDistances();
     const generation=watchGeneration;
-    $("[data-gps-toggle]").textContent="Stop live distances";
-    gpsStatus("Finding your location… Move into the open for the best signal.");
-    try { const nextWatch=navigator.geolocation.watchPosition(result=>{
-      if(closed||!wanted||document.hidden||generation!==watchGeneration)return;
-      const point=coordinates({lat:result.coords.latitude,lng:result.coords.longitude}),accuracy=Number(result.coords.accuracy),timestamp=Number(result.timestamp);
-      if(!point||!Number.isFinite(accuracy)||accuracy<0||!Number.isFinite(timestamp)||timestamp>Date.now()+5000||Date.now()-timestamp>MAX_FIX_AGE){clearPosition();gpsStatus("GPS signal is out of date. Waiting for a fresh location…");return;}
-      if(accuracy>MAX_ACCURACY){clearPosition();gpsStatus(`GPS accuracy is ±${Math.round(accuracy)} m. Move near a window or outside for a stronger signal.`);return;}
-      fix={point,accuracy,timestamp};controller?.setPosition(point);updateDistances();gpsStatus(`GPS is live · accuracy ±${Math.round(accuracy)} m. Distances update as you move.`);
-    },error=>{
-      if(closed||!wanted||generation!==watchGeneration)return;
-      clearPosition();
-      if(error.code===1){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Try location again";gpsStatus("Location access was denied. Allow location for this website in your browser settings, then try again.");}
-      else {gpsStatus(error.code===3?"GPS timed out. Waiting for a fresh signal…":"Your location is unavailable. Waiting for a fresh signal…");}
-    },{enableHighAccuracy:true,maximumAge:0,timeout:12000});
-      if(generation===watchGeneration&&wanted&&!document.hidden)watch=nextWatch;
-      else navigator.geolocation.clearWatch(nextWatch);
-    }
-    catch {wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Try location again";gpsStatus("This browser blocked location access. Check this website’s location permission, then try again.");}
+    try{
+      const next=navigator.geolocation.watchPosition(result=>{
+        if(closed||!wanted||!screenOpen||document.hidden||generation!==watchGeneration)return;
+        fix={point:coordinates({lat:result.coords.latitude,lng:result.coords.longitude}),accuracy:result.coords.accuracy,timestamp:result.timestamp};
+        updateDistances();
+      },error=>{
+        if(closed||!wanted||generation!==watchGeneration)return;
+        fix=null;
+        if(error.code===1){wanted=false;stopWatching();statusMessage="GPS blocked · retry";}
+        else statusMessage="Waiting for GPS…";
+        updateDistances();
+      },{enableHighAccuracy:true,maximumAge:0,timeout:12000});
+      if(generation===watchGeneration&&wanted&&screenOpen&&!document.hidden)watch=next;
+      else navigator.geolocation.clearWatch(next);
+    }catch{wanted=false;stopWatching();statusMessage="GPS blocked · retry";updateDistances();}
   }
   $("[data-gps-toggle]").onclick=()=>{
-    if(wanted){wanted=false;stopWatching();$("[data-gps-toggle]").textContent="Use my location for distances";gpsStatus("Showing distances from the mapped start reference. Tap the button for your live position.");}
+    if(wanted){wanted=false;statusMessage="Use GPS";stopWatching();}
     else beginGPS();
   };
   function grid(){
-    $("[data-hole-picker]").hidden=false;$("[data-hole-screen]").hidden=true;dialog.scrollTop=0;
-    dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Choose your hole";
+    screenOpen=false;stopWatching();dialog.classList.remove("is-hole-view");
+    $("[data-hole-picker]").hidden=false;$("[data-hole-screen]").hidden=true;$("[data-hole-grid-back]").hidden=true;dialog.scrollTop=0;
+    $("[data-hole-title]").textContent=preview?"Course map preview":"Choose your hole";
+    $("[data-hole-course]").textContent=event.name||"Today's round";
     $("[data-hole-grid]").querySelector(`[data-hole="${selected?.number||1}"]`)?.focus();
   }
   async function showHole(number){
     const hole=holes.find(h=>h.number===number);
     if(!hole?.reviewed||!hole.tee||!hole.green)return;
-    selected=hole;target=null;
-    $("[data-hole-picker]").hidden=true;$("[data-hole-screen]").hidden=false;dialog.scrollTop=0;
-    dialog.querySelector(".hole-dialog-top h2").textContent=preview?"Course map preview":"Your hole view";
+    selected=hole;target=null;screenOpen=true;dialog.classList.add("is-hole-view");
+    $("[data-hole-picker]").hidden=true;$("[data-hole-screen]").hidden=false;$("[data-hole-grid-back]").hidden=false;dialog.scrollTop=0;
     $("[data-hole-title]").textContent=`Hole ${number}`;
-    $("[data-hole-course]").textContent=`${layout.name}${layout.tee_name?" · "+layout.tee_name+" tees":""}`;
-    $("[data-hole-stats]").innerHTML=`<div><span>${layout.source?.par_source === "numbered_map_routes" ? "Par (map)" : "Par"}</span><strong>${b.escape(hole.par??"—")}</strong></div><div><span>Card yardage</span><strong>${b.escape(hole.yards??"—")}</strong></div><div><span>Stroke index</span><strong>${b.escape(hole.stroke_index??"—")}</strong></div>`;
-    $("[data-hole-count]").textContent=`${number} / 18`;
+    $("[data-hole-course]").textContent=hole.par?`Par ${hole.par}`:"";
     $("[data-hole-prev]").disabled=!holes.some(h=>h.number<number&&h.reviewed&&h.tee&&h.green);
     $("[data-hole-next]").disabled=!holes.some(h=>h.number>number&&h.reviewed&&h.tee&&h.green);
-    updateDistances();
-    if(controller){controller.setHole(hole);controller.setPosition(validFix()?fix.point:null);return;}
-    if(mapPromise)return;
+    controller?.setHole(hole);updateDistances({fit:true});
+    // The user has opened a hole: ask the browser once, then watch locally.
+    if((!preview&&!requestedGPS)||(wanted&&watch===null))beginGPS();
+    if(controller||mapPromise)return;
     mapPromise=createHoleMap($("[data-hole-map]"),{
       center:hole.tee,
-      onClick(point){target=point;controller?.setTarget(point);updateDistances();},
+      onClick(point){if(state()!=="live")return;target=point;controller?.setTarget(point);updateDistances();},
       onError(error){if(!closed){$("[data-map-status]").hidden=false;$("[data-map-status]").textContent=error.message;}},
     }).then(map=>{
       if(closed){map.destroy();return;}
-      controller=map;$("[data-map-status]").hidden=true;
-      controller.setHole(selected);controller.setPosition(validFix()?fix.point:null);
+      controller=map;$("[data-map-status]").hidden=true;controller.setHole(selected);updateDistances({fit:true});
+      if(typeof ResizeObserver!=="undefined"){resize=new ResizeObserver(()=>{if(screenOpen)controller?.fitHole();});resize.observe($("[data-hole-map]"));}
     }).catch(error=>{if(!closed){$("[data-map-status]").textContent=error.message;$("[data-map-status]").hidden=false;}}).finally(()=>{mapPromise=null;});
   }
   $("[data-hole-prev]").onclick=()=>{const previous=holes.filter(h=>h.number<selected.number&&h.reviewed&&h.tee&&h.green).at(-1);if(previous)showHole(previous.number);};
   $("[data-hole-next]").onclick=()=>{const next=holes.find(h=>h.number>selected.number&&h.reviewed&&h.tee&&h.green);if(next)showHole(next.number);};
   $("[data-hole-grid-back]").onclick=grid;
   $("[data-hole-fit]").onclick=()=>controller?.fitHole();
-  $("[data-hole-rotate-left]").onclick=()=>controller?.rotate(-30);
-  $("[data-hole-rotate-right]").onclick=()=>controller?.rotate(30);
   $("[data-hole-close]").onclick=()=>dialog.close();
-  function visibility(){if(document.hidden){stopWatching();if(wanted)gpsStatus("GPS paused while the screen is hidden.");}else if(wanted)beginGPS();}
-  const freshness=setInterval(()=>{if(fix&&!validFix()){clearPosition();gpsStatus("GPS signal is out of date. Waiting for a fresh location…");}},3000);
-  function cleanup(){if(closed)return;closed=true;wanted=false;stopWatching();clearInterval(freshness);document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pagehide",cleanup);controller?.destroy();dialog.remove();activeDialog=null;}
+  function visibility(){if(document.hidden){statusMessage="GPS paused";stopWatching();}else if(wanted&&screenOpen)beginGPS();}
+  const freshness=setInterval(()=>{if(fix&&state()==="stale")updateDistances();},1000);
+  function cleanup(){if(closed)return;closed=true;wanted=false;stopWatching();clearInterval(freshness);resize?.disconnect();document.removeEventListener("visibilitychange",visibility);window.removeEventListener("pagehide",cleanup);controller?.destroy();dialog.remove();document.documentElement.classList.remove("has-hole-dialog");activeDialog=null;}
   dialog.addEventListener("close",cleanup);
   document.addEventListener("visibilitychange",visibility);
   window.addEventListener("pagehide",cleanup);

@@ -80,7 +80,7 @@ export async function createHoleMap(element,{center,onClick,onError}={}) {
     renderingType:maps.RenderingType.VECTOR,tilt:0,heading:0,
     gestureHandling:"greedy",headingInteractionEnabled:true,tiltInteractionEnabled:false,
     streetViewControl:false,fullscreenControl:false,mapTypeControl:false,
-    zoomControl:true,rotateControl:false,keyboardShortcuts:true,
+    zoomControl:true,cameraControl:false,rotateControl:false,keyboardShortcuts:true,
   });
   const report=(error)=>{if(!destroyed)onError?.(error);};
   failures.add(report);
@@ -98,16 +98,17 @@ export async function createHoleMap(element,{center,onClick,onError}={}) {
     if(destroyed)return;clear();
     if(!current)return;
     const {tee,green,front,back,dogleg}=current;
-    if(tee&&green)line([tee,...(dogleg?[dogleg]:[]),green]);
-    pin(tee,"Mapped start","tee");pin(green,"Centre","green");pin(front,"Front","edge");pin(back,"Back","edge");pin(dogleg,"Turn","edge");
-    if(position)pin(position,"You","player");
+    if(tee&&green)line([tee,...(dogleg?[dogleg]:[]),green],"#ffffff",2);
+    pin(tee,"","tee");pin(green,"","green");
+    if(position)pin(position,"","player");
     const origin=position||tee;
-    if(target){if(origin)line([origin,target],"#ffd66d",4);if(green)line([target,green],"#ffd66d",3);pin(target,"Target","target");}
+    if(target){if(origin)line([origin,target],"#ffd66d",4);if(green)line([target,green],"#ffd66d",3);pin(target,"","target");}
     else if(position&&green)line([position,green],"#79dbf2",3);
   }
   function fitHole(){
     if(!current||destroyed)return;
-    const points=[current.tee,current.green,current.front,current.back,current.dogleg].filter(Boolean);
+    // The viewer passes only a fresh nearby position. Never frame a home location.
+    const points=[current.tee,current.green,current.front,current.back,current.dogleg,position].filter(Boolean);
     if(!points.length)return;
     const centre={lat:points.reduce((s,p)=>s+p.lat,0)/points.length,lng:points.reduce((s,p)=>s+p.lng,0)/points.length};
     const angle=current.tee&&current.green?heading(current.tee,current.green):0;
@@ -120,7 +121,7 @@ export async function createHoleMap(element,{center,onClick,onError}={}) {
   const click=map.addListener("click",event=>{const point=coordinates(event.latLng);if(point)onClick?.(point);});
   return {
     map,
-    setHole(hole,{fit=true}={}){current=normaliseHole(hole);target=null;redraw();if(fit)fitHole();},
+    setHole(hole,{fit=true}={}){current=normaliseHole(hole);position=null;target=null;redraw();if(fit)fitHole();},
     setPosition(point){position=coordinates(point);redraw();},
     setTarget(point){target=coordinates(point);redraw();},
     fitHole,
