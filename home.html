@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="assets/css/home-event-first.css?v=2027-event-day-1" />
     <link rel="stylesheet" href="assets/css/event-day.css?v=2027-event-day-1" />
 <link rel="stylesheet" href="assets/css/guest-rsvp.css?v=2027-guest-rsvp-1">
+<style>body.signed-in #joinSociety,body.signed-in #headerSignup {display:none !important;} #headerSignup {font-weight:700;} #joinSociety .button {min-height:44px;display:inline-flex;align-items:center;justify-content:center;} @media(max-width:600px){#joinSociety .actions{flex-direction:column;}#joinSociety .actions .button{width:100%;}}</style>
 </head>
   <body class="page-index simple-site">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -55,12 +56,13 @@
           <a href="gallery.html">Gallery</a><a class="account-link" href="account.html" id="accountNav"
             >Sign in</a
           >
+          <a id="headerSignup" href="signup.html" class="button">Create an account</a>
           <a href="admin.html" data-admin hidden>Admin</a>
         </nav>
       </div>
     </header>
     <main id="main" class="container">
-      <section id="joinSociety" class="panel section" aria-labelledby="joinSocietyTitle" hidden style="padding:24px;margin-bottom:24px">
+      <section id="joinSociety" class="panel section" aria-labelledby="joinSocietyTitle" style="padding:24px;margin-bottom:24px">
         <p class="eyebrow">NEW TO BARFORD GOLF SOCIETY?</p>
         <h2 id="joinSocietyTitle">Join us for the 2027 season</h2>
         <p>Create your member account to RSVP for golf days, manage your details and follow your scores.</p>
