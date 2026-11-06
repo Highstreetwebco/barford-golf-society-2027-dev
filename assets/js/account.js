@@ -1,3 +1,5 @@
+import { mountPhotoEditor } from "./member-photos.js?v=2027-account-photo-1";
+
 const b = await window.barfordReady;
 const { raw, state, escape: e, submit } = b;
 const isSignup = location.pathname.endsWith("signup.html");
@@ -107,7 +109,7 @@ if (isSignup) {
       return;
     }
 
-    area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Username (your name)</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" ${linked ? "readonly" : ""} required>${state.user.email?.endsWith("@members.barford2027.invalid") ? "" : `<label for="profileEmail">Existing account email</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly>`}<label for="profilePhone">Mobile number</label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="25" required value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Visible to organisers and your assigned buggy partner.</small><button>Save details</button><p class="form-status" role="status"></p></form><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
+    area.innerHTML = `<section class="panel"><form id="profileForm" class="form-stack"><h2>Your details</h2><label for="profileName">Username (your name)</label><input id="profileName" name="full_name" autocomplete="name" maxlength="150" value="${e(p.full_name || "")}" ${linked ? "readonly" : ""} required>${state.user.email?.endsWith("@members.barford2027.invalid") ? "" : `<label for="profileEmail">Existing account email</label><input id="profileEmail" type="email" value="${e(state.user.email || "")}" readonly>`}<label for="profilePhone">Mobile number</label><input id="profilePhone" name="phone" type="tel" autocomplete="tel" maxlength="25" required value="${e(p.phone || "")}" aria-describedby="phoneHelp"><small id="phoneHelp">Visible to organisers and your assigned buggy partner.</small><button>Save details</button><p class="form-status" role="status"></p></form><section id="profilePhotoEditor" class="section" aria-label="Profile photo">Loading your photo…</section><div class="actions"><button id="changePassword" class="secondary">Change password</button><button id="signOut" class="secondary">Sign out</button></div></section><aside><section class="panel"><p class="eyebrow">YOUR GOLF</p><h2>Your RSVPs</h2><div id="myRsvps" class="member-summary">Loading…</div><a class="button secondary" href="events.html" style="margin-top:22px">All events</a></section>${state.admin ? '<a class="button section" href="admin.html">Organiser tools</a>' : ""}</aside>`;
     if (!linked) {
       const claim = document.createElement("section");
       claim.className = "panel section";
@@ -169,6 +171,7 @@ if (isSignup) {
     };
     document.getElementById("changePassword").onclick = () =>
       passwordForm(false);
+    await mountPhotoEditor(document.getElementById("profilePhotoEditor"));
     const { data, error } = await b.client
       .from("rsvps")
       .select(

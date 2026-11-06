@@ -59,6 +59,90 @@ function resultBoard() {
   await new Promise(resolve=>server.listen(8765,'127.0.0.1',resolve));
   const browser = await chromium.launch();
   try {
+    // Exercise the member account page in the active suite: the old baseline
+    // photo tests were no longer run after the site was simplified.
+    for (const width of [320,390,1365]) {
+      const {context,page,model,errors}=await setup(browser,{width});
+      const objects=new Set(),deleted=[];
+      let uploads=0,failUpload=false,failProfile=false;
+      await context.route(backend+'/storage/v1/object/baseline-profile-images**',route=>{
+        if(route.request().method()==='POST') {
+          uploads++;
+          if(failUpload){failUpload=false;return route.fulfill({status:503,json:{message:'Photo upload interrupted. Try again.'}});}
+          const key=new URL(route.request().url()).pathname.split('/baseline-profile-images/')[1];
+          assert(key.startsWith(uid+'/'),'Photos upload to the signed-in member’s folder');
+          objects.add(key);
+          return route.fulfill({json:{Id:'fixture',Key:'baseline-profile-images/'+key}});
+        }
+        if(route.request().method()==='DELETE') {
+          for(const key of route.request().postDataJSON().prefixes){objects.delete(key);deleted.push(key);}
+          return route.fulfill({json:[]});
+        }
+        return route.fallback();
+      });
+      await context.route(backend+'/rest/v1/profiles**',route=>{
+        if(route.request().method()==='PATCH'&&failProfile) {
+          failProfile=false;
+          return route.fulfill({status:503,json:{message:'Photo could not be saved. Try again.'}});
+        }
+        return route.fallback();
+      });
+      const editor=page.locator('#profilePhotoEditor'),current=editor.getByAltText('Your current profile photo',{exact:true});
+      const choose=()=>editor.getByLabel('Profile photo (optional)',{exact:true}).setInputFiles(path.join(__dirname,'..','icon-logo.png'));
+      const save=()=>editor.getByRole('button',{name:'Save photo',exact:true}).click();
+      const saved=()=>page.getByText('Profile photo saved.',{exact:true}).waitFor();
+      await page.goto(base+'account.html');
+      await editor.getByRole('heading',{name:'Your profile photo',exact:true}).waitFor();
+      assert.equal(await current.count(),0);
+      await save();await editor.getByText('Choose a photo first.',{exact:true}).waitFor();
+      assert.equal(uploads,0);
+      await editor.getByLabel('Profile photo (optional)',{exact:true}).setInputFiles({name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('not a photo')});
+      await editor.getByText('Choose a JPEG, PNG or WebP photo. Export HEIC photos as JPEG first.',{exact:true}).waitFor();
+      assert.equal(uploads,0);
+      await choose();await editor.getByAltText('Your selected profile photo',{exact:true}).waitFor();
+      assert.equal(uploads,0,'Selecting a photo only previews it');
+      await editor.locator('form').evaluate(form=>{form.requestSubmit();form.requestSubmit();});
+      await saved();assert.equal(uploads,1,'Repeated submit only uploads once');
+      const first=model.profile.baseline_avatar_path;
+      assert(objects.has(first));assert.equal(await current.count(),1);
+      assert.equal(await page.locator('#profilePhone').inputValue(),'07000000000','Photo changes preserve account details');
+      await page.reload();await current.waitFor();
+      await page.waitForFunction(()=>document.querySelector('#profilePhotoEditor img')?.naturalWidth>0);
+      assert((await current.getAttribute('src')).includes(first),'The saved picture loads after refresh');
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Photo form fits the screen');
+      await page.screenshot({path:path.join(out,`account-photo-${width}.png`),fullPage:true});
+
+      await choose();failUpload=true;await save();
+      await editor.getByText('Photo upload interrupted. Try again.',{exact:true}).waitFor();
+      assert.equal(model.profile.baseline_avatar_path,first);assert(objects.has(first));
+      failProfile=true;await save();
+      await editor.getByText('Photo could not be saved. Try again.',{exact:true}).waitFor();
+      assert.equal(model.profile.baseline_avatar_path,first);
+      assert.deepEqual([...objects],[first],'A rejected save cleans up the new upload and retains the current photo');
+      await save();await saved();
+      const replacement=model.profile.baseline_avatar_path;
+      assert.notEqual(replacement,first);assert(objects.has(replacement));assert(deleted.includes(first));
+      await page.reload();await current.waitFor();
+      assert((await current.getAttribute('src')).includes(replacement));
+      failProfile=true;await editor.getByRole('button',{name:'Remove photo',exact:true}).click();
+      await editor.getByText('Photo could not be saved. Try again.',{exact:true}).waitFor();
+      assert.equal(model.profile.baseline_avatar_path,replacement);assert(objects.has(replacement));
+      await editor.getByRole('button',{name:'Remove photo',exact:true}).click();
+      await page.getByText('Profile photo removed.',{exact:true}).waitFor();
+      assert.equal(model.profile.baseline_avatar_path,null);assert.equal(objects.size,0);
+      await page.reload();await editor.getByRole('button',{name:'Save photo',exact:true}).waitFor();
+      assert.equal(await current.count(),0);assert.equal(await editor.getByRole('button',{name:'Remove photo',exact:true}).count(),0);
+      assert.deepEqual(errors,[]);await context.close();
+      report.push(`PASS account photos ${width}: preview, validation, save/refresh, duplicate submit, upload/save retry, replacement/removal and unchanged account details`);
+    }
+    for (const signedIn of [false,true]) {
+      const {context,page,errors}=await setup(browser,{signedIn,width:390});
+      if(signedIn) await context.route(backend+'/rest/v1/baseline_member_accounts**',route=>route.fulfill({json:{member_id:uid,disabled:true}}));
+      await page.goto(base+'account.html');
+      await page.getByRole('heading',{name:signedIn?'Account needs organiser help':'Sign in',exact:true}).waitFor();
+      assert.equal(await page.locator('#profilePhoto').count(),0,'Signed-out and disabled accounts do not show the photo editor');
+      assert.deepEqual(errors,[]);await context.close();
+    }
     for (const width of [390,1365]) {
       const {context,page,model,errors}=await setup(browser,{admin:true,width,timezoneId:'America/Los_Angeles'});
       const address='Golf & Spa, Crewe Lane, Kenilworth CV8 2EA';
