@@ -7,6 +7,8 @@ import { openRsvp, rsvpClosed, rsvpChangeLocked, rsvpStatus, teeTimesPublished, 
 
 const b = await window.barfordReady;
 const { escape: e, state } = b;
+const joinSociety = document.getElementById("joinSociety");
+if (joinSociety) joinSociety.hidden = !!state.user;
 const area = document.getElementById("nextEvent");
 const teeArea = document.getElementById("homeTeeGroup");
 const gotoRsvp = document.getElementById("homeRsvp");
