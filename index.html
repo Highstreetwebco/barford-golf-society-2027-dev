@@ -7,12 +7,15 @@
 <style>html[data-launch-pending] body{visibility:hidden}</style>
 <script src="assets/js/launch-api.js?v=2027-launch-control-1"></script>
 <script src="assets/js/preview-landing.js?v=2027-launch-control-1" defer></script>
+<link rel="stylesheet" href="assets/css/photo-show.css">
+<script src="assets/js/photo-show.js" defer></script>
 </head><body><div class="back" aria-hidden="true"></div>
 <header><a class="brand" href="index.html"><img class="preview-logo" src="assets/brand/barford-wordmark-2027.webp" alt="Barford Golf Society" width="270" height="85"></a><span class="top-label">The 2027 season</span></header>
 <main><section><p class="kicker">A new chapter on the fairway</p><h1>2027<em>Season loading.</em></h1>
 <p class="intro">The next season of Barford Golf Society is taking shape. A new home for our golf days, tee times, results and everything in between is coming soon.</p>
 <div class="loading"><div class="loading-top"><span>Getting ready for the first tee</span><span>Coming soon</span></div><div class="track"><span></span></div></div>
-<p class="aside">Seven rounds. One society. Plenty of stories still to be written.</p></section>
+<p class="aside">Seven rounds. One society. Plenty of stories still to be written.</p><button type="button" id="playPhotos">Play photos</button>
+<p id="photoStatus" role="status" hidden></p></section>
 <section class="panel" aria-labelledby="title"><div class="symbol" aria-hidden="true">✦</div><h2 id="title">Admin preview</h2>
 <p>Enter the admin preview password to prepare the website before it opens to everyone.</p>
 <form id="previewForm"><label for="previewPassword">Admin preview password</label>
@@ -20,4 +23,6 @@
 <button type="submit" id="previewSubmit">Enter admin preview →</button><p id="previewStatus" class="message" aria-live="polite"></p></form>
 <div class="help">Admin preview only. You'll still need your normal member or admin login once inside.</div></section></main>
 <footer><span>© Barford Golf Society · 2027</span><span>See you on the first tee.</span></footer>
+<div id="photoShow" role="dialog" aria-modal="true" aria-label="Gallery slideshow" tabindex="-1" hidden>
+<div id="photoFrame"></div><button id="endShow" type="button" aria-label="Close slideshow" hidden>×</button></div>
 <noscript><style>html[data-launch-pending] body{visibility:visible}</style><p style="padding:2rem">JavaScript is required for committee preview access.</p></noscript></body></html>

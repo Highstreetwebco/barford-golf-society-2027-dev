@@ -1,0 +1,7 @@
+#playPhotos { width: auto; padding: 0 1.8rem; }
+#photoShow { position: fixed; inset: 0; z-index: 1000; overflow: hidden; background: black; cursor: none; outline: none; touch-action: manipulation; }
+#photoShow[hidden], #endShow[hidden] { display: none; }
+#photoFrame, #photoFrame img { width: 100%; height: 100%; }
+#photoFrame img { display: block; object-fit: contain; }
+#endShow { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); width: 48px; height: 48px; min-height: 0; margin: 0; border-radius: 50%; background: #131313d9; color: white; font-size: 1.8rem; }
+body:has(#photoShow:not([hidden])) { overflow: hidden; }
