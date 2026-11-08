@@ -13,6 +13,7 @@ export async function loadAccounts() {
     accounts = data || [];
     render();
     document.getElementById("accountSearch").oninput = render;
+    document.getElementById("accountScope").onchange = render;
   } catch (error) {
     if (ticket === generation) list.innerHTML = b.empty("Could not load members.", error.message);
   } finally { if (ticket === generation) refresh.disabled = false; }
@@ -21,10 +22,13 @@ export async function loadAccounts() {
 function render() {
   const query = document.getElementById("accountSearch").value.trim().toLowerCase();
   const active = accounts.filter(p => !p.disabled);
-  const visible = accounts.filter(p => (query || !p.disabled) && ((p.username || "").toLowerCase().includes(query) || (p.mobile || "").includes(query)));
-  document.getElementById("accountSummary").textContent = `${active.length} members · ${active.filter(p => p.registered !== false).length} with a login · ${active.filter(p => p.is_admin).length} admins`;
+  const signedUp = active.filter(p => p.registered !== false);
+  const registeredOnly = document.getElementById("accountScope").value === "registered";
+  const source = registeredOnly ? signedUp : accounts;
+  const visible = source.filter(p => (query || !p.disabled) && ((p.username || "").toLowerCase().includes(query) || (p.mobile || "").includes(query)));
+  document.getElementById("accountSummary").textContent = registeredOnly ? `${signedUp.length} signed-up ${signedUp.length === 1 ? "member" : "members"}` : `${active.length} on the roster · ${signedUp.length} signed up`;
   const list = document.getElementById("accountList");
-  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.member_id && !p.disabled ? `<button type="button" class="secondary" data-edit-photo="${e(p.id)}">Edit photo</button>` : ""}${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : b.empty("No matching members.", "Try a different name or mobile number.");
+  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.member_id && !p.disabled ? `<button type="button" class="secondary" data-edit-photo="${e(p.id)}">Edit photo</button>` : ""}${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : query ? b.empty("No matching members.", "Try a different name or mobile number.") : b.empty("No members to show.", registeredOnly ? "Members appear here when they create an account." : "The society roster is empty.");
   list.querySelectorAll("[data-edit-account]").forEach(button => button.onclick = () => edit(accounts.find(p => p.id === button.dataset.editAccount)));
   list.querySelectorAll("[data-reset-account]").forEach(button => button.onclick = () => resetPassword(accounts.find(p => p.id === button.dataset.resetAccount)));
   list.querySelectorAll("[data-edit-photo]").forEach(button => button.onclick = async () => {
