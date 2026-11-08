@@ -5,6 +5,7 @@ window.addEventListener("beforeunload", ev => { if (editingDirty) { ev.preventDe
 export async function loadAccounts() {
   const ticket = ++generation, list = document.getElementById("accountList"), refresh = document.getElementById("refreshAccounts");
   const picker = document.getElementById("signedUpNames");
+  picker.replaceChildren(new Option("Loading members…", ""));
   picker.disabled = true;
   refresh.disabled = true;
   list.innerHTML = '<p class="muted" role="status">Loading members…</p>';
@@ -14,7 +15,7 @@ export async function loadAccounts() {
     if (error) throw error;
     accounts = data || [];
     const members = accounts.filter(person => !person.disabled && person.registered !== false);
-    picker.replaceChildren(new Option(members.length ? "View signed-up names" : "No signed-up members", ""));
+    picker.replaceChildren(new Option(`${members.length} signed-up ${members.length === 1 ? "member" : "members"}`, ""));
     for (const person of members) picker.add(new Option(person.username, person.id));
     picker.disabled = members.length === 0;
     picker.onchange = () => {
@@ -30,7 +31,10 @@ export async function loadAccounts() {
     document.getElementById("accountSearch").oninput = render;
     document.getElementById("accountScope").onchange = render;
   } catch (error) {
-    if (ticket === generation) list.innerHTML = b.empty("Could not load members.", error.message);
+    if (ticket === generation) {
+      picker.replaceChildren(new Option("Names unavailable", ""));
+      list.innerHTML = b.empty("Could not load members.", error.message);
+    }
   } finally { if (ticket === generation) refresh.disabled = false; }
   refresh.onclick = loadAccounts;
 }
@@ -41,7 +45,6 @@ function render() {
   const registeredOnly = document.getElementById("accountScope").value === "registered";
   const source = registeredOnly ? signedUp : accounts;
   const visible = source.filter(p => (query || !p.disabled) && ((p.username || "").toLowerCase().includes(query) || (p.mobile || "").includes(query)));
-  document.getElementById("accountSummary").textContent = registeredOnly ? `${signedUp.length} signed-up ${signedUp.length === 1 ? "member" : "members"}` : `${active.length} on the roster · ${signedUp.length} signed up`;
   const list = document.getElementById("accountList");
   list.innerHTML = visible.length ? visible.map(p => `<article class="account-row" tabindex="-1" id="account-row-${e(p.id)}"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.member_id && !p.disabled ? `<button type="button" class="secondary" data-edit-photo="${e(p.id)}">Edit photo</button>` : ""}${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : query ? b.empty("No matching members.", "Try a different name or mobile number.") : b.empty("No members to show.", registeredOnly ? "Members appear here when they create an account." : "The society roster is empty.");
   list.querySelectorAll("[data-edit-account]").forEach(button => button.onclick = () => edit(accounts.find(p => p.id === button.dataset.editAccount)));
