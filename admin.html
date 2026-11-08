@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-season-ready-1" />
     <link rel="stylesheet" href="assets/css/holes.css?v=2027-aim-point-1" media="print" onload="this.media='all'" />
     <script src="assets/js/baseline.js?v=2027-season-ready-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-season-ready-1"></script>
+    <script type="module" src="assets/js/admin.js?v=2027-social-events-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 <link rel="stylesheet" href="assets/css/guest-rsvp.css?v=2027-guest-rsvp-1">
 </head>
@@ -47,7 +47,7 @@
         <section id="adminSiteControls" class="panel admin-site-controls" aria-label="Website controls"></section>
         <div class="panel admin-event-bar" id="eventToolbar">
           <label for="adminEvent">Working on<select id="adminEvent"><option value="">New event</option></select></label>
-          <div class="actions"><button id="newEvent" type="button" class="secondary">New event</button><a class="button secondary" id="viewAdminEvent" href="events.html">View event</a></div>
+          <div class="actions"><button id="newEvent" type="button" class="secondary">New golf event</button><button id="newSocialEvent" type="button" class="secondary">New social event</button><a class="button secondary" id="viewAdminEvent" href="events.html">View event</a></div>
           <p id="adminEventSummary" class="muted full" role="status"></p>
         </div>
         <div class="admin-tabs" role="tablist" aria-label="Admin tasks">
@@ -60,6 +60,7 @@
         <section id="adminDetails" class="panel admin-panel" role="tabpanel" aria-labelledby="tabDetails">
           <div class="section-heading"><div><h2>Event details</h2><p class="muted">Edit these details at any time, including after tee times are published.</p></div><span id="eventSaveState" class="save-state" role="status">New event</span></div>
           <form id="eventForm" class="form-grid">
+            <label>Event type<select name="event_type" required><option value="league">League round</option><option value="pairs">Pairs golf</option><option value="social">Social event</option></select></label>
             <label data-league-round>League round<select name="round_number" required><option value="">Choose a round</option><option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option><option value="4">Round 4</option><option value="5">Round 5</option><option value="6">Round 6 · scores private</option><option value="7">Round 7 · scores private</option></select></label>
             <label>Date<input name="date" type="date" required /></label>
             <label class="full">Event name<input name="name" required maxlength="200" placeholder="e.g. Round 1 — The Warwickshire" /></label>
@@ -73,7 +74,6 @@
             <label>Tee time gap (minutes)<input name="tee_interval" type="number" min="1" max="60" step="1" value="8" /><small>Changing the gap spaces existing groups from the first tee time.</small></label>
             <label class="full">Message for members<textarea name="description" rows="3" placeholder="Meeting arrangements, what is included or anything members need to know"></textarea></label>
             <details class="full admin-extra"><summary>Optional details and cover photo</summary><div class="form-grid section">
-              <label>Event type<select name="event_type" required><option value="league">League round</option><option value="pairs">Pairs golf</option><option value="social">Social event</option></select></label>
               <label>Estimated round (hours)<input name="round_hours" type="number" min="2" max="8" step="0.5" value="5" /></label>
               <label class="full">Address<input name="address" maxlength="300" /></label>
               <label>Course website<input name="course_link" type="url" placeholder="https://" /></label>

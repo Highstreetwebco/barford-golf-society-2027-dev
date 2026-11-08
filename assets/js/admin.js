@@ -1,6 +1,6 @@
 import { mountHoleSetup } from "./hole-admin.js?v=2027-aim-point-1";
 import { mountCoverUpload } from "./event-cover.js?v=2027-event-setup-1";
-import { eventFields, updateEventType } from "./event-fields.js?v=2027-accurate-gps-1";
+import { eventFields, updateEventType } from "./event-fields.js?v=2027-social-events-1";
 import { showLeagueTab, canLeaveLeague, clearLeagueAdmin } from "./league-admin.js?v=2027-admin-bookings-1";
 import { loadAccounts } from "./account-admin.js?v=2027-admin-photos-1";
 import { packPlayers, participantId } from "./tee-groups.js?v=2027-guest-rsvp-1";
@@ -37,7 +37,7 @@ function setSaveState(id, text, state = "saved") { $(id).textContent = text; $(i
 function markEventDirty() { eventDirty = true; setSaveState("eventSaveState", "Unsaved changes", "unsaved"); }
 function syncControls() {
   $("addEventMember").disabled = isBusy() || !selected || !!selected.cancelled;
-  picker.disabled = isBusy(); $("newEvent").disabled = isBusy();
+  picker.disabled = isBusy(); $("newEvent").disabled = $("newSocialEvent").disabled = isBusy();
   document.querySelectorAll(".admin-tabs button").forEach(button => button.disabled = isBusy());
   $("saveTees").disabled = teeBusy || !groups.some(g => g.players.length) || !!selected?.cancelled;
 }
@@ -67,6 +67,7 @@ if (!b.state.adminAccess) {
   form.addEventListener("change", markEventDirty);
   picker.onchange = () => changeEvent(picker.value);
   $("newEvent").onclick = () => changeEvent("", true);
+  $("newSocialEvent").onclick = () => changeEvent("", true, "social");
   document.querySelectorAll(".admin-tabs button").forEach(button => {
     button.onclick = () => showTab(button.dataset.tab);
     button.onkeydown = async ev => {
@@ -124,7 +125,7 @@ function renderEventPicker() {
   picker.innerHTML = '<option value="">New event</option>' + events.map(ev => `<option value="${ev.id}">${ev.round_number ? "Round " + ev.round_number + " · " : ""}${e(ev.name)} · ${e(b.date(ev.date))}${ev.cancelled ? " · Cancelled" : ""}</option>`).join("");
   picker.value = selected?.id || "";
 }
-async function changeEvent(id, newEvent = false) {
+async function changeEvent(id, newEvent = false, type = "league") {
   if (!canChangeEvent()) { picker.value = selected?.id || ""; return; }
   selected = events.find(ev => String(ev.id) === String(id)) || null;
   groups = []; rows = []; groupsLoadedFor = null; teeDirty = false;
@@ -132,6 +133,12 @@ async function changeEvent(id, newEvent = false) {
   $("scorecardTools").open = false; $("adminScorecards").innerHTML = "";
   $("copyTeeUpdate")?.remove();
   fillEvent();
+  if (newEvent) {
+    form.elements.event_type.value = type;
+    form.elements.event_type.dispatchEvent(new Event("change"));
+    eventDirty = false;
+    setSaveState("eventSaveState", "New event", "new");
+  }
   await showTab(newEvent ? "details" : activeTab, true);
 }
 function fillEvent() {
@@ -220,7 +227,7 @@ async function saveEvent(ev) {
     if (teeDirty) markTeeDirty();
     form.querySelector(".form-status").textContent = scheduleChanged && wasPublished
       ? (selected.tee_times_dirty ? "Event and tee times saved. Player groups kept. Review the outstanding player changes in Tee times before publishing." : "Event and published tee times updated. Player groups kept.")
-      : "Event saved. Existing RSVPs and tee groups kept.";
+      : selected.event_type === "social" ? "Social event saved." : "Event saved. Existing RSVPs and tee groups kept.";
     status.dataset.state = "saved";
     if (teeDirty) form.querySelector(".form-status").textContent += " Your unsaved group changes are still in Tee times.";
     b.toast("Event saved.");
@@ -317,7 +324,8 @@ async function loadResponses() {
     if (error) throw error;
     rows = data || [];
     const playing = rows.filter(r => r.attending && !r.reserve).length, waiting = rows.filter(r => r.reserve).length;
-    area.innerHTML = `<p class="rsvp-counts"><strong>${playing} playing</strong><span>${waiting} waiting</span><span>${rows.length - playing - waiting} not playing</span></p>${selected.tee_published_at ? '<p class="notice">Tee times are published. Members must contact the committee to withdraw. Check and republish the groups after changing the player list.</p>' : ''}` + (rows.length ? rows.map(r => `<article class="simple-response-row"><div><h3>${e(r.name)}</h3><p>${r.buggy ? "Buggy" + (r.flexibility === "walk" ? " · can walk if needed" : "") : "Walking"}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</p></div><span class="status-pill ${!r.attending && !r.reserve ? "cancelled" : ""}">${r.reserve ? "Waiting list" : r.attending ? "Playing" : "Not playing"}</span><button class="secondary" type="button" data-edit-response="${participantId(r)}">Edit response</button></article>`).join("") : '<p class="muted">No responses yet. Add a member here or let members RSVP from the event page.</p>');
+    const social = selected.event_type === "social";
+    area.innerHTML = `<p class="rsvp-counts"><strong>${playing} ${social ? "attending" : "playing"}</strong><span>${waiting} waiting</span><span>${rows.length - playing - waiting} ${social ? "not attending" : "not playing"}</span></p>${selected.tee_published_at ? '<p class="notice">Tee times are published. Members must contact the committee to withdraw. Check and republish the groups after changing the player list.</p>' : ''}` + (rows.length ? rows.map(r => `<article class="simple-response-row"><div><h3>${e(r.name)}</h3><p ${social ? "hidden" : ""}>${r.buggy ? "Buggy" + (r.flexibility === "walk" ? " · can walk if needed" : "") : "Walking"}${r.preferred_time ? " · " + e(r.preferred_time) + " tee preference" : ""}</p></div><span class="status-pill ${!r.attending && !r.reserve ? "cancelled" : ""}">${r.reserve ? "Waiting list" : r.attending ? (social ? "Attending" : "Playing") : (social ? "Not attending" : "Not playing")}</span><button class="secondary" type="button" data-edit-response="${participantId(r)}">Edit response</button></article>`).join("") : '<p class="muted">No responses yet. Add a member here or let members RSVP from the event page.</p>');
     area.querySelectorAll("[data-edit-response]").forEach(button => button.onclick = () => editResponse(rows.find(r => participantId(r) === button.dataset.editResponse)));
     return true;
   } catch (error) {
@@ -347,10 +355,11 @@ function editResponse(person, choices = null) {
     import('./admin-guest-rsvp.js?v=2027-guest-rsvp-1').then(({editGuestRsvp})=>editGuestRsvp(person,selected,b,async()=>{groupsLoadedFor=null;const fresh=await c.from('events').select('*').eq('id',selected.id).single();if(!fresh.error){selected=fresh.data;events=events.map(ev=>ev.id===selected.id?selected:ev);}await loadResponses();updateEventSummary();})).catch(error=>b.toast(error.message)).finally(()=>{responseBusy=false;syncControls();});
     return;
   }
+  const social = selected.event_type === "social";
   const id = selected.id, dialog = document.createElement("dialog");
   dialog.className = "simple-admin-dialog";
   dialog.setAttribute("aria-labelledby", "responseTitle");
-  dialog.innerHTML = `<form class="form-stack"><h2 id="responseTitle">${choices ? "Add member" : e(person.name)}</h2>${choices ? `<label>Member<select name="member_id" required><option value="">Choose member</option>${choices.map(m => `<option value="${e(m.id)}">${e(m.name)}${m.booking_id ? " · response saved" : ""}</option>`).join("")}</select></label><p class="muted" data-member-info>Choose the member who contacted you. They do not need an online account.</p>` : ""}<p class="muted">${e(selected.name)}${person.baseline_rsvp_contacts?.phone ? " · " + e(person.baseline_rsvp_contacts.phone) : ""}</p><label>Status<select name="status"><option value="playing" ${person.attending && !person.reserve ? "selected" : ""}>Playing</option><option value="waiting" ${person.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!person.attending && !person.reserve ? "selected" : ""}>Not playing</option></select></label><div data-golf-options ${selected.event_type === "social" ? "hidden" : ""}><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${person.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${person.flexibility === "walk" ? "checked" : ""}>Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map(x => `<option ${person.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><p class="muted">If the event is full, the booking joins the waiting list. If a place opens, the next member on the waiting list is moved in automatically.</p><div class="actions"><button type="submit">Save response</button><button type="button" class="secondary" data-close>Cancel</button></div><p class="form-status" role="status"></p></form>`;
+  dialog.innerHTML = `<form class="form-stack"><h2 id="responseTitle">${choices ? "Add member" : e(person.name)}</h2>${choices ? `<label>Member<select name="member_id" required><option value="">Choose member</option>${choices.map(m => `<option value="${e(m.id)}">${e(m.name)}${m.booking_id ? " · response saved" : ""}</option>`).join("")}</select></label><p class="muted" data-member-info>Choose the member who contacted you. They do not need an online account.</p>` : ""}<p class="muted">${e(selected.name)}${person.baseline_rsvp_contacts?.phone ? " · " + e(person.baseline_rsvp_contacts.phone) : ""}</p><label>Status<select name="status"><option value="playing" ${person.attending && !person.reserve ? "selected" : ""}>${social ? "Attending" : "Playing"}</option><option value="waiting" ${person.reserve ? "selected" : ""}>Waiting list</option><option value="no" ${!person.attending && !person.reserve ? "selected" : ""}>${social ? "Not attending" : "Not playing"}</option></select></label><div data-golf-options ${selected.event_type === "social" ? "hidden" : ""}><label>Buggy<select name="buggy"><option value="no">No</option><option value="yes" ${person.buggy ? "selected" : ""}>Yes</option></select></label><label class="check"><input name="flexibility" type="checkbox" ${person.flexibility === "walk" ? "checked" : ""}>Can walk if needed</label><label>Tee preference<select name="preferred_time"><option value="">No preference</option>${["First", "Middle", "End"].map(x => `<option ${person.preferred_time === x ? "selected" : ""}>${x}</option>`).join("")}</select></label></div><p class="muted">If the event is full, the booking joins the waiting list. If a place opens, the next member on the waiting list is moved in automatically.</p><div class="actions"><button type="submit">Save response</button><button type="button" class="secondary" data-close>Cancel</button></div><p class="form-status" role="status"></p></form>`;
   document.body.append(dialog); dialog.showModal();
   const editor = dialog.querySelector("form");
   if (choices) editor.elements.member_id.onchange = () => {

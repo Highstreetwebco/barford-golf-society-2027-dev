@@ -25,11 +25,21 @@ export function updateEventType(form) {
     const label = form.elements[name]?.closest("label");
     if (label) label.hidden = social;
   }
-  const label = form.elements.first_time?.closest("label");
-  if (label) {
-    const text = [...label.childNodes].find(node => node.nodeType === 3);
-    if (text) text.textContent = social ? "Event start time" : "First tee time";
+  form.querySelector(".course-search-box").hidden = social;
+  for (const [name, golfLabel, socialLabel] of [
+    ["first_time", "First tee time", "Event start time"],
+    ["course_name", "Course / venue name", "Venue or destination"],
+    ["max_players", "Maximum players", "Maximum attendees"],
+    ["course_link", "Course website", "Venue website"],
+    ["course_phone", "Course telephone", "Venue telephone"],
+  ]) {
+    const label = form.elements[name].closest("label");
+    label.firstChild.textContent = social ? socialLabel : golfLabel;
+    const hint = label.querySelector("small");
+    if (hint) hint.hidden = social;
   }
+  form.elements.course_name.placeholder = social ? "e.g. The Granville Arms" : "Filled in when you choose a course";
+  form.elements.name.placeholder = social ? "e.g. Presentation evening or golf trip" : "e.g. Round 1 — The Warwickshire";
 }
 
 export function eventFields(form) {
