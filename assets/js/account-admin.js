@@ -4,6 +4,8 @@ window.addEventListener("beforeunload", ev => { if (editingDirty) { ev.preventDe
 
 export async function loadAccounts() {
   const ticket = ++generation, list = document.getElementById("accountList"), refresh = document.getElementById("refreshAccounts");
+  const picker = document.getElementById("signedUpNames");
+  picker.disabled = true;
   refresh.disabled = true;
   list.innerHTML = '<p class="muted" role="status">Loading members…</p>';
   try {
@@ -11,6 +13,19 @@ export async function loadAccounts() {
     if (ticket !== generation) return;
     if (error) throw error;
     accounts = data || [];
+    const members = accounts.filter(person => !person.disabled && person.registered !== false);
+    picker.replaceChildren(new Option(members.length ? "View signed-up names" : "No signed-up members", ""));
+    for (const person of members) picker.add(new Option(person.username, person.id));
+    picker.disabled = members.length === 0;
+    picker.onchange = () => {
+      if (!picker.value) return;
+      document.getElementById("accountScope").value = "registered";
+      document.getElementById("accountSearch").value = "";
+      render();
+      const row = document.getElementById("account-row-" + picker.value);
+      picker.value = "";
+      row?.focus();
+    };
     render();
     document.getElementById("accountSearch").oninput = render;
     document.getElementById("accountScope").onchange = render;
@@ -28,7 +43,7 @@ function render() {
   const visible = source.filter(p => (query || !p.disabled) && ((p.username || "").toLowerCase().includes(query) || (p.mobile || "").includes(query)));
   document.getElementById("accountSummary").textContent = registeredOnly ? `${signedUp.length} signed-up ${signedUp.length === 1 ? "member" : "members"}` : `${active.length} on the roster · ${signedUp.length} signed up`;
   const list = document.getElementById("accountList");
-  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.member_id && !p.disabled ? `<button type="button" class="secondary" data-edit-photo="${e(p.id)}">Edit photo</button>` : ""}${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : query ? b.empty("No matching members.", "Try a different name or mobile number.") : b.empty("No members to show.", registeredOnly ? "Members appear here when they create an account." : "The society roster is empty.");
+  list.innerHTML = visible.length ? visible.map(p => `<article class="account-row" tabindex="-1" id="account-row-${e(p.id)}"><div><h3>${e(p.username)}${p.id === b.state.user.id ? " <small>(you)</small>" : ""}</h3><p>${p.mobile ? `<a href="tel:${e(p.mobile.replace(/[^+0-9]/g, ""))}">${e(p.mobile)}</a>` : "No mobile number"} · Starting handicap: ${p.handicap ?? "not set"}</p></div><div class="account-row-actions"><span class="status-pill ${p.disabled ? "cancelled" : ""}">${p.disabled ? "Name released" : p.registered === false ? "No login yet" : p.is_admin ? "Admin" : "Member"}</span><button type="button" class="secondary" data-edit-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Edit member</button>${p.member_id && !p.disabled ? `<button type="button" class="secondary" data-edit-photo="${e(p.id)}">Edit photo</button>` : ""}${p.registered !== false ? `<button type="button" class="text-button" data-reset-account="${e(p.id)}" ${p.disabled ? "disabled" : ""}>Reset password</button>` : ""}</div></article>`).join("") : query ? b.empty("No matching members.", "Try a different name or mobile number.") : b.empty("No members to show.", registeredOnly ? "Members appear here when they create an account." : "The society roster is empty.");
   list.querySelectorAll("[data-edit-account]").forEach(button => button.onclick = () => edit(accounts.find(p => p.id === button.dataset.editAccount)));
   list.querySelectorAll("[data-reset-account]").forEach(button => button.onclick = () => resetPassword(accounts.find(p => p.id === button.dataset.resetAccount)));
   list.querySelectorAll("[data-edit-photo]").forEach(button => button.onclick = async () => {

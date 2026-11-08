@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="assets/css/simple-admin.css?v=2027-season-ready-1" />
     <link rel="stylesheet" href="assets/css/holes.css?v=2027-aim-point-1" media="print" onload="this.media='all'" />
     <script src="assets/js/baseline.js?v=2027-season-ready-1" defer></script>
-    <script type="module" src="assets/js/admin.js?v=2027-member-list-1"></script>
+    <script type="module" src="assets/js/admin.js?v=2027-member-picker-1"></script>
     <link rel="stylesheet" href="assets/css/brand-2027.css?v=2027-emblem-1" />
 <link rel="stylesheet" href="assets/css/guest-rsvp.css?v=2027-guest-rsvp-1">
 </head>
@@ -106,6 +106,7 @@
         <section id="adminAccounts" class="panel admin-panel" role="tabpanel" aria-labelledby="tabAccounts" hidden>
           <div class="section-heading"><div><h2>Members</h2><p id="accountSummary" class="muted">Loading members…</p></div><button id="refreshAccounts" class="secondary" type="button">Refresh</button></div>
           <details id="handicapSetup" class="admin-extra"><summary id="handicapSetupLabel">Starting handicaps</summary><div id="adminHandicaps" class="section"></div></details>
+          <select id="signedUpNames" aria-label="Signed-up member names" disabled><option value="">View signed-up names</option></select>
           <label for="accountScope">Show</label><select id="accountScope"><option value="registered">Signed-up members</option><option value="all">Full society roster</option></select>
           <label for="accountSearch">Find a member</label><input id="accountSearch" type="search" placeholder="Name or mobile number" autocomplete="off" />
           <div id="accountList" class="account-list" aria-live="polite">Loading…</div>
